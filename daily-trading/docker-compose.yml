@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  trading-bot:
+    build: .
+    container_name: daily-trading-bot
+    restart: unless-stopped
+    environment:
+      - TRADING_MODE=PAPER
+      - MARKET=CRYPTO
+      - SYMBOL=BTC/USDT
+      - ENABLE_DASHBOARD=True
+      - DASHBOARD_PORT=8000
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./logs:/app/logs
+      - ./models:/app/models
+      - ./data:/app/data
+      - ./.env:/app/.env
+    networks:
+      - trading-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Servicio opcional para base de datos
+  postgres:
+    image: postgres:13
+    container_name: trading-bot-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=trading_bot
+      - POSTGRES_USER=tradingbot
+      - POSTGRES_PASSWORD=secure_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - trading-network
+    profiles:
+      - database
+
+  # Servicio opcional para Redis (caché)
+  redis:
+    image: redis:6-alpine
+    container_name: trading-bot-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - trading-network
+    profiles:
+      - cache
+
+networks:
+  trading-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
