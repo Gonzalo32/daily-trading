@@ -1,239 +1,225 @@
 """
 Estrategia de trading automatizada
-Implementa la lógica de decisión de compra/venta basada en indicadores técnicos
+Basada en cruce de medias móviles, RSI y MACD con filtros dinámicos.
 """
 
 import logging
+from datetime import datetime
 from typing import Dict, Optional, Any
 import pandas as pd
-import numpy as np
 from config import Config
 
+
 class TradingStrategy:
-    """Estrategia de trading basada en medias móviles y RSI"""
-    
+    """Estrategia de trading basada en medias móviles, RSI y MACD"""
+
     def __init__(self, config: Config):
         self.config = config
         self.logger = logging.getLogger(__name__)
-        
+
         # Estado de la estrategia
-        self.last_signal = None
-        self.signal_strength = 0.0
-        self.consecutive_signals = 0
-        
+        self.last_signal: Optional[Dict[str, Any]] = None
+        self.consecutive_signals: int = 0
+
+    # ======================================================
+    # 🎯 GENERACIÓN DE SEÑALES
+    # ======================================================
     async def generate_signal(self, market_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Generar señal de trading basada en los datos de mercado"""
+        """Genera señal de compra o venta según indicadores técnicos"""
         try:
-            if not market_data or 'indicators' not in market_data:
+            if not market_data or "indicators" not in market_data:
                 return None
-                
-            indicators = market_data['indicators']
-            price = market_data['price']
-            
-            # Verificar que tenemos todos los indicadores necesarios
-            required_indicators = ['fast_ma', 'slow_ma', 'rsi', 'macd', 'macd_signal']
-            if not all(ind in indicators for ind in required_indicators):
-                self.logger.warning("⚠️ Indicadores técnicos incompletos")
+
+            indicators = market_data["indicators"]
+            price = market_data["price"]
+
+            required = ["fast_ma", "slow_ma", "rsi", "macd", "macd_signal"]
+            if not all(k in indicators for k in required):
+                self.logger.warning("⚠️ Faltan indicadores necesarios para generar señal")
                 return None
-                
-            # Generar señal principal
-            signal = self._analyze_technical_indicators(indicators, price)
-            
-            if signal:
-                # Aplicar filtros adicionales
-                if self._apply_filters(signal, market_data):
-                    # Calcular tamaño de posición
-                    position_size = self._calculate_position_size(signal, market_data)
-                    
-                    if position_size > 0:
-                        signal['position_size'] = position_size
-                        signal['timestamp'] = market_data['timestamp']
-                        signal['symbol'] = market_data['symbol']
-                        
-                        # Actualizar estado
-                        self.last_signal = signal
-                        self.consecutive_signals += 1
-                        
-                        self.logger.info(f"📊 Señal generada: {signal['action']} {signal['symbol']} - Fuerza: {signal['strength']:.2f}")
-                        return signal
-                    else:
-                        self.logger.info("ℹ️ Señal rechazada: tamaño de posición insuficiente")
-                else:
-                    self.logger.info("ℹ️ Señal rechazada: no pasa filtros adicionales")
-            else:
+
+            # Análisis principal
+            signal = self._analyze_indicators(indicators, price)
+            if not signal:
                 self.consecutive_signals = 0
-                
-            return None
-            
-        except Exception as e:
-            self.logger.error(f"❌ Error generando señal: {e}")
-            return None
-            
-    def _analyze_technical_indicators(self, indicators: Dict[str, float], price: float) -> Optional[Dict[str, Any]]:
-        """Analizar indicadores técnicos para generar señal"""
-        try:
-            fast_ma = indicators['fast_ma']
-            slow_ma = indicators['slow_ma']
-            rsi = indicators['rsi']
-            macd = indicators['macd']
-            macd_signal = indicators['macd_signal']
-            
-            # Verificar que los valores no sean NaN
-            if any(pd.isna([fast_ma, slow_ma, rsi, macd, macd_signal])):
                 return None
-                
-            signal = None
-            strength = 0.0
-            
-            # Señal de compra: MA rápida cruza por encima de MA lenta + RSI no sobrecomprado + MACD positivo
-            if (fast_ma > slow_ma and 
-                rsi < self.config.RSI_OVERBOUGHT and 
-                macd > macd_signal and
-                macd > 0):
-                
-                # Calcular fuerza de la señal
-                ma_strength = (fast_ma - slow_ma) / slow_ma * 100
-                rsi_strength = (self.config.RSI_OVERBOUGHT - rsi) / self.config.RSI_OVERBOUGHT
-                macd_strength = macd / abs(macd_signal) if macd_signal != 0 else 0
-                
-                strength = (ma_strength * 0.4 + rsi_strength * 0.3 + macd_strength * 0.3)
-                
-                if strength > 0.3:  # Umbral mínimo de fuerza
-                    signal = {
-                        'action': 'BUY',
-                        'price': price,
-                        'strength': strength,
-                        'reason': 'MA crossover + RSI + MACD bullish',
-                        'stop_loss': price * (1 - self.config.STOP_LOSS_PCT),
-                        'take_profit': price * (1 + self.config.STOP_LOSS_PCT * self.config.TAKE_PROFIT_RATIO)
-                    }
-                    
-            # Señal de venta: MA rápida cruza por debajo de MA lenta + RSI no sobrevendido + MACD negativo
-            elif (fast_ma < slow_ma and 
-                  rsi > self.config.RSI_OVERSOLD and 
-                  macd < macd_signal and
-                  macd < 0):
-                
-                # Calcular fuerza de la señal
-                ma_strength = (slow_ma - fast_ma) / slow_ma * 100
-                rsi_strength = (rsi - self.config.RSI_OVERSOLD) / (100 - self.config.RSI_OVERSOLD)
-                macd_strength = abs(macd) / abs(macd_signal) if macd_signal != 0 else 0
-                
-                strength = (ma_strength * 0.4 + rsi_strength * 0.3 + macd_strength * 0.3)
-                
-                if strength > 0.3:  # Umbral mínimo de fuerza
-                    signal = {
-                        'action': 'SELL',
-                        'price': price,
-                        'strength': strength,
-                        'reason': 'MA crossover + RSI + MACD bearish',
-                        'stop_loss': price * (1 + self.config.STOP_LOSS_PCT),
-                        'take_profit': price * (1 - self.config.STOP_LOSS_PCT * self.config.TAKE_PROFIT_RATIO)
-                    }
-                    
+
+            # Aplicar filtros
+            if not self._apply_filters(signal, market_data):
+                return None
+
+            # Calcular tamaño de posición (proporcional a fuerza)
+            position_size = self._calculate_position_size(signal)
+            if position_size <= 0:
+                self.logger.info("ℹ️ Tamaño de posición insuficiente")
+                return None
+
+            # Completar datos
+            signal.update({
+                "position_size": position_size,
+                "timestamp": market_data["timestamp"],
+                "symbol": market_data["symbol"],
+            })
+
+            self.last_signal = signal
+            self.consecutive_signals += 1
+
+            self.logger.info(
+                f"📈 Señal generada: {signal['action']} {signal['symbol']} "
+                f"({signal['reason']}) | Fuerza={signal['strength']:.2f}"
+            )
             return signal
-            
+
         except Exception as e:
-            self.logger.error(f"❌ Error analizando indicadores técnicos: {e}")
+            self.logger.exception(f"❌ Error generando señal: {e}")
             return None
-            
+
+    # ======================================================
+    # ⚙️ ANÁLISIS DE INDICADORES
+    # ======================================================
+    def _analyze_indicators(self, indicators: Dict[str, float], price: float) -> Optional[Dict[str, Any]]:
+        """Evalúa los indicadores técnicos para generar señal"""
+        try:
+            fast = indicators["fast_ma"]
+            slow = indicators["slow_ma"]
+            rsi = indicators["rsi"]
+            macd = indicators["macd"]
+            macd_signal = indicators["macd_signal"]
+
+            # Validar datos
+            if any(pd.isna([fast, slow, rsi, macd, macd_signal])):
+                return None
+
+            # Señal de compra
+            if fast > slow and rsi < self.config.RSI_OVERBOUGHT and macd > macd_signal and macd > 0:
+                strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=True)
+                if strength > 0.3:
+                    return {
+                        "action": "BUY",
+                        "price": price,
+                        "strength": strength,
+                        "reason": "Cruce alcista + RSI + MACD",
+                        "stop_loss": round(price * (1 - self.config.STOP_LOSS_PCT), 2),
+                        "take_profit": round(price * (1 + self.config.STOP_LOSS_PCT * self.config.TAKE_PROFIT_RATIO), 2),
+                    }
+
+            # Señal de venta
+            if fast < slow and rsi > self.config.RSI_OVERSOLD and macd < macd_signal and macd < 0:
+                strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=False)
+                if strength > 0.3:
+                    return {
+                        "action": "SELL",
+                        "price": price,
+                        "strength": strength,
+                        "reason": "Cruce bajista + RSI + MACD",
+                        "stop_loss": round(price * (1 + self.config.STOP_LOSS_PCT), 2),
+                        "take_profit": round(price * (1 - self.config.STOP_LOSS_PCT * self.config.TAKE_PROFIT_RATIO), 2),
+                    }
+
+            return None
+
+        except Exception as e:
+            self.logger.exception(f"❌ Error analizando indicadores: {e}")
+            return None
+
+    # ======================================================
+    # 🧮 CÁLCULOS AUXILIARES
+    # ======================================================
+    def _calc_strength(
+        self, fast: float, slow: float, rsi: float, macd: float, macd_signal: float, bullish: bool
+    ) -> float:
+        """Calcula fuerza de la señal (0 a 1) en base a MA, RSI y MACD"""
+        try:
+            ma_diff = abs(fast - slow) / slow * 100
+            rsi_factor = (
+                (self.config.RSI_OVERBOUGHT - rsi) / self.config.RSI_OVERBOUGHT
+                if bullish else (rsi - self.config.RSI_OVERSOLD) / (100 - self.config.RSI_OVERSOLD)
+            )
+            macd_factor = abs(macd / macd_signal) if macd_signal != 0 else 0
+            return ma_diff * 0.4 + rsi_factor * 0.3 + macd_factor * 0.3
+        except Exception:
+            return 0.0
+
     def _apply_filters(self, signal: Dict[str, Any], market_data: Dict[str, Any]) -> bool:
-        """Aplicar filtros adicionales a la señal"""
+        """Filtra señales débiles o condiciones no óptimas"""
         try:
-            # Filtro 1: Evitar señales consecutivas del mismo tipo
-            if (self.last_signal and 
-                self.last_signal['action'] == signal['action'] and 
-                self.consecutive_signals >= 3):
-                self.logger.info("ℹ️ Filtro: demasiadas señales consecutivas del mismo tipo")
+            # Evitar repeticiones excesivas
+            if (
+                self.last_signal
+                and self.last_signal["action"] == signal["action"]
+                and self.consecutive_signals >= 3
+            ):
+                self.logger.info("⛔ Señales consecutivas del mismo tipo ignoradas")
                 return False
-                
-            # Filtro 2: Verificar volatilidad (usando ATR si está disponible)
-            if 'atr' in market_data['indicators']:
-                atr = market_data['indicators']['atr']
-                price = market_data['price']
-                volatility = atr / price
-                
-                if volatility > 0.05:  # 5% de volatilidad máxima
-                    self.logger.info("ℹ️ Filtro: volatilidad demasiado alta")
+
+            # Volatilidad máxima (si ATR está disponible)
+            atr = market_data["indicators"].get("atr")
+            if atr:
+                volatility = atr / market_data["price"]
+                if volatility > 0.05:
+                    self.logger.info("⚠️ Volatilidad alta, señal ignorada")
                     return False
-                    
-            # Filtro 3: Verificar volumen (si está disponible)
-            if 'volume' in market_data:
-                volume = market_data['volume']
-                if volume < 1000:  # Volumen mínimo
-                    self.logger.info("ℹ️ Filtro: volumen insuficiente")
-                    return False
-                    
-            # Filtro 4: Verificar horario de trading (para acciones)
-            if self.config.MARKET == 'STOCK':
-                current_hour = market_data['timestamp'].hour
-                if not (self.config.TRADING_START_HOUR <= current_hour < self.config.TRADING_END_HOUR):
-                    self.logger.info("ℹ️ Filtro: fuera del horario de trading")
-                    return False
-                    
-            # Filtro 5: Verificar fuerza mínima de la señal
-            if signal['strength'] < 0.3:
-                self.logger.info("ℹ️ Filtro: fuerza de señal insuficiente")
+
+            # Volumen mínimo
+            if market_data.get("volume", 0) < 1000:
+                self.logger.info("⚠️ Volumen insuficiente, señal ignorada")
                 return False
-                
+
+            # Horario (solo para acciones)
+            if self.config.MARKET == "STOCK":
+                hour = market_data["timestamp"].hour
+                if not (self.config.TRADING_START_HOUR <= hour < self.config.TRADING_END_HOUR):
+                    self.logger.info("🕒 Fuera del horario de mercado")
+                    return False
+
+            # Fuerza mínima
+            if signal["strength"] < 0.3:
+                self.logger.info("💤 Señal débil descartada")
+                return False
+
             return True
-            
         except Exception as e:
-            self.logger.error(f"❌ Error aplicando filtros: {e}")
+            self.logger.exception(f"❌ Error aplicando filtros: {e}")
             return False
-            
-    def _calculate_position_size(self, signal: Dict[str, Any], market_data: Dict[str, Any]) -> float:
-        """Calcular tamaño de posición basado en el riesgo"""
+
+    def _calculate_position_size(self, signal: Dict[str, Any]) -> float:
+        """Calcula el tamaño de posición basado en el riesgo y fuerza de señal"""
         try:
-            # Obtener capital disponible (simulado por ahora)
-            available_capital = 10000  # TODO: Obtener del balance real
-            
-            # Calcular riesgo por trade
-            risk_amount = available_capital * self.config.RISK_PER_TRADE
-            
-            # Calcular distancia al stop loss
-            price = signal['price']
-            stop_loss = signal['stop_loss']
-            risk_per_unit = abs(price - stop_loss)
-            
+            base_capital = 10_000  # Simulado
+            risk_amount = base_capital * self.config.RISK_PER_TRADE
+            risk_per_unit = abs(signal["price"] - signal["stop_loss"])
             if risk_per_unit == 0:
-                return 0
-                
-            # Calcular cantidad de unidades
-            position_size = risk_amount / risk_per_unit
-            
-            # Aplicar límites
-            max_position_size = available_capital * 0.1 / price  # Máximo 10% del capital
-            position_size = min(position_size, max_position_size)
-            
-            # Redondear a 2 decimales
-            return round(position_size, 2)
-            
+                return 0.0
+            qty = risk_amount / risk_per_unit
+            qty *= signal["strength"]  # ajusta por fuerza
+            return round(min(qty, (base_capital * 0.1) / signal["price"]), 2)
         except Exception as e:
-            self.logger.error(f"❌ Error calculando tamaño de posición: {e}")
-            return 0
-            
+            self.logger.exception(f"❌ Error calculando posición: {e}")
+            return 0.0
+
+    # ======================================================
+    # 📊 UTILIDADES
+    # ======================================================
     def get_strategy_info(self) -> Dict[str, Any]:
-        """Obtener información sobre la estrategia"""
+        """Retorna configuración y último estado"""
         return {
-            'name': 'MA Crossover + RSI + MACD',
-            'description': 'Estrategia basada en cruce de medias móviles con confirmación de RSI y MACD',
-            'parameters': {
-                'fast_ma_period': self.config.FAST_MA_PERIOD,
-                'slow_ma_period': self.config.SLOW_MA_PERIOD,
-                'rsi_period': self.config.RSI_PERIOD,
-                'rsi_overbought': self.config.RSI_OVERBOUGHT,
-                'rsi_oversold': self.config.RSI_OVERSOLD,
-                'stop_loss_pct': self.config.STOP_LOSS_PCT,
-                'take_profit_ratio': self.config.TAKE_PROFIT_RATIO
+            "name": "MA Crossover + RSI + MACD",
+            "description": "Cruce de medias móviles con confirmación de RSI y MACD",
+            "parameters": {
+                "fast_ma_period": self.config.FAST_MA_PERIOD,
+                "slow_ma_period": self.config.SLOW_MA_PERIOD,
+                "rsi_period": self.config.RSI_PERIOD,
+                "rsi_overbought": self.config.RSI_OVERBOUGHT,
+                "rsi_oversold": self.config.RSI_OVERSOLD,
+                "stop_loss_pct": self.config.STOP_LOSS_PCT,
+                "take_profit_ratio": self.config.TAKE_PROFIT_RATIO,
             },
-            'last_signal': self.last_signal,
-            'consecutive_signals': self.consecutive_signals
+            "last_signal": self.last_signal,
+            "consecutive_signals": self.consecutive_signals,
         }
-        
+
     def reset_strategy(self):
-        """Reiniciar estado de la estrategia"""
+        """Reinicia el estado interno de la estrategia"""
         self.last_signal = None
-        self.signal_strength = 0.0
         self.consecutive_signals = 0
         self.logger.info("🔄 Estrategia reiniciada")
