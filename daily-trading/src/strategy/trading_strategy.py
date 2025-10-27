@@ -3,11 +3,12 @@ Estrategia de trading automatizada
 Basada en cruce de medias móviles, RSI y MACD con filtros dinámicos.
 """
 
-import logging
 from datetime import datetime
 from typing import Dict, Optional, Any
 import pandas as pd
+
 from config import Config
+from src.utils.logging_setup import setup_logging
 
 
 class TradingStrategy:
@@ -15,7 +16,7 @@ class TradingStrategy:
 
     def __init__(self, config: Config):
         self.config = config
-        self.logger = logging.getLogger(__name__)
+        self.logger = setup_logging(__name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
 
         # Estado de la estrategia
         self.last_signal: Optional[Dict[str, Any]] = None
@@ -51,10 +52,10 @@ class TradingStrategy:
             # Calcular tamaño de posición (proporcional a fuerza)
             position_size = self._calculate_position_size(signal)
             if position_size <= 0:
-                self.logger.info("ℹ️ Tamaño de posición insuficiente")
+                self.logger.info("ℹ️ Tamaño de posición insuficiente para operar")
                 return None
 
-            # Completar datos
+            # Completar datos de la señal
             signal.update({
                 "position_size": position_size,
                 "timestamp": market_data["timestamp"],
@@ -65,8 +66,8 @@ class TradingStrategy:
             self.consecutive_signals += 1
 
             self.logger.info(
-                f"📈 Señal generada: {signal['action']} {signal['symbol']} "
-                f"({signal['reason']}) | Fuerza={signal['strength']:.2f}"
+                f"📈 Señal generada: {signal['action']} {signal['symbol']} | "
+                f"{signal['reason']} | Fuerza={signal['strength']:.2f}"
             )
             return signal
 
@@ -86,7 +87,6 @@ class TradingStrategy:
             macd = indicators["macd"]
             macd_signal = indicators["macd_signal"]
 
-            # Validar datos
             if any(pd.isna([fast, slow, rsi, macd, macd_signal])):
                 return None
 
@@ -125,9 +125,8 @@ class TradingStrategy:
     # ======================================================
     # 🧮 CÁLCULOS AUXILIARES
     # ======================================================
-    def _calc_strength(
-        self, fast: float, slow: float, rsi: float, macd: float, macd_signal: float, bullish: bool
-    ) -> float:
+    def _calc_strength(self, fast: float, slow: float, rsi: float, macd: float,
+                       macd_signal: float, bullish: bool) -> float:
         """Calcula fuerza de la señal (0 a 1) en base a MA, RSI y MACD"""
         try:
             ma_diff = abs(fast - slow) / slow * 100
@@ -185,7 +184,7 @@ class TradingStrategy:
     def _calculate_position_size(self, signal: Dict[str, Any]) -> float:
         """Calcula el tamaño de posición basado en el riesgo y fuerza de señal"""
         try:
-            base_capital = 10_000  # Simulado
+            base_capital = self.config.INITIAL_CAPITAL
             risk_amount = base_capital * self.config.RISK_PER_TRADE
             risk_per_unit = abs(signal["price"] - signal["stop_loss"])
             if risk_per_unit == 0:

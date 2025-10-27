@@ -1,14 +1,14 @@
 """
 Ejecutor de órdenes de trading
-Maneja la ejecución, cierre y cancelación de órdenes en distintos mercados
-Compatible con Binance (Testnet o Live) y preparado para Alpaca (acciones)
+Maneja la ejecución, cierre y cancelación de órdenes en distintos mercados.
+Compatible con Binance (Testnet o Live) y preparado para Alpaca (acciones).
 """
 
-import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 import ccxt.async_support as ccxt  # ✅ versión asíncrona
 from config import Config
+from src.utils.logging_setup import setup_logging
 
 
 class OrderExecutor:
@@ -16,8 +16,8 @@ class OrderExecutor:
 
     def __init__(self, config: Config):
         self.config = config
-        self.logger = logging.getLogger(__name__)
-        self.exchange = None
+        self.logger = setup_logging(__name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
+        self.exchange: Optional[ccxt.binance] = None
         self.is_initialized = False
         self.executed_orders: List[Dict[str, Any]] = []
 
@@ -133,7 +133,7 @@ class OrderExecutor:
             await self._place_stop_orders(position)
 
             self.executed_orders.append(position)
-            self.logger.info(f"✅ Orden ejecutada: {position['id']} a {entry_price}")
+            self.logger.info(f"✅ Orden ejecutada: {position['id']} a {entry_price:.4f}")
             return {"success": True, "order": position, "error": None}
 
         except Exception as e:

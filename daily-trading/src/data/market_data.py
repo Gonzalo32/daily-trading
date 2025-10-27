@@ -5,30 +5,32 @@ Compatible con Binance (Testnet o Live) y estructura para acciones (Alpaca)
 """
 
 import asyncio
-import logging
 from datetime import datetime
 from typing import Dict, Optional, Any
+
 import pandas as pd
 import numpy as np
-import ccxt.async_support as ccxt  # ✅ versión asíncrona de ccxt
+import ccxt.async_support as ccxt  # ✅ versión asíncrona
+
 from config import Config
+from src.utils.logging_setup import setup_logging
 
 
 class MarketDataProvider:
-    """Proveedor de datos de mercado para diferentes exchanges"""
+    """Proveedor de datos de mercado para diferentes exchanges (Cripto / Acciones)"""
 
     def __init__(self, config: Config):
         self.config = config
-        self.logger = logging.getLogger(__name__)
-        self.exchange = None
-        self.market_data_cache = {}
-        self.last_update = None
+        self.logger = setup_logging(__name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
+        self.exchange: Optional[ccxt.binance] = None
+        self.market_data_cache: Dict[str, Any] = {}
+        self.last_update: Optional[datetime] = None
 
     # ======================================================
     # 🔧 INICIALIZACIÓN
     # ======================================================
     async def initialize(self):
-        """Inicializar el proveedor de datos"""
+        """Inicializar el proveedor de datos según el mercado"""
         try:
             if self.config.MARKET == "CRYPTO":
                 await self._initialize_crypto_exchange()
@@ -70,7 +72,7 @@ class MarketDataProvider:
     # 📈 DATOS DE MERCADO
     # ======================================================
     async def get_latest_data(self) -> Optional[Dict[str, Any]]:
-        """Obtener datos más recientes del mercado"""
+        """Obtener los datos más recientes del mercado"""
         try:
             if self.config.MARKET == "CRYPTO":
                 return await self._get_crypto_data()
@@ -91,7 +93,6 @@ class MarketDataProvider:
             df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
             df.set_index("timestamp", inplace=True)
-
             df = self._calculate_indicators(df)
 
             latest_data = {
@@ -120,6 +121,7 @@ class MarketDataProvider:
             self.market_data_cache = latest_data
             self.last_update = datetime.now()
 
+            self.logger.debug(f"📊 Datos actualizados para {self.config.SYMBOL}")
             return latest_data
 
         except Exception as e:
@@ -127,8 +129,8 @@ class MarketDataProvider:
             return None
 
     async def _get_stock_data(self) -> Dict[str, Any]:
-        """Simulación de datos para acciones (placeholder)"""
-        return {
+        """Simulación temporal de datos para acciones"""
+        simulated = {
             "symbol": self.config.SYMBOL,
             "timestamp": datetime.now(),
             "price": 100.0,
@@ -143,12 +145,14 @@ class MarketDataProvider:
                 "bb_lower": 98.0,
             },
         }
+        self.logger.info(f"📈 Datos simulados para acciones: {self.config.SYMBOL}")
+        return simulated
 
     # ======================================================
     # 📊 INDICADORES TÉCNICOS
     # ======================================================
     def _calculate_indicators(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Calcular todos los indicadores técnicos"""
+        """Calcular todos los indicadores técnicos relevantes"""
         try:
             df["fast_ma"] = df["close"].rolling(self.config.FAST_MA_PERIOD).mean()
             df["slow_ma"] = df["close"].rolling(self.config.SLOW_MA_PERIOD).mean()
@@ -158,6 +162,7 @@ class MarketDataProvider:
             macd, signal, hist = self._macd(df["close"])
             df["macd"], df["macd_signal"], df["macd_hist"] = macd, signal, hist
 
+            # Bandas de Bollinger
             mid = df["close"].rolling(20).mean()
             std = df["close"].rolling(20).std()
             df["bb_upper"], df["bb_middle"], df["bb_lower"] = mid + 2 * std, mid, mid - 2 * std

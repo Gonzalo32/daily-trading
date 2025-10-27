@@ -25,9 +25,15 @@ class Config:
     # ==============================
     INITIAL_CAPITAL = float(os.getenv("INITIAL_CAPITAL", "10000"))
     MAX_POSITIONS = int(os.getenv("MAX_POSITIONS", "3"))
+
+    # Gestión de riesgo porcentual
     RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", "0.02"))  # 2% del capital por trade
     MAX_DAILY_LOSS = float(os.getenv("MAX_DAILY_LOSS", "0.03"))   # 3%
     MAX_DAILY_GAIN = float(os.getenv("MAX_DAILY_GAIN", "0.05"))   # 5%
+
+    # Alternativas compatibles con versiones previas
+    MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "3"))
+    MAX_POSITION_RISK_PCT = float(os.getenv("MAX_POSITION_RISK_PCT", "1.5"))
 
     STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", "0.01"))      # 1%
     TAKE_PROFIT_RATIO = float(os.getenv("TAKE_PROFIT_RATIO", "2.0"))  # 2:1 ratio
