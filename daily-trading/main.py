@@ -257,8 +257,8 @@ class TradingBot:
             if 'dataframe' in market_data:
                 df = market_data.get('dataframe')
                 if df is not None and hasattr(df, 'tail') and len(df) > 0:
-                    # Obtener últimas 50 velas
-                    recent_candles = df.tail(50)
+                    # Obtener últimas 200 velas para más contexto histórico
+                    recent_candles = df.tail(200)
                     market_snapshot['ohlc_history'] = [
                         {
                             'timestamp': idx.isoformat() if hasattr(idx, 'isoformat') else str(idx),

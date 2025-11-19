@@ -22,68 +22,112 @@ class TradingStrategy:
         self.last_signal: Optional[Dict[str, Any]] = None
         self.consecutive_signals: int = 0
         
-        # Historial para umbrales dinámicos
+        # Historial para umbrales dinámicos (ampliado para mejor adaptación)
         self.recent_volumes = []
         self.recent_volatilities = []
         self.recent_strengths = []
+        self.recent_rsi_values = []
+        self.recent_ma_diffs = []  # Diferencias entre fast_ma y slow_ma
+        self.recent_macd_values = []
+        self.recent_prices = []
 
     # ======================================================
     # 🎯 GENERACIÓN DE SEÑALES
     # ======================================================
     def _calculate_dynamic_thresholds(self, market_data: Dict[str, Any]) -> Dict[str, float]:
-        """Calcula umbrales dinámicos basados en condiciones del mercado"""
+        """Calcula umbrales dinámicos basados completamente en condiciones actuales del mercado"""
         try:
             volume = market_data.get("volume", 0)
             price = market_data.get("price", 1)
             indicators = market_data.get("indicators", {})
             atr = indicators.get("atr", 0)
+            rsi = indicators.get("rsi", 50)
+            fast_ma = indicators.get("fast_ma", price)
+            slow_ma = indicators.get("slow_ma", price)
+            macd = indicators.get("macd", 0)
             
-            # Calcular volatilidad actual
+            # Calcular métricas actuales
             volatility = (atr / price) if price > 0 else 0
+            ma_diff_pct = abs(fast_ma - slow_ma) / slow_ma * 100 if slow_ma > 0 else 0
             
-            # Mantener historial (últimos 50 valores)
+            # Mantener historial ampliado (últimos 100 valores para mejor estadística)
             self.recent_volumes.append(volume)
             self.recent_volatilities.append(volatility)
-            if len(self.recent_volumes) > 50:
-                self.recent_volumes.pop(0)
-                self.recent_volatilities.pop(0)
+            self.recent_rsi_values.append(rsi)
+            self.recent_ma_diffs.append(ma_diff_pct)
+            self.recent_macd_values.append(abs(macd))
+            self.recent_prices.append(price)
             
-            # Calcular percentiles para adaptación
-            if len(self.recent_volumes) >= 10:
+            # Limitar historial a 100 valores
+            max_history = 100
+            for history_list in [self.recent_volumes, self.recent_volatilities, self.recent_rsi_values,
+                                self.recent_ma_diffs, self.recent_macd_values, self.recent_prices]:
+                if len(history_list) > max_history:
+                    history_list.pop(0)
+            
+            # Calcular umbrales basados en estadísticas reales del mercado actual
+            # Mínimo necesario: 5 valores para tener alguna estadística
+            min_samples = 5
+            
+            if len(self.recent_volumes) >= min_samples:
+                # VOLUMEN: Usar percentil 25 de los volúmenes recientes como mínimo
                 sorted_volumes = sorted(self.recent_volumes)
-                volume_percentile_30 = sorted_volumes[int(len(sorted_volumes) * 0.3)]
-                
+                volume_percentile_25 = sorted_volumes[int(len(sorted_volumes) * 0.25)]
+                min_volume = max(volume * 0.1, volume_percentile_25 * 0.5)  # Al menos 10% del volumen actual o 50% del percentil 25
+            else:
+                # Si no hay suficientes datos, usar el volumen actual como referencia
+                min_volume = volume * 0.2 if volume > 0 else 100
+            
+            if len(self.recent_volatilities) >= min_samples:
+                # VOLATILIDAD: Usar percentil 75 como máximo permitido
                 sorted_volatilities = sorted(self.recent_volatilities)
-                volatility_percentile_70 = sorted_volatilities[int(len(sorted_volatilities) * 0.7)]
+                volatility_percentile_75 = sorted_volatilities[int(len(sorted_volatilities) * 0.75)]
+                max_volatility = volatility_percentile_75 * 1.2  # 20% más que el percentil 75
             else:
-                volume_percentile_30 = 300  # Valor por defecto
-                volatility_percentile_70 = 0.05  # 5% por defecto
+                # Si no hay suficientes datos, usar la volatilidad actual como referencia
+                max_volatility = volatility * 1.5 if volatility > 0 else 0.05
             
-            # Umbral de volumen dinámico (30% del percentil 30)
-            min_volume = max(100, min(volume_percentile_30 * 0.3, 1000))
-            
-            # Umbral de volatilidad dinámico (70% del percentil 70)
-            max_volatility = max(0.03, min(volatility_percentile_70 * 0.7, 0.08))
-            
-            # Umbral de fuerza dinámico (ajustado según volatilidad)
-            # Mercados más volátiles = señales más fuertes requeridas
-            if volatility > 0.04:
-                min_strength = 0.25  # Más estricto en alta volatilidad
-            elif volatility < 0.02:
-                min_strength = 0.12  # Más permisivo en baja volatilidad
+            if len(self.recent_rsi_values) >= min_samples:
+                # RSI: Calcular umbrales basados en la distribución actual de RSI
+                sorted_rsi = sorted(self.recent_rsi_values)
+                rsi_median = sorted_rsi[len(sorted_rsi) // 2]
+                rsi_std = pd.Series(self.recent_rsi_values).std()
+                
+                # Umbrales adaptativos: usar mediana ± desviación estándar ajustada
+                rsi_overbought = min(95, max(70, rsi_median + rsi_std * 1.5))
+                rsi_oversold = max(5, min(30, rsi_median - rsi_std * 1.5))
             else:
-                min_strength = 0.18  # Valor base
+                # Si no hay suficientes datos, usar RSI actual como referencia
+                rsi_overbought = min(95, rsi + 15) if rsi < 80 else 85
+                rsi_oversold = max(5, rsi - 15) if rsi > 20 else 15
             
-            # RSI dinámico (ajusta según volatilidad)
-            if volatility > 0.04:
-                rsi_overbought = 75  # Más estricto
-                rsi_oversold = 25
-            elif volatility < 0.02:
-                rsi_overbought = 85  # Más permisivo
-                rsi_oversold = 15
+            if len(self.recent_ma_diffs) >= min_samples and len(self.recent_macd_values) >= min_samples:
+                # FUERZA: Calcular basado en la distribución actual de diferencias de MA y MACD
+                sorted_ma_diffs = sorted(self.recent_ma_diffs)
+                ma_diff_percentile_50 = sorted_ma_diffs[int(len(sorted_ma_diffs) * 0.5)]
+                
+                sorted_macd = sorted(self.recent_macd_values)
+                macd_percentile_50 = sorted_macd[int(len(sorted_macd) * 0.5)]
+                
+                # Fuerza mínima basada en la mediana de las señales históricas
+                # Normalizar a un rango 0-1
+                base_strength = (ma_diff_percentile_50 * 0.4 + (macd_percentile_50 / (macd_percentile_50 + 1)) * 0.6) / 100
+                min_strength = max(0.05, min(0.3, base_strength * 0.8))  # 80% de la fuerza mediana
             else:
-                rsi_overbought = 80
-                rsi_oversold = 20
+                # Si no hay suficientes datos, usar valores actuales como referencia
+                current_strength_estimate = (ma_diff_pct * 0.4 + (abs(macd) / (abs(macd) + 1)) * 0.6) / 100
+                min_strength = max(0.05, min(0.25, current_strength_estimate * 0.6))
+            
+            # Ajuste final basado en volatilidad actual (refinamiento)
+            if volatility > 0:
+                volatility_factor = min(1.5, max(0.7, volatility / (pd.Series(self.recent_volatilities).mean() if len(self.recent_volatilities) >= min_samples else volatility)))
+                min_strength *= volatility_factor  # Más estricto en alta volatilidad relativa
+            
+            self.logger.debug(
+                f"📊 Umbrales dinámicos calculados: "
+                f"vol={min_volume:.2f}, volatl={max_volatility:.4f}, "
+                f"fuerza={min_strength:.3f}, RSI=[{rsi_oversold:.1f}, {rsi_overbought:.1f}]"
+            )
             
             return {
                 "min_volume": min_volume,
@@ -94,14 +138,30 @@ class TradingStrategy:
             }
         except Exception as e:
             self.logger.exception(f"❌ Error calculando umbrales dinámicos: {e}")
-            # Valores por defecto en caso de error
-            return {
-                "min_volume": 300,
-                "max_volatility": 0.05,
-                "min_strength": 0.18,
-                "rsi_overbought": 80,
-                "rsi_oversold": 20
-            }
+            # En caso de error, intentar usar valores actuales del mercado
+            try:
+                volume = market_data.get("volume", 0)
+                price = market_data.get("price", 1)
+                indicators = market_data.get("indicators", {})
+                rsi = indicators.get("rsi", 50)
+                volatility = (indicators.get("atr", 0) / price) if price > 0 else 0.05
+                
+                return {
+                    "min_volume": volume * 0.2 if volume > 0 else 100,
+                    "max_volatility": volatility * 1.5 if volatility > 0 else 0.05,
+                    "min_strength": 0.1,  # Muy permisivo como último recurso
+                    "rsi_overbought": min(95, rsi + 15) if rsi < 80 else 85,
+                    "rsi_oversold": max(5, rsi - 15) if rsi > 20 else 15
+                }
+            except:
+                # Último recurso: valores muy permisivos basados en mercado típico
+                return {
+                    "min_volume": 100,
+                    "max_volatility": 0.1,
+                    "min_strength": 0.05,
+                    "rsi_overbought": 90,
+                    "rsi_oversold": 10
+                }
     
     async def generate_signal(self, market_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Genera señal de compra o venta según indicadores técnicos"""
@@ -176,7 +236,7 @@ class TradingStrategy:
             min_strength = thresholds.get("min_strength", 0.18)
             
             if fast > slow and rsi < rsi_overbought and macd > macd_signal and macd > 0:
-                strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=True)
+                strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=True, thresholds=thresholds)
                 if strength > min_strength:
                     return {
                         "action": "BUY",
@@ -191,7 +251,7 @@ class TradingStrategy:
             rsi_oversold = thresholds.get("rsi_oversold", self.config.RSI_OVERSOLD)
             
             if fast < slow and rsi > rsi_oversold and macd < macd_signal and macd < 0:
-                strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=False)
+                strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=False, thresholds=thresholds)
                 if strength > min_strength:
                     return {
                         "action": "SELL",
@@ -212,16 +272,39 @@ class TradingStrategy:
     # 🧮 CÁLCULOS AUXILIARES
     # ======================================================
     def _calc_strength(self, fast: float, slow: float, rsi: float, macd: float,
-                       macd_signal: float, bullish: bool) -> float:
-        """Calcula fuerza de la señal (0 a 1) en base a MA, RSI y MACD"""
+                       macd_signal: float, bullish: bool, thresholds: Optional[Dict[str, float]] = None) -> float:
+        """Calcula fuerza de la señal (0 a 1) en base a MA, RSI y MACD usando umbrales dinámicos"""
         try:
             ma_diff = abs(fast - slow) / slow * 100
-            rsi_factor = (
-                (self.config.RSI_OVERBOUGHT - rsi) / self.config.RSI_OVERBOUGHT
-                if bullish else (rsi - self.config.RSI_OVERSOLD) / (100 - self.config.RSI_OVERSOLD)
-            )
+            
+            # Usar umbrales dinámicos si están disponibles, sino usar config
+            if thresholds:
+                rsi_overbought = thresholds.get("rsi_overbought", self.config.RSI_OVERBOUGHT)
+                rsi_oversold = thresholds.get("rsi_oversold", self.config.RSI_OVERSOLD)
+            else:
+                rsi_overbought = self.config.RSI_OVERBOUGHT
+                rsi_oversold = self.config.RSI_OVERSOLD
+            
+            # Calcular factor RSI usando umbrales dinámicos
+            if bullish:
+                # Para compras: cuanto más lejos esté del sobrecompra, mejor
+                rsi_range = rsi_overbought - rsi_oversold
+                rsi_factor = (rsi_overbought - rsi) / rsi_range if rsi_range > 0 else 0.5
+            else:
+                # Para ventas: cuanto más lejos esté del sobreventa, mejor
+                rsi_range = rsi_overbought - rsi_oversold
+                rsi_factor = (rsi - rsi_oversold) / rsi_range if rsi_range > 0 else 0.5
+            
+            # Normalizar RSI factor a 0-1
+            rsi_factor = max(0, min(1, rsi_factor))
+            
+            # Factor MACD: relación entre MACD y su señal
             macd_factor = abs(macd / macd_signal) if macd_signal != 0 else 0
-            return ma_diff * 0.4 + rsi_factor * 0.3 + macd_factor * 0.3
+            macd_factor = min(1, macd_factor / 2)  # Normalizar
+            
+            # Combinar factores (ajustar pesos según importancia)
+            strength = ma_diff * 0.4 + rsi_factor * 0.3 + macd_factor * 0.3
+            return max(0, min(1, strength / 10))  # Normalizar a rango 0-1
         except Exception:
             return 0.0
 

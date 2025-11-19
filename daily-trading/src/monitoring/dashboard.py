@@ -284,7 +284,7 @@ class Dashboard:
                     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
                 }
                 .grid-chart-row {
-                    grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr);
+                    grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
                 }
                 @media (max-width: 799px) {
                     .grid-chart-row {
@@ -335,17 +335,26 @@ class Dashboard:
                     border-left: 4px solid #f44336;
                 }
                 .chart {
-                    height: 500px;
-                    background-color: #3d3d3d;
-                    border-radius: 5px;
+                    height: 700px;
+                    background-color: #1e1e1e;
+                    border-radius: 8px;
                     padding: 10px;
                     position: relative;
                     width: 100%;
+                    border: 2px solid #4CAF50;
+                    box-sizing: border-box;
+                    overflow: hidden;
                 }
                 .chart canvas {
                     width: 100% !important;
                     height: 100% !important;
                     display: block;
+                    box-sizing: border-box;
+                }
+                .chart-container {
+                    width: 100%;
+                    min-height: 700px;
+                    box-sizing: border-box;
                 }
                 .refresh {
                     display: inline-block;
@@ -474,10 +483,22 @@ class Dashboard:
                 </div>
                 
                 <div class="grid grid-chart-row">
-                    <div class="card">
-                        <h3>📊 Gráfico de Precios en Tiempo Real</h3>
-                        <div class="chart">
+                    <div class="card chart-container">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                            <h3 style="margin: 0;">📊 Gráfico de Precios en Tiempo Real</h3>
+                            <div style="display: flex; gap: 10px;">
+                                <button onclick="resetChartView()" style="background: #4CAF50; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">🔄 Reset</button>
+                                <button onclick="zoomIn()" style="background: #2196F3; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">➕ Zoom In</button>
+                                <button onclick="zoomOut()" style="background: #2196F3; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; font-size: 12px;">➖ Zoom Out</button>
+                            </div>
+                        </div>
+                        <div style="margin-bottom: 10px; color: #888; font-size: 12px;">
+                            <span id="chart-info">Cargando datos...</span>
+                            <span style="margin-left: 20px; color: #4CAF50;">🖱️ Scroll para zoom | Arrastra para desplazar</span>
+                        </div>
+                        <div class="chart" style="position: relative;">
                             <canvas id="price-chart"></canvas>
+                            <div id="chart-tooltip" style="position: absolute; background: rgba(0,0,0,0.9); color: white; padding: 10px; border-radius: 5px; pointer-events: none; display: none; z-index: 1000; font-size: 12px; border: 1px solid #4CAF50;"></div>
                         </div>
                     </div>
                     
@@ -516,7 +537,18 @@ class Dashboard:
                 let reconnectInterval = null;
                 let priceChart = null;
                 let candleHistory = [];
-                const MAX_CANDLES = 50;
+                let currentCandle = null; // Vela actual en tiempo real
+                let lastCandleTimestamp = null; // Timestamp de la última vela completa
+                const MAX_CANDLES = 200; // Aumentado para mostrar más datos históricos
+                
+                // Variables para interactividad
+                let chartZoom = 1.0;
+                let chartOffset = 0; // Offset para pan
+                let isDragging = false;
+                let dragStartX = 0;
+                let hoveredCandle = null;
+                let mouseX = 0;
+                let mouseY = 0;
                 
                 // Función para dibujar velas manualmente
                 function drawCandlestick(ctx, x, open, high, low, close, width, isUp) {
@@ -560,10 +592,85 @@ class Dashboard:
                     function initialResize() {
                         const container = canvas.parentElement;
                         const rect = container.getBoundingClientRect();
-                        canvas.width = rect.width - 20; // Restar padding
-                        canvas.height = rect.height - 20; // Restar padding
+                        // Calcular tamaño considerando padding del contenedor
+                        const containerPadding = 20; // padding del .card
+                        const chartPadding = 10; // padding del .chart
+                        canvas.width = rect.width - (containerPadding * 2) - (chartPadding * 2);
+                        canvas.height = rect.height - (containerPadding * 2) - (chartPadding * 2);
                     }
                     initialResize();
+                    
+                    // Eventos de interactividad
+                    let isMouseDown = false;
+                    let lastMouseX = 0;
+                    
+                    canvas.addEventListener('wheel', function(e) {
+                        e.preventDefault();
+                        const delta = e.deltaY > 0 ? 0.9 : 1.1;
+                        const mouseX = e.offsetX;
+                        const rect = canvas.getBoundingClientRect();
+                        const x = mouseX - rect.left;
+                        
+                        // Zoom hacia el punto del mouse
+                        const oldZoom = chartZoom;
+                        chartZoom = Math.max(0.5, Math.min(5.0, chartZoom * delta));
+                        
+                        // Ajustar offset para mantener el punto del mouse en la misma posición
+                        const zoomChange = chartZoom / oldZoom;
+                        chartOffset = x - (x - chartOffset) * zoomChange;
+                        
+                        if (priceChart && priceChart.data && priceChart.data.length > 0) {
+                            priceChart.draw();
+                        }
+                    });
+                    
+                    canvas.addEventListener('mousedown', function(e) {
+                        isMouseDown = true;
+                        isDragging = true;
+                        lastMouseX = e.offsetX;
+                        canvas.style.cursor = 'grabbing';
+                    });
+                    
+                    canvas.addEventListener('mousemove', function(e) {
+                        mouseX = e.offsetX;
+                        mouseY = e.offsetY;
+                        
+                        if (isMouseDown) {
+                            const deltaX = e.offsetX - lastMouseX;
+                            chartOffset += deltaX;
+                            lastMouseX = e.offsetX;
+                            
+                            // Limitar el offset
+                            if (priceChart && priceChart.data && priceChart.data.length > 0) {
+                                const padding = 60;
+                                const chartWidth = canvas.width - padding * 2;
+                                const visibleCandles = Math.ceil(priceChart.data.length / chartZoom);
+                                const spacing = chartWidth / priceChart.data.length;
+                                const maxOffset = Math.max(0, (priceChart.data.length - visibleCandles) * spacing);
+                                chartOffset = Math.max(0, Math.min(maxOffset, chartOffset));
+                            }
+                            
+                            if (priceChart && priceChart.data && priceChart.data.length > 0) {
+                                priceChart.draw();
+                            }
+                        } else {
+                            // Mostrar tooltip al pasar el mouse
+                            updateTooltip(e.offsetX, e.offsetY);
+                        }
+                    });
+                    
+                    canvas.addEventListener('mouseup', function() {
+                        isMouseDown = false;
+                        isDragging = false;
+                        canvas.style.cursor = 'default';
+                    });
+                    
+                    canvas.addEventListener('mouseleave', function() {
+                        isMouseDown = false;
+                        isDragging = false;
+                        canvas.style.cursor = 'default';
+                        document.getElementById('chart-tooltip').style.display = 'none';
+                    });
                     
                     // Guardar contexto para uso posterior
                     priceChart = {
@@ -573,21 +680,37 @@ class Dashboard:
                         resize: function() {
                             const container = this.canvas.parentElement;
                             const rect = container.getBoundingClientRect();
-                            this.canvas.width = rect.width - 20;
-                            this.canvas.height = rect.height - 20;
+                            const containerPadding = 20;
+                            const chartPadding = 10;
+                            this.canvas.width = rect.width - (containerPadding * 2) - (chartPadding * 2);
+                            this.canvas.height = rect.height - (containerPadding * 2) - (chartPadding * 2);
                             if (this.data && this.data.length > 0) {
                                 this.draw();
                             }
                         },
+                        indicators: {
+                            fastMA: [],
+                            slowMA: [],
+                            rsi: [],
+                            macd: [],
+                            volume: []
+                        },
                         draw: function() {
-                            if (!this.data || this.data.length === 0) return;
+                            if (!this.data || this.data.length === 0) {
+                                // Mostrar mensaje si no hay datos
+                                this.ctx.fillStyle = '#ffffff';
+                                this.ctx.font = 'bold 16px Arial';
+                                this.ctx.textAlign = 'center';
+                                this.ctx.fillText('Esperando datos del mercado...', this.canvas.width / 2, this.canvas.height / 2);
+                                return;
+                            }
                             
-                            const padding = 40;
+                            const padding = 60;
                             const chartWidth = this.canvas.width - padding * 2;
                             const chartHeight = this.canvas.height - padding * 2;
                             
-                            // Limpiar canvas
-                            this.ctx.fillStyle = '#3d3d3d';
+                            // Limpiar canvas con fondo oscuro
+                            this.ctx.fillStyle = '#1e1e1e';
                             this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
                             
                             // Calcular min y max para escala
@@ -598,48 +721,120 @@ class Dashboard:
                                 maxPrice = Math.max(maxPrice, candle.h, candle.o, candle.c, candle.l);
                             });
                             
+                            // Agregar margen del 2% arriba y abajo para mejor visualización
                             const priceRange = maxPrice - minPrice || 1;
-                            const candleWidth = chartWidth / this.data.length * 0.8;
-                            const spacing = chartWidth / this.data.length;
+                            const margin = priceRange * 0.02;
+                            minPrice -= margin;
+                            maxPrice += margin;
+                            const adjustedRange = maxPrice - minPrice;
                             
-                            // Dibujar velas
-                            this.data.forEach((candle, index) => {
-                                const x = padding + index * spacing + spacing / 2;
+                            // Aplicar zoom y offset
+                            const baseSpacing = chartWidth / this.data.length;
+                            const visibleCandles = Math.ceil(this.data.length / chartZoom);
+                            const startIndex = Math.max(0, Math.floor(chartOffset / baseSpacing));
+                            const endIndex = Math.min(this.data.length, startIndex + visibleCandles);
+                            const visibleData = this.data.slice(startIndex, endIndex);
+                            
+                            const candleWidth = Math.max(2, Math.min(12, (chartWidth / visibleCandles) * 0.7));
+                            const spacing = chartWidth / visibleCandles;
+                            
+                            // Convertir precios a coordenadas Y (invertido) - Definir fuera del forEach
+                            const scaleY = (price) => {
+                                return padding + chartHeight - ((price - minPrice) / adjustedRange * chartHeight);
+                            };
+                            
+                            // Dibujar grid horizontal (líneas de precio)
+                            this.ctx.strokeStyle = '#333';
+                            this.ctx.lineWidth = 1;
+                            for (let i = 0; i <= 5; i++) {
+                                const y = padding + (chartHeight / 5) * i;
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(padding, y);
+                                this.ctx.lineTo(padding + chartWidth, y);
+                                this.ctx.stroke();
+                            }
+                            
+                            // Dibujar marcas de tiempo en el eje X
+                            this.ctx.strokeStyle = '#555';
+                            this.ctx.lineWidth = 1;
+                            this.ctx.fillStyle = '#888';
+                            this.ctx.font = '10px Arial';
+                            this.ctx.textAlign = 'center';
+                            
+                            // Mostrar marcas de tiempo cada N velas
+                            const timeMarkInterval = Math.max(1, Math.floor(visibleCandles / 8));
+                            for (let i = 0; i < visibleData.length; i += timeMarkInterval) {
+                                const globalIndex = startIndex + i;
+                                if (globalIndex < this.data.length) {
+                                    const candle = this.data[globalIndex];
+                                    const x = padding + i * spacing + spacing / 2;
+                                    
+                                    // Línea vertical
+                                    this.ctx.beginPath();
+                                    this.ctx.moveTo(x, padding + chartHeight);
+                                    this.ctx.lineTo(x, padding + chartHeight + 5);
+                                    this.ctx.stroke();
+                                    
+                                    // Etiqueta de tiempo
+                                    if (candle.timestamp) {
+                                        try {
+                                            const date = new Date(candle.timestamp);
+                                            const timeStr = date.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+                                            this.ctx.fillText(timeStr, x, padding + chartHeight + 18);
+                                        } catch (e) {
+                                            // Si no se puede parsear, mostrar índice
+                                            this.ctx.fillText('#' + globalIndex, x, padding + chartHeight + 18);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // Dibujar velas con mejor visualización
+                            visibleData.forEach((candle, localIndex) => {
+                                const globalIndex = startIndex + localIndex;
+                                const x = padding + localIndex * spacing + spacing / 2;
                                 const isUp = candle.c >= candle.o;
-                                
-                                // Convertir precios a coordenadas Y (invertido)
-                                const scaleY = (price) => {
-                                    return padding + chartHeight - ((price - minPrice) / priceRange * chartHeight);
-                                };
                                 
                                 const openY = scaleY(candle.o);
                                 const highY = scaleY(candle.h);
                                 const lowY = scaleY(candle.l);
                                 const closeY = scaleY(candle.c);
                                 
-                                // Dibujar mecha superior
-                                this.ctx.strokeStyle = isUp ? '#4CAF50' : '#f44336';
+                                // Colores más vibrantes
+                                const upColor = '#00ff88';
+                                const downColor = '#ff4444';
+                                
+                                // Dibujar mecha superior (más gruesa)
+                                this.ctx.strokeStyle = isUp ? upColor : downColor;
+                                this.ctx.lineWidth = 1.5;
                                 this.ctx.beginPath();
                                 this.ctx.moveTo(x, highY);
                                 this.ctx.lineTo(x, Math.min(openY, closeY));
                                 this.ctx.stroke();
                                 
-                                // Dibujar cuerpo
-                                this.ctx.fillStyle = isUp ? '#4CAF50' : '#f44336';
+                                // Dibujar cuerpo (más visible)
+                                this.ctx.fillStyle = isUp ? upColor : downColor;
                                 const bodyTop = Math.min(openY, closeY);
                                 const bodyBottom = Math.max(openY, closeY);
-                                this.ctx.fillRect(x - candleWidth/2, bodyTop, candleWidth, Math.max(bodyBottom - bodyTop, 1));
+                                this.ctx.fillRect(x - candleWidth/2, bodyTop, candleWidth, Math.max(bodyBottom - bodyTop, 2));
+                                
+                                // Borde del cuerpo para mejor definición
+                                this.ctx.strokeStyle = isUp ? '#00cc66' : '#cc0000';
+                                this.ctx.lineWidth = 1;
+                                this.ctx.strokeRect(x - candleWidth/2, bodyTop, candleWidth, Math.max(bodyBottom - bodyTop, 2));
                                 
                                 // Dibujar mecha inferior
+                                this.ctx.strokeStyle = isUp ? upColor : downColor;
+                                this.ctx.lineWidth = 1.5;
                                 this.ctx.beginPath();
                                 this.ctx.moveTo(x, Math.max(openY, closeY));
                                 this.ctx.lineTo(x, lowY);
                                 this.ctx.stroke();
                             });
                             
-                            // Dibujar ejes
-                            this.ctx.strokeStyle = '#888';
-                            this.ctx.lineWidth = 1;
+                            // Dibujar ejes con mejor estilo
+                            this.ctx.strokeStyle = '#666';
+                            this.ctx.lineWidth = 2;
                             // Eje Y izquierdo
                             this.ctx.beginPath();
                             this.ctx.moveTo(padding, padding);
@@ -651,11 +846,140 @@ class Dashboard:
                             this.ctx.lineTo(padding + chartWidth, padding + chartHeight);
                             this.ctx.stroke();
                             
-                            // Etiquetas de precio
-                            this.ctx.fillStyle = '#888';
-                            this.ctx.font = '10px Arial';
-                            this.ctx.fillText(maxPrice.toFixed(2), 5, padding + 10);
-                            this.ctx.fillText(minPrice.toFixed(2), 5, padding + chartHeight - 5);
+                            // Dibujar medias móviles si están disponibles (solo para datos visibles)
+                            if (this.indicators && this.indicators.fastMA && this.indicators.fastMA.length > 0) {
+                                this.ctx.strokeStyle = '#00bfff';
+                                this.ctx.lineWidth = 2;
+                                this.ctx.beginPath();
+                                let firstPoint = true;
+                                visibleData.forEach((candle, localIndex) => {
+                                    const globalIndex = startIndex + localIndex;
+                                    if (globalIndex < this.indicators.fastMA.length && this.indicators.fastMA[globalIndex] !== null) {
+                                        const ma = this.indicators.fastMA[globalIndex];
+                                        const x = padding + localIndex * spacing + spacing / 2;
+                                        const y = scaleY(ma);
+                                        if (firstPoint) {
+                                            this.ctx.moveTo(x, y);
+                                            firstPoint = false;
+                                        } else {
+                                            this.ctx.lineTo(x, y);
+                                        }
+                                    }
+                                });
+                                this.ctx.stroke();
+                                
+                                // Etiqueta MA rápida (última visible)
+                                if (visibleData.length > 0) {
+                                    const lastVisibleIndex = startIndex + visibleData.length - 1;
+                                    if (lastVisibleIndex < this.indicators.fastMA.length && this.indicators.fastMA[lastVisibleIndex] !== null) {
+                                        const lastMA = this.indicators.fastMA[lastVisibleIndex];
+                                        const x = padding + (visibleData.length - 1) * spacing + spacing / 2;
+                                        const y = scaleY(lastMA);
+                                        this.ctx.fillStyle = '#00bfff';
+                                        this.ctx.font = 'bold 10px Arial';
+                                        this.ctx.textAlign = 'left';
+                                        this.ctx.fillText('MA9: ' + lastMA.toFixed(2), x + 5, y - 5);
+                                    }
+                                }
+                            }
+                            
+                            if (this.indicators && this.indicators.slowMA && this.indicators.slowMA.length > 0) {
+                                this.ctx.strokeStyle = '#ff8800';
+                                this.ctx.lineWidth = 2;
+                                this.ctx.beginPath();
+                                let firstPoint = true;
+                                visibleData.forEach((candle, localIndex) => {
+                                    const globalIndex = startIndex + localIndex;
+                                    if (globalIndex < this.indicators.slowMA.length && this.indicators.slowMA[globalIndex] !== null) {
+                                        const ma = this.indicators.slowMA[globalIndex];
+                                        const x = padding + localIndex * spacing + spacing / 2;
+                                        const y = scaleY(ma);
+                                        if (firstPoint) {
+                                            this.ctx.moveTo(x, y);
+                                            firstPoint = false;
+                                        } else {
+                                            this.ctx.lineTo(x, y);
+                                        }
+                                    }
+                                });
+                                this.ctx.stroke();
+                                
+                                // Etiqueta MA lenta (última visible)
+                                if (visibleData.length > 0) {
+                                    const lastVisibleIndex = startIndex + visibleData.length - 1;
+                                    if (lastVisibleIndex < this.indicators.slowMA.length && this.indicators.slowMA[lastVisibleIndex] !== null) {
+                                        const lastMA = this.indicators.slowMA[lastVisibleIndex];
+                                        const x = padding + (visibleData.length - 1) * spacing + spacing / 2;
+                                        const y = scaleY(lastMA);
+                                        this.ctx.fillStyle = '#ff8800';
+                                        this.ctx.font = 'bold 10px Arial';
+                                        this.ctx.textAlign = 'left';
+                                        this.ctx.fillText('MA21: ' + lastMA.toFixed(2), x + 5, y + 15);
+                                    }
+                                }
+                            }
+                            
+                            // Etiquetas de precio más visibles
+                            this.ctx.fillStyle = '#ffffff';
+                            this.ctx.font = 'bold 12px Arial';
+                            this.ctx.textAlign = 'left';
+                            this.ctx.fillText('Max: ' + maxPrice.toFixed(2), 5, padding + 15);
+                            this.ctx.fillText('Min: ' + minPrice.toFixed(2), 5, padding + chartHeight - 5);
+                            
+                            // Precio actual (última vela visible)
+                            if (visibleData.length > 0) {
+                                const lastCandle = visibleData[visibleData.length - 1];
+                                const currentPrice = lastCandle.c;
+                                const currentX = padding + (visibleData.length - 1) * spacing + spacing / 2;
+                                const currentY = scaleY(currentPrice);
+                                
+                                // Línea horizontal para precio actual
+                                this.ctx.strokeStyle = '#ffff00';
+                                this.ctx.lineWidth = 1;
+                                this.ctx.setLineDash([5, 5]);
+                                this.ctx.beginPath();
+                                this.ctx.moveTo(padding, currentY);
+                                this.ctx.lineTo(padding + chartWidth, currentY);
+                                this.ctx.stroke();
+                                this.ctx.setLineDash([]);
+                                
+                                // Etiqueta de precio actual
+                                this.ctx.fillStyle = '#ffff00';
+                                this.ctx.font = 'bold 14px Arial';
+                                this.ctx.textAlign = 'right';
+                                this.ctx.fillText('Precio: ' + currentPrice.toFixed(4), this.canvas.width - 10, currentY - 5);
+                                
+                                // Información adicional en la esquina superior derecha
+                                this.ctx.fillStyle = '#888';
+                                this.ctx.font = '10px Arial';
+                                this.ctx.textAlign = 'right';
+                                let infoY = padding + 15;
+                                this.ctx.fillText('OHLC:', this.canvas.width - 10, infoY);
+                                infoY += 12;
+                                this.ctx.fillText('O: ' + lastCandle.o.toFixed(2), this.canvas.width - 10, infoY);
+                                infoY += 12;
+                                this.ctx.fillText('H: ' + lastCandle.h.toFixed(2), this.canvas.width - 10, infoY);
+                                infoY += 12;
+                                this.ctx.fillText('L: ' + lastCandle.l.toFixed(2), this.canvas.width - 10, infoY);
+                                infoY += 12;
+                                this.ctx.fillText('C: ' + lastCandle.c.toFixed(2), this.canvas.width - 10, infoY);
+                            }
+                            
+                            // Información del gráfico
+                            const infoEl = document.getElementById('chart-info');
+                            if (infoEl && this.data.length > 0) {
+                                const lastCandle = this.data[this.data.length - 1];
+                                let infoText = `Velas: ${this.data.length} | Precio: ${lastCandle.c.toFixed(4)} | Rango: ${minPrice.toFixed(2)} - ${maxPrice.toFixed(2)}`;
+                                if (this.indicators && this.indicators.rsi && this.indicators.rsi.length > 0) {
+                                    const lastRSI = this.indicators.rsi[this.indicators.rsi.length - 1];
+                                    infoText += ` | RSI: ${lastRSI.toFixed(2)}`;
+                                }
+                                if (this.indicators && this.indicators.macd && this.indicators.macd.length > 0) {
+                                    const lastMACD = this.indicators.macd[this.indicators.macd.length - 1];
+                                    infoText += ` | MACD: ${lastMACD.toFixed(4)}`;
+                                }
+                                infoEl.textContent = infoText;
+                            }
                         }
                     };
                     
@@ -668,31 +992,67 @@ class Dashboard:
                 function updateChart(ohlcData, timestamp) {
                     if (!priceChart || !ohlcData) return;
                     
-                    // Crear vela actual
-                    const candle = {
-                        o: parseFloat(ohlcData.open || ohlcData.price || 0),
-                        h: parseFloat(ohlcData.high || ohlcData.price || 0),
-                        l: parseFloat(ohlcData.low || ohlcData.price || 0),
-                        c: parseFloat(ohlcData.close || ohlcData.price || 0),
-                        timestamp: timestamp
-                    };
+                    const currentPrice = parseFloat(ohlcData.close || ohlcData.price || 0);
+                    const currentOpen = parseFloat(ohlcData.open || ohlcData.price || 0);
+                    const currentHigh = parseFloat(ohlcData.high || ohlcData.price || 0);
+                    const currentLow = parseFloat(ohlcData.low || ohlcData.price || 0);
                     
-                    // Agregar nueva vela
-                    candleHistory.push(candle);
+                    // Detectar si es una nueva vela (cuando el open cambia significativamente)
+                    const isNewCandle = currentCandle && Math.abs(currentCandle.o - currentOpen) > (currentOpen * 0.001);
                     
-                    // Limitar a MAX_CANDLES velas
-                    if (candleHistory.length > MAX_CANDLES) {
-                        candleHistory.shift();
+                    if (!currentCandle || isNewCandle) {
+                        // Si hay una vela anterior, agregarla al historial antes de crear una nueva
+                        if (currentCandle && isNewCandle) {
+                            candleHistory.push({...currentCandle});
+                            // Limitar historial
+                            if (candleHistory.length > MAX_CANDLES) {
+                                candleHistory.shift();
+                            }
+                        }
+                        
+                        // Crear nueva vela actual
+                        currentCandle = {
+                            o: currentOpen,
+                            h: Math.max(currentHigh, currentPrice),
+                            l: Math.min(currentLow, currentPrice),
+                            c: currentPrice,
+                            timestamp: timestamp
+                        };
+                        lastCandleTimestamp = timestamp;
+                    } else {
+                        // Actualizar vela actual en tiempo real
+                        currentCandle.h = Math.max(currentCandle.h, currentPrice, currentHigh);
+                        currentCandle.l = Math.min(currentCandle.l, currentPrice, currentLow);
+                        currentCandle.c = currentPrice; // Actualizar precio de cierre
                     }
                     
-                    // Actualizar gráfico
-                    priceChart.data = candleHistory;
+                    // Actualizar gráfico con vela actual
+                    const displayData = [...candleHistory];
+                    if (currentCandle) {
+                        displayData.push(currentCandle);
+                    }
+                    
+                    priceChart.data = displayData;
                     priceChart.draw();
+                }
+                
+                function calculateMA(prices, period) {
+                    const ma = [];
+                    for (let i = 0; i < prices.length; i++) {
+                        if (i < period - 1) {
+                            ma.push(null);
+                        } else {
+                            const sum = prices.slice(i - period + 1, i + 1).reduce((a, b) => a + b, 0);
+                            ma.push(sum / period);
+                        }
+                    }
+                    return ma;
                 }
                 
                 function updateChartFromHistory(ohlcHistory) {
                     if (!priceChart || !ohlcHistory || ohlcHistory.length === 0) return;
                     
+                    // Convertir historial a formato de velas
                     candleHistory = ohlcHistory.map(candle => ({
                         o: parseFloat(candle.open || 0),
                         h: parseFloat(candle.high || 0),
@@ -701,8 +1061,132 @@ class Dashboard:
                         timestamp: candle.timestamp
                     }));
                     
-                    priceChart.data = candleHistory;
+                    // Limitar a MAX_CANDLES velas históricas
+                    if (candleHistory.length > MAX_CANDLES) {
+                        candleHistory = candleHistory.slice(-MAX_CANDLES);
+                    }
+                    
+                    // Calcular medias móviles desde los precios de cierre
+                    const closes = candleHistory.map(c => c.c);
+                    priceChart.indicators.fastMA = calculateMA(closes, 9);
+                    priceChart.indicators.slowMA = calculateMA(closes, 21);
+                    
+                    // Combinar historial con vela actual si existe
+                    const displayData = [...candleHistory];
+                    if (currentCandle) {
+                        displayData.push(currentCandle);
+                    }
+                    
+                    priceChart.data = displayData;
                     priceChart.draw();
+                }
+                
+                function updateIndicators(indicators) {
+                    if (!priceChart || !indicators) return;
+                    
+                    // Actualizar indicadores si están disponibles
+                    if (indicators.fast_ma !== undefined && indicators.fast_ma !== null) {
+                        if (!priceChart.indicators.fastMA) priceChart.indicators.fastMA = [];
+                        priceChart.indicators.fastMA.push(parseFloat(indicators.fast_ma));
+                        if (priceChart.indicators.fastMA.length > priceChart.data.length) {
+                            priceChart.indicators.fastMA.shift();
+                        }
+                    }
+                    
+                    if (indicators.slow_ma !== undefined && indicators.slow_ma !== null) {
+                        if (!priceChart.indicators.slowMA) priceChart.indicators.slowMA = [];
+                        priceChart.indicators.slowMA.push(parseFloat(indicators.slow_ma));
+                        if (priceChart.indicators.slowMA.length > priceChart.data.length) {
+                            priceChart.indicators.slowMA.shift();
+                        }
+                    }
+                    
+                    if (indicators.rsi !== undefined && indicators.rsi !== null) {
+                        if (!priceChart.indicators.rsi) priceChart.indicators.rsi = [];
+                        priceChart.indicators.rsi.push(parseFloat(indicators.rsi));
+                        if (priceChart.indicators.rsi.length > priceChart.data.length) {
+                            priceChart.indicators.rsi.shift();
+                        }
+                    }
+                    
+                    if (indicators.macd !== undefined && indicators.macd !== null) {
+                        if (!priceChart.indicators.macd) priceChart.indicators.macd = [];
+                        priceChart.indicators.macd.push(parseFloat(indicators.macd));
+                        if (priceChart.indicators.macd.length > priceChart.data.length) {
+                            priceChart.indicators.macd.shift();
+                        }
+                    }
+                }
+                
+                // Funciones de control del gráfico
+                function zoomIn() {
+                    chartZoom = Math.min(5.0, chartZoom * 1.2);
+                    if (priceChart && priceChart.data && priceChart.data.length > 0) {
+                        priceChart.draw();
+                    }
+                }
+                
+                function zoomOut() {
+                    chartZoom = Math.max(0.5, chartZoom * 0.8);
+                    if (priceChart && priceChart.data && priceChart.data.length > 0) {
+                        priceChart.draw();
+                    }
+                }
+                
+                function resetChartView() {
+                    chartZoom = 1.0;
+                    chartOffset = 0;
+                    if (priceChart && priceChart.data && priceChart.data.length > 0) {
+                        priceChart.draw();
+                    }
+                }
+                
+                function updateTooltip(x, y) {
+                    if (!priceChart || !priceChart.data || priceChart.data.length === 0) return;
+                    
+                    const padding = 60;
+                    const chartWidth = priceChart.canvas.width - padding * 2;
+                    const visibleCandles = Math.ceil(priceChart.data.length / chartZoom);
+                    const startIndex = Math.max(0, Math.floor(chartOffset / (chartWidth / priceChart.data.length)));
+                    const spacing = chartWidth / visibleCandles;
+                    
+                    // Encontrar la vela más cercana al cursor
+                    const localIndex = Math.floor((x - padding) / spacing);
+                    const globalIndex = startIndex + localIndex;
+                    
+                    if (globalIndex >= 0 && globalIndex < priceChart.data.length) {
+                        const candle = priceChart.data[globalIndex];
+                        const tooltip = document.getElementById('chart-tooltip');
+                        const rect = priceChart.canvas.getBoundingClientRect();
+                        
+                        let tooltipText = '<strong>Vela #' + globalIndex + '</strong><br>';
+                        if (candle.timestamp) {
+                            try {
+                                const date = new Date(candle.timestamp);
+                                tooltipText += 'Fecha: ' + date.toLocaleString('es-ES') + '<br>';
+                            } catch (e) {}
+                        }
+                        tooltipText += 'Open: ' + candle.o.toFixed(4) + '<br>';
+                        tooltipText += 'High: ' + candle.h.toFixed(4) + '<br>';
+                        tooltipText += 'Low: ' + candle.l.toFixed(4) + '<br>';
+                        tooltipText += 'Close: ' + candle.c.toFixed(4) + '<br>';
+                        tooltipText += 'Cambio: ' + ((candle.c - candle.o) / candle.o * 100).toFixed(2) + '%';
+                        
+                        tooltip.innerHTML = tooltipText;
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = (rect.left + x + 10) + 'px';
+                        tooltip.style.top = (rect.top + y - 10) + 'px';
+                        
+                        // Asegurar que el tooltip no se salga de la pantalla
+                        if (parseInt(tooltip.style.left) + tooltip.offsetWidth > window.innerWidth) {
+                            tooltip.style.left = (rect.left + x - tooltip.offsetWidth - 10) + 'px';
+                        }
+                        if (parseInt(tooltip.style.top) + tooltip.offsetHeight > window.innerHeight) {
+                            tooltip.style.top = (rect.top + y - tooltip.offsetHeight - 10) + 'px';
+                        }
+                    } else {
+                        document.getElementById('chart-tooltip').style.display = 'none';
+                    }
                 }
                 
                 function connectWebSocket() {
@@ -784,33 +1268,46 @@ class Dashboard:
                         }
                     }
                     
-                    // Actualizar indicadores técnicos
-                    if (data.market && data.market.indicators) {
-                        const ind = data.market.indicators;
-                        const timestamp = data.timestamp || new Date().toISOString();
-                        
-                        document.getElementById('indicator-rsi').textContent = ind.rsi ? ind.rsi.toFixed(2) : '-';
-                        document.getElementById('indicator-fast-ma').textContent = ind.fast_ma ? ind.fast_ma.toFixed(4) : '-';
-                        document.getElementById('indicator-slow-ma').textContent = ind.slow_ma ? ind.slow_ma.toFixed(4) : '-';
-                        document.getElementById('indicator-macd').textContent = ind.macd ? ind.macd.toFixed(4) : '-';
-                        document.getElementById('indicator-macd-signal').textContent = ind.macd_signal ? ind.macd_signal.toFixed(4) : '-';
-                        document.getElementById('indicator-atr').textContent = ind.atr ? ind.atr.toFixed(4) : '-';
-                        
-                        // Actualizar gráfico de velas
-                        if (data.market.ohlc_history && data.market.ohlc_history.length > 0) {
-                            // Usar historial completo si está disponible
-                            updateChartFromHistory(data.market.ohlc_history);
-                        } else if (data.market.open && data.market.high && data.market.low && data.market.close) {
-                            // Usar datos OHLC actuales
-                            updateChart({
-                                open: data.market.open,
-                                high: data.market.high,
-                                low: data.market.low,
-                                close: data.market.close,
-                                price: data.market.price
-                            }, timestamp);
+                        // Actualizar indicadores técnicos
+                        if (data.market && data.market.indicators) {
+                            const ind = data.market.indicators;
+                            const timestamp = data.timestamp || new Date().toISOString();
+                            
+                            document.getElementById('indicator-rsi').textContent = ind.rsi ? ind.rsi.toFixed(2) : '-';
+                            document.getElementById('indicator-fast-ma').textContent = ind.fast_ma ? ind.fast_ma.toFixed(4) : '-';
+                            document.getElementById('indicator-slow-ma').textContent = ind.slow_ma ? ind.slow_ma.toFixed(4) : '-';
+                            document.getElementById('indicator-macd').textContent = ind.macd ? ind.macd.toFixed(4) : '-';
+                            document.getElementById('indicator-macd-signal').textContent = ind.macd_signal ? ind.macd_signal.toFixed(4) : '-';
+                            document.getElementById('indicator-atr').textContent = ind.atr ? ind.atr.toFixed(4) : '-';
+                            
+                            // Actualizar indicadores en el gráfico
+                            updateIndicators(ind);
+                            
+                            // Actualizar gráfico de velas - SIEMPRE actualizar cuando hay datos
+                            if (data.market.ohlc_history && data.market.ohlc_history.length > 0) {
+                                // Usar historial completo si está disponible
+                                updateChartFromHistory(data.market.ohlc_history);
+                            }
+                            
+                            // SIEMPRE actualizar vela actual en tiempo real con precio actual
+                            // Esto asegura que el gráfico se actualice dinámicamente
+                            if (data.market && data.market.price !== undefined && data.market.price !== null) {
+                                const price = parseFloat(data.market.price);
+                                const open = parseFloat(data.market.open || data.market.price);
+                                const high = parseFloat(data.market.high || data.market.price);
+                                const low = parseFloat(data.market.low || data.market.price);
+                                const close = parseFloat(data.market.close || data.market.price);
+                                
+                                // Forzar actualización del gráfico
+                                updateChart({
+                                    open: open,
+                                    high: high,
+                                    low: low,
+                                    close: close,
+                                    price: price
+                                }, timestamp);
+                            }
                         }
-                    }
                     
                     // Actualizar señal actual
                     if (data.current_signal) {
