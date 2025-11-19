@@ -8,7 +8,7 @@ import logging
 import signal
 import sys
 from datetime import datetime
-from typing import Optional
+from typing import Dict, List, Optional, Any
 
 from config import Config
 from src.data.market_data import MarketDataProvider
@@ -135,12 +135,8 @@ class TradingBot:
                 
                 # Actualizar dashboard
                 if self.dashboard:
-                    await self.dashboard.update_data({
-                        'positions': self.current_positions,
-                        'daily_pnl': self.daily_pnl,
-                        'daily_trades': self.daily_trades,
-                        'market_data': market_data
-                    })
+                    dashboard_payload = self._build_dashboard_payload(market_data)
+                    await self.dashboard.update_data(dashboard_payload)
                     
                 # Esperar antes de la siguiente iteración
                 await asyncio.sleep(1)  # 1 segundo entre iteraciones
@@ -174,6 +170,81 @@ class TradingBot:
             if close_result['success']:
                 self.current_positions.remove(position)
                 self.daily_pnl += close_result['pnl']
+
+    def _build_dashboard_payload(self, market_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """Construir un payload serializable para el dashboard web"""
+        positions = []
+        for position in self.current_positions:
+            entry_time = position.get('entry_time')
+            if isinstance(entry_time, datetime):
+                entry_time = entry_time.isoformat()
+            positions.append({
+                'symbol': position.get('symbol'),
+                'side': (position.get('side') or '').upper(),
+                'entry_price': self._safe_float(position.get('entry_price')),
+                'size': self._safe_float(position.get('size')),
+                'stop_loss': self._safe_float(position.get('stop_loss')),
+                'take_profit': self._safe_float(position.get('take_profit')),
+                'entry_time': entry_time,
+                'pnl': self._safe_float(position.get('pnl', 0.0)) or 0.0,
+            })
+
+        metrics = {
+            'daily_pnl': self.daily_pnl,
+            'daily_trades': self.daily_trades,
+            'win_rate': None,
+            'max_drawdown': None,
+        }
+
+        balance = {
+            'current': float(self.config.INITIAL_CAPITAL + self.daily_pnl),
+            'peak': float(max(self.config.INITIAL_CAPITAL, self.config.INITIAL_CAPITAL + self.daily_pnl)),
+            'exposure': sum(
+                (self._safe_float(p.get('size')) or 0.0) * (self._safe_float(p.get('entry_price')) or 0.0)
+                for p in self.current_positions
+            )
+        }
+
+        market_snapshot = None
+        if market_data:
+            market_snapshot = {
+                'symbol': market_data.get('symbol'),
+                'price': self._safe_float(market_data.get('price')),
+                'open': self._safe_float(market_data.get('open')),
+                'high': self._safe_float(market_data.get('high')),
+                'low': self._safe_float(market_data.get('low')),
+                'volume': self._safe_float(market_data.get('volume')),
+                'change': self._safe_float(market_data.get('change')),
+                'change_percent': self._safe_float(market_data.get('change_percent')),
+            }
+
+            timestamp = market_data.get('timestamp')
+            if isinstance(timestamp, datetime):
+                market_snapshot['timestamp'] = timestamp.isoformat()
+
+            indicators = market_data.get('indicators', {})
+            market_snapshot['indicators'] = {
+                name: self._safe_float(value)
+                for name, value in indicators.items()
+                if value is not None
+            }
+
+        return {
+            'positions': positions,
+            'metrics': metrics,
+            'balance': balance,
+            'market': market_snapshot,
+        }
+
+    @staticmethod
+    def _safe_float(value: Any) -> Optional[float]:
+        """Intentar convertir un valor numérico a float serializable"""
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
                 
     def _validate_config(self) -> bool:
         """Validar configuración del bot"""

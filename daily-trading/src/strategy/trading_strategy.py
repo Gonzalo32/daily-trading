@@ -93,7 +93,7 @@ class TradingStrategy:
             # Señal de compra
             if fast > slow and rsi < self.config.RSI_OVERBOUGHT and macd > macd_signal and macd > 0:
                 strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=True)
-                if strength > 0.3:
+                if strength > 0.18:  # Umbral reducido de 0.3 a 0.18 para más oportunidades
                     return {
                         "action": "BUY",
                         "price": price,
@@ -106,7 +106,7 @@ class TradingStrategy:
             # Señal de venta
             if fast < slow and rsi > self.config.RSI_OVERSOLD and macd < macd_signal and macd < 0:
                 strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=False)
-                if strength > 0.3:
+                if strength > 0.18:  # Umbral reducido de 0.3 a 0.18 para más oportunidades
                     return {
                         "action": "SELL",
                         "price": price,
@@ -146,7 +146,7 @@ class TradingStrategy:
             if (
                 self.last_signal
                 and self.last_signal["action"] == signal["action"]
-                and self.consecutive_signals >= 3
+                and self.consecutive_signals >= 5  # Aumentado de 3 a 5 para aprovechar tendencias fuertes
             ):
                 self.logger.info("⛔ Señales consecutivas del mismo tipo ignoradas")
                 return False
@@ -159,8 +159,8 @@ class TradingStrategy:
                     self.logger.info("⚠️ Volatilidad alta, señal ignorada")
                     return False
 
-            # Volumen mínimo
-            if market_data.get("volume", 0) < 1000:
+            # Volumen mínimo (reducido de 1000 a 300 para más oportunidades)
+            if market_data.get("volume", 0) < 300:
                 self.logger.info("⚠️ Volumen insuficiente, señal ignorada")
                 return False
 
@@ -171,8 +171,8 @@ class TradingStrategy:
                     self.logger.info("🕒 Fuera del horario de mercado")
                     return False
 
-            # Fuerza mínima
-            if signal["strength"] < 0.3:
+            # Fuerza mínima (reducido de 0.3 a 0.18 para más oportunidades)
+            if signal["strength"] < 0.18:
                 self.logger.info("💤 Señal débil descartada")
                 return False
 

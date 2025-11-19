@@ -36,7 +36,7 @@ class Config:
     MAX_POSITION_RISK_PCT = float(os.getenv("MAX_POSITION_RISK_PCT", "1.5"))
 
     STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", "0.01"))      # 1%
-    TAKE_PROFIT_RATIO = float(os.getenv("TAKE_PROFIT_RATIO", "2.0"))  # 2:1 ratio
+    TAKE_PROFIT_RATIO = float(os.getenv("TAKE_PROFIT_RATIO", "2.5"))  # 2.5:1 ratio (ajustado para mejor riesgo/beneficio)
 
     # ==============================
     # 📈 ESTRATEGIA TÉCNICA
@@ -44,8 +44,8 @@ class Config:
     FAST_MA_PERIOD = int(os.getenv("FAST_MA_PERIOD", "9"))
     SLOW_MA_PERIOD = int(os.getenv("SLOW_MA_PERIOD", "21"))
     RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
-    RSI_OVERBOUGHT = float(os.getenv("RSI_OVERBOUGHT", "70"))
-    RSI_OVERSOLD = float(os.getenv("RSI_OVERSOLD", "30"))
+    RSI_OVERBOUGHT = float(os.getenv("RSI_OVERBOUGHT", "80"))  # Ajustado para más oportunidades
+    RSI_OVERSOLD = float(os.getenv("RSI_OVERSOLD", "20"))  # Ajustado para más oportunidades
 
     # ==============================
     # 🕓 HORARIOS (acciones)

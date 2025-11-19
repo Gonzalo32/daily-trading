@@ -77,17 +77,26 @@ class Dashboard:
             self.is_running = True
             self.logger.info(f"🚀 Iniciando dashboard en puerto {self.config.DASHBOARD_PORT}")
             
-            # Iniciar servidor en segundo plano
+            # Iniciar servidor en segundo plano usando uvicorn
             config = uvicorn.Config(
                 self.app, 
                 host="0.0.0.0", 
                 port=self.config.DASHBOARD_PORT,
-                log_level="info"
+                log_level="info",
+                loop="asyncio"
             )
             server = uvicorn.Server(config)
             
-            # Ejecutar servidor en tarea separada
-            asyncio.create_task(server.serve())
+            # Ejecutar servidor en tarea separada de forma correcta
+            async def run_server():
+                await server.serve()
+            
+            # Crear la tarea y asegurarse de que se ejecute
+            task = asyncio.create_task(run_server())
+            # Dar tiempo para que el servidor inicie
+            await asyncio.sleep(0.1)
+            
+            self.logger.info(f"✅ Dashboard iniciado en http://0.0.0.0:{self.config.DASHBOARD_PORT}")
             
         except Exception as e:
             self.logger.error(f"❌ Error iniciando dashboard: {e}")

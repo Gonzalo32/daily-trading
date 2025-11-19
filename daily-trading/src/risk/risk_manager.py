@@ -66,14 +66,39 @@ class RiskManager:
             self.logger.exception(f"❌ Error validando operación: {e}")
             return False
 
-    def _check_daily_limits(self) -> bool:
-        """Verifica límites diarios de pérdida y cantidad de trades."""
-        max_loss = self.state.equity * (self.config.MAX_DAILY_LOSS_PCT / 100)
+    def check_daily_limits(self, daily_pnl: float = None, daily_trades: int = None) -> bool:
+        """
+        Verifica límites diarios de pérdida y cantidad de trades.
+        Método público para uso externo.
+        """
+        # Usar valores actualizados si se proporcionan, sino usar del estado
+        pnl = daily_pnl if daily_pnl is not None else self.state.daily_pnl
+        trades = daily_trades if daily_trades is not None else self.state.trades_today
+        
+        max_loss = self.state.equity * self.config.MAX_DAILY_LOSS
+        max_gain = self.state.equity * self.config.MAX_DAILY_GAIN
         max_trades = getattr(self.config, "MAX_DAILY_TRADES", 20)
-        return (
-            abs(self.state.daily_pnl) < max_loss
-            and self.state.trades_today < max_trades
-        )
+        
+        # Verificar si se alcanzó el límite de pérdida
+        if pnl < -max_loss:
+            self.logger.warning(f"⚠️ Límite de pérdida diaria alcanzado: {pnl:.2f} / {-max_loss:.2f}")
+            return False
+            
+        # Verificar si se alcanzó el límite de ganancia (opcional)
+        if pnl > max_gain:
+            self.logger.info(f"✅ Límite de ganancia diaria alcanzado: {pnl:.2f} / {max_gain:.2f}")
+            return False
+            
+        # Verificar límite de trades
+        if trades >= max_trades:
+            self.logger.warning(f"⚠️ Límite de trades diarios alcanzado: {trades} / {max_trades}")
+            return False
+            
+        return True
+
+    def _check_daily_limits(self) -> bool:
+        """Verifica límites diarios de pérdida y cantidad de trades (método interno)."""
+        return self.check_daily_limits()
 
     def _check_total_exposure(self, signal: Dict[str, Any], current_positions: List[Dict[str, Any]]) -> bool:
         """Limita la exposición total (por ej. máx. 50% del capital)."""
