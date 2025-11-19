@@ -20,24 +20,22 @@ if (-not (Test-Path "main.py")) {
     exit 1
 }
 
-# Activar entorno virtual
-if (Test-Path "venv\Scripts\Activate.ps1") {
-    Write-Host "✅ Activando entorno virtual..." -ForegroundColor Green
-    & "venv\Scripts\Activate.ps1"
-    Write-Host ""
-} else {
-    Write-Host "⚠️  Advertencia: No se encontró el entorno virtual" -ForegroundColor Yellow
-    Write-Host "Intentando ejecutar con Python del sistema..." -ForegroundColor Yellow
-    Write-Host ""
-}
-
 # Ejecutar el bot principal
 Write-Host "═══════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host "📡 Ejecutando Bot de Trading..." -ForegroundColor White
 Write-Host "═══════════════════════════════════════════" -ForegroundColor Cyan
 Write-Host ""
 
-python main.py
+# Usar Python del entorno virtual si existe, sino del sistema
+$pythonPath = "python"
+if (Test-Path "venv\Scripts\python.exe") {
+    $pythonPath = "venv\Scripts\python.exe"
+    Write-Host "✅ Usando Python del entorno virtual" -ForegroundColor Green
+} else {
+    Write-Host "⚠️  Usando Python del sistema" -ForegroundColor Yellow
+}
+
+& $pythonPath main.py
 
 # Desactivar entorno virtual si estaba activado
 if ($env:VIRTUAL_ENV) {

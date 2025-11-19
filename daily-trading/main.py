@@ -18,6 +18,7 @@ from src.execution.order_executor import OrderExecutor
 from src.monitoring.dashboard import Dashboard
 from src.utils.logger import setup_logger
 from src.utils.notifications import NotificationManager
+from src.ml.trade_recorder import TradeRecorder
 
 class TradingBot:
     """Bot principal de trading automatizado"""
@@ -33,12 +34,15 @@ class TradingBot:
         self.order_executor = OrderExecutor(self.config)
         self.dashboard = Dashboard(self.config) if self.config.ENABLE_DASHBOARD else None
         self.notifications = NotificationManager(self.config)
+        self.trade_recorder = TradeRecorder() if self.config.ENABLE_ML else None  # Sistema de aprendizaje
         
         # Estado del bot
         self.is_running = False
         self.current_positions = []
         self.daily_pnl = 0.0
         self.daily_trades = 0
+        self.current_signal = None  # Señal actual que está analizando
+        self.position_market_data = {}  # Guardar datos de mercado al abrir posiciones
         
         # Configurar manejo de señales
         signal.signal(signal.SIGINT, self._signal_handler)
@@ -111,6 +115,7 @@ class TradingBot:
                     
                 # Generar señal de trading
                 signal = await self.strategy.generate_signal(market_data)
+                self.current_signal = signal  # Guardar señal actual para el dashboard
                 
                 if signal:
                     # Verificar riesgo de la operación
@@ -119,9 +124,14 @@ class TradingBot:
                         order_result = await self.order_executor.execute_order(signal)
                         
                         if order_result['success']:
-                            self.current_positions.append(order_result['position'])
+                            position = order_result['position']
+                            self.current_positions.append(position)
                             self.daily_trades += 1
                             self.logger.info(f"✅ Orden ejecutada: {signal['action']} {signal['symbol']}")
+                            
+                            # Guardar datos de mercado al abrir posición (para aprendizaje)
+                            if self.trade_recorder:
+                                self.position_market_data[position['id']] = market_data.copy()
                             
                             # Enviar notificación
                             await self.notifications.send_trade_notification(order_result)
@@ -133,10 +143,13 @@ class TradingBot:
                 # Verificar posiciones abiertas
                 await self._check_open_positions(market_data)
                 
-                # Actualizar dashboard
+                # Actualizar dashboard (siempre, incluso sin datos de mercado)
                 if self.dashboard:
-                    dashboard_payload = self._build_dashboard_payload(market_data)
-                    await self.dashboard.update_data(dashboard_payload)
+                    try:
+                        dashboard_payload = self._build_dashboard_payload(market_data)
+                        await self.dashboard.update_data(dashboard_payload)
+                    except Exception as e:
+                        self.logger.error(f"❌ Error actualizando dashboard: {e}")
                     
                 # Esperar antes de la siguiente iteración
                 await asyncio.sleep(1)  # 1 segundo entre iteraciones
@@ -157,6 +170,27 @@ class TradingBot:
                     self.current_positions.remove(position)
                     self.daily_pnl += close_result['pnl']
                     self.logger.info(f"✅ Posición cerrada: PnL = {close_result['pnl']:.2f}")
+                    
+                    # Registrar operación para aprendizaje
+                    if self.trade_recorder and position['id'] in self.position_market_data:
+                        entry_market_data = self.position_market_data.pop(position['id'])
+                        entry_data = {
+                            'entry_time': position.get('entry_time', datetime.now()),
+                            'symbol': position.get('symbol'),
+                            'action': position.get('side'),
+                            'entry_price': position.get('entry_price'),
+                            'size': position.get('size'),
+                            'stop_loss': position.get('stop_loss'),
+                            'take_profit': position.get('take_profit'),
+                            'strength': self.current_signal.get('strength') if self.current_signal else 0,
+                        }
+                        exit_data = {
+                            'exit_time': datetime.now(),
+                            'exit_price': close_result.get('exit_price', market_data.get('price')),
+                            'pnl': close_result['pnl'],
+                        }
+                        self.trade_recorder.record_trade(entry_data, exit_data, entry_market_data, market_data)
+                        self.logger.info("📚 Operación registrada para aprendizaje")
                     
                     # Enviar notificación
                     await self.notifications.send_position_closed_notification(close_result)
@@ -213,10 +247,29 @@ class TradingBot:
                 'open': self._safe_float(market_data.get('open')),
                 'high': self._safe_float(market_data.get('high')),
                 'low': self._safe_float(market_data.get('low')),
+                'close': self._safe_float(market_data.get('price')),  # Precio actual como close
                 'volume': self._safe_float(market_data.get('volume')),
                 'change': self._safe_float(market_data.get('change')),
                 'change_percent': self._safe_float(market_data.get('change_percent')),
             }
+            
+            # Agregar datos OHLC históricos si están disponibles
+            if 'dataframe' in market_data:
+                df = market_data.get('dataframe')
+                if df is not None and hasattr(df, 'tail') and len(df) > 0:
+                    # Obtener últimas 50 velas
+                    recent_candles = df.tail(50)
+                    market_snapshot['ohlc_history'] = [
+                        {
+                            'timestamp': idx.isoformat() if hasattr(idx, 'isoformat') else str(idx),
+                            'open': float(row.get('open', 0)),
+                            'high': float(row.get('high', 0)),
+                            'low': float(row.get('low', 0)),
+                            'close': float(row.get('close', 0)),
+                            'volume': float(row.get('volume', 0))
+                        }
+                        for idx, row in recent_candles.iterrows()
+                    ]
 
             timestamp = market_data.get('timestamp')
             if isinstance(timestamp, datetime):
@@ -229,11 +282,23 @@ class TradingBot:
                 if value is not None
             }
 
+        # Preparar señal actual para el dashboard
+        current_signal_snapshot = None
+        if self.current_signal:
+            current_signal_snapshot = {
+                'action': self.current_signal.get('action'),
+                'strength': self._safe_float(self.current_signal.get('strength')),
+                'reason': self.current_signal.get('reason'),
+                'stop_loss': self._safe_float(self.current_signal.get('stop_loss')),
+                'take_profit': self._safe_float(self.current_signal.get('take_profit')),
+            }
+
         return {
             'positions': positions,
             'metrics': metrics,
             'balance': balance,
             'market': market_snapshot,
+            'current_signal': current_signal_snapshot,
         }
 
     @staticmethod

@@ -21,10 +21,88 @@ class TradingStrategy:
         # Estado de la estrategia
         self.last_signal: Optional[Dict[str, Any]] = None
         self.consecutive_signals: int = 0
+        
+        # Historial para umbrales dinámicos
+        self.recent_volumes = []
+        self.recent_volatilities = []
+        self.recent_strengths = []
 
     # ======================================================
     # 🎯 GENERACIÓN DE SEÑALES
     # ======================================================
+    def _calculate_dynamic_thresholds(self, market_data: Dict[str, Any]) -> Dict[str, float]:
+        """Calcula umbrales dinámicos basados en condiciones del mercado"""
+        try:
+            volume = market_data.get("volume", 0)
+            price = market_data.get("price", 1)
+            indicators = market_data.get("indicators", {})
+            atr = indicators.get("atr", 0)
+            
+            # Calcular volatilidad actual
+            volatility = (atr / price) if price > 0 else 0
+            
+            # Mantener historial (últimos 50 valores)
+            self.recent_volumes.append(volume)
+            self.recent_volatilities.append(volatility)
+            if len(self.recent_volumes) > 50:
+                self.recent_volumes.pop(0)
+                self.recent_volatilities.pop(0)
+            
+            # Calcular percentiles para adaptación
+            if len(self.recent_volumes) >= 10:
+                sorted_volumes = sorted(self.recent_volumes)
+                volume_percentile_30 = sorted_volumes[int(len(sorted_volumes) * 0.3)]
+                
+                sorted_volatilities = sorted(self.recent_volatilities)
+                volatility_percentile_70 = sorted_volatilities[int(len(sorted_volatilities) * 0.7)]
+            else:
+                volume_percentile_30 = 300  # Valor por defecto
+                volatility_percentile_70 = 0.05  # 5% por defecto
+            
+            # Umbral de volumen dinámico (30% del percentil 30)
+            min_volume = max(100, min(volume_percentile_30 * 0.3, 1000))
+            
+            # Umbral de volatilidad dinámico (70% del percentil 70)
+            max_volatility = max(0.03, min(volatility_percentile_70 * 0.7, 0.08))
+            
+            # Umbral de fuerza dinámico (ajustado según volatilidad)
+            # Mercados más volátiles = señales más fuertes requeridas
+            if volatility > 0.04:
+                min_strength = 0.25  # Más estricto en alta volatilidad
+            elif volatility < 0.02:
+                min_strength = 0.12  # Más permisivo en baja volatilidad
+            else:
+                min_strength = 0.18  # Valor base
+            
+            # RSI dinámico (ajusta según volatilidad)
+            if volatility > 0.04:
+                rsi_overbought = 75  # Más estricto
+                rsi_oversold = 25
+            elif volatility < 0.02:
+                rsi_overbought = 85  # Más permisivo
+                rsi_oversold = 15
+            else:
+                rsi_overbought = 80
+                rsi_oversold = 20
+            
+            return {
+                "min_volume": min_volume,
+                "max_volatility": max_volatility,
+                "min_strength": min_strength,
+                "rsi_overbought": rsi_overbought,
+                "rsi_oversold": rsi_oversold
+            }
+        except Exception as e:
+            self.logger.exception(f"❌ Error calculando umbrales dinámicos: {e}")
+            # Valores por defecto en caso de error
+            return {
+                "min_volume": 300,
+                "max_volatility": 0.05,
+                "min_strength": 0.18,
+                "rsi_overbought": 80,
+                "rsi_oversold": 20
+            }
+    
     async def generate_signal(self, market_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Genera señal de compra o venta según indicadores técnicos"""
         try:
@@ -39,14 +117,17 @@ class TradingStrategy:
                 self.logger.warning("⚠️ Faltan indicadores necesarios para generar señal")
                 return None
 
-            # Análisis principal
-            signal = self._analyze_indicators(indicators, price)
+            # Calcular umbrales dinámicos
+            dynamic_thresholds = self._calculate_dynamic_thresholds(market_data)
+            
+            # Análisis principal con umbrales dinámicos
+            signal = self._analyze_indicators(indicators, price, dynamic_thresholds)
             if not signal:
                 self.consecutive_signals = 0
                 return None
 
-            # Aplicar filtros
-            if not self._apply_filters(signal, market_data):
+            # Aplicar filtros con umbrales dinámicos
+            if not self._apply_filters(signal, market_data, dynamic_thresholds):
                 return None
 
             # Calcular tamaño de posición (proporcional a fuerza)
@@ -78,7 +159,7 @@ class TradingStrategy:
     # ======================================================
     # ⚙️ ANÁLISIS DE INDICADORES
     # ======================================================
-    def _analyze_indicators(self, indicators: Dict[str, float], price: float) -> Optional[Dict[str, Any]]:
+    def _analyze_indicators(self, indicators: Dict[str, float], price: float, thresholds: Dict[str, float]) -> Optional[Dict[str, Any]]:
         """Evalúa los indicadores técnicos para generar señal"""
         try:
             fast = indicators["fast_ma"]
@@ -90,10 +171,13 @@ class TradingStrategy:
             if any(pd.isna([fast, slow, rsi, macd, macd_signal])):
                 return None
 
-            # Señal de compra
-            if fast > slow and rsi < self.config.RSI_OVERBOUGHT and macd > macd_signal and macd > 0:
+            # Señal de compra (usando umbrales dinámicos)
+            rsi_overbought = thresholds.get("rsi_overbought", self.config.RSI_OVERBOUGHT)
+            min_strength = thresholds.get("min_strength", 0.18)
+            
+            if fast > slow and rsi < rsi_overbought and macd > macd_signal and macd > 0:
                 strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=True)
-                if strength > 0.18:  # Umbral reducido de 0.3 a 0.18 para más oportunidades
+                if strength > min_strength:
                     return {
                         "action": "BUY",
                         "price": price,
@@ -103,10 +187,12 @@ class TradingStrategy:
                         "take_profit": round(price * (1 + self.config.STOP_LOSS_PCT * self.config.TAKE_PROFIT_RATIO), 2),
                     }
 
-            # Señal de venta
-            if fast < slow and rsi > self.config.RSI_OVERSOLD and macd < macd_signal and macd < 0:
+            # Señal de venta (usando umbrales dinámicos)
+            rsi_oversold = thresholds.get("rsi_oversold", self.config.RSI_OVERSOLD)
+            
+            if fast < slow and rsi > rsi_oversold and macd < macd_signal and macd < 0:
                 strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=False)
-                if strength > 0.18:  # Umbral reducido de 0.3 a 0.18 para más oportunidades
+                if strength > min_strength:
                     return {
                         "action": "SELL",
                         "price": price,
@@ -139,7 +225,7 @@ class TradingStrategy:
         except Exception:
             return 0.0
 
-    def _apply_filters(self, signal: Dict[str, Any], market_data: Dict[str, Any]) -> bool:
+    def _apply_filters(self, signal: Dict[str, Any], market_data: Dict[str, Any], thresholds: Dict[str, float]) -> bool:
         """Filtra señales débiles o condiciones no óptimas"""
         try:
             # Evitar repeticiones excesivas
@@ -151,17 +237,19 @@ class TradingStrategy:
                 self.logger.info("⛔ Señales consecutivas del mismo tipo ignoradas")
                 return False
 
-            # Volatilidad máxima (si ATR está disponible)
+            # Volatilidad máxima dinámica
             atr = market_data["indicators"].get("atr")
+            max_volatility = thresholds.get("max_volatility", 0.05)
             if atr:
                 volatility = atr / market_data["price"]
-                if volatility > 0.05:
-                    self.logger.info("⚠️ Volatilidad alta, señal ignorada")
+                if volatility > max_volatility:
+                    self.logger.info(f"⚠️ Volatilidad alta ({volatility:.4f} > {max_volatility:.4f}), señal ignorada")
                     return False
 
-            # Volumen mínimo (reducido de 1000 a 300 para más oportunidades)
-            if market_data.get("volume", 0) < 300:
-                self.logger.info("⚠️ Volumen insuficiente, señal ignorada")
+            # Volumen mínimo dinámico
+            min_volume = thresholds.get("min_volume", 300)
+            if market_data.get("volume", 0) < min_volume:
+                self.logger.info(f"⚠️ Volumen insuficiente ({market_data.get('volume', 0):.2f} < {min_volume:.2f}), señal ignorada")
                 return False
 
             # Horario (solo para acciones)
@@ -171,9 +259,10 @@ class TradingStrategy:
                     self.logger.info("🕒 Fuera del horario de mercado")
                     return False
 
-            # Fuerza mínima (reducido de 0.3 a 0.18 para más oportunidades)
-            if signal["strength"] < 0.18:
-                self.logger.info("💤 Señal débil descartada")
+            # Fuerza mínima dinámica
+            min_strength = thresholds.get("min_strength", 0.18)
+            if signal["strength"] < min_strength:
+                self.logger.info(f"💤 Señal débil descartada (fuerza: {signal['strength']:.3f} < {min_strength:.3f})")
                 return False
 
             return True
