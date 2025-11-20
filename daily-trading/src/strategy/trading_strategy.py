@@ -1,6 +1,9 @@
 """
-Estrategia de trading automatizada
-Basada en cruce de medias móviles, RSI y MACD con filtros dinámicos.
+Estrategia de trading automatizada AVANZADA
+Basada en cruce de medias móviles, RSI y MACD con:
+- Filtros dinámicos adaptados al régimen de mercado
+- Filtrado ML inteligente
+- VWAP, múltiples timeframes
 """
 
 from datetime import datetime
@@ -9,18 +12,30 @@ import pandas as pd
 
 from config import Config
 from src.utils.logging_setup import setup_logging
+from src.strategy.dynamic_parameters import DynamicParameterManager
 
 
 class TradingStrategy:
-    """Estrategia de trading basada en medias móviles, RSI y MACD"""
+    """
+    Estrategia de trading avanzada que integra:
+    - Señales técnicas clásicas (MA, RSI, MACD, VWAP)
+    - Parámetros dinámicos según régimen
+    - Contexto de mercado completo
+    """
 
     def __init__(self, config: Config):
         self.config = config
         self.logger = setup_logging(__name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
 
+        # Gestor de parámetros dinámicos
+        self.param_manager = DynamicParameterManager(config)
+        
         # Estado de la estrategia
         self.last_signal: Optional[Dict[str, Any]] = None
         self.consecutive_signals: int = 0
+        
+        # Parámetros actuales (adaptados según régimen)
+        self.current_params: Dict[str, Any] = {}
         
         # Historial para umbrales dinámicos (ampliado para mejor adaptación)
         self.recent_volumes = []
@@ -30,6 +45,29 @@ class TradingStrategy:
         self.recent_ma_diffs = []  # Diferencias entre fast_ma y slow_ma
         self.recent_macd_values = []
         self.recent_prices = []
+
+    # ======================================================
+    # 🔧 ADAPTACIÓN DE PARÁMETROS
+    # ======================================================
+    def update_parameters_for_regime(self, regime_info: Dict[str, Any]):
+        """
+        Actualiza los parámetros de la estrategia según el régimen de mercado
+        
+        Args:
+            regime_info: Información del régimen (regime, confidence, metrics)
+        """
+        try:
+            self.current_params = self.param_manager.adapt_parameters(regime_info)
+            self.logger.info(
+                f"🔧 Parámetros actualizados para régimen: {regime_info.get('regime')} "
+                f"(confianza: {regime_info.get('confidence', 0):.2%})"
+            )
+        except Exception as e:
+            self.logger.error(f"❌ Error actualizando parámetros: {e}")
+
+    def get_current_parameters(self) -> Dict[str, Any]:
+        """Retorna los parámetros actuales adaptados"""
+        return self.current_params if self.current_params else self.param_manager.get_current_parameters()
 
     # ======================================================
     # 🎯 GENERACIÓN DE SEÑALES
@@ -123,11 +161,6 @@ class TradingStrategy:
                 volatility_factor = min(1.5, max(0.7, volatility / (pd.Series(self.recent_volatilities).mean() if len(self.recent_volatilities) >= min_samples else volatility)))
                 min_strength *= volatility_factor  # Más estricto en alta volatilidad relativa
             
-            self.logger.debug(
-                f"📊 Umbrales dinámicos calculados: "
-                f"vol={min_volume:.2f}, volatl={max_volatility:.4f}, "
-                f"fuerza={min_strength:.3f}, RSI=[{rsi_oversold:.1f}, {rsi_overbought:.1f}]"
-            )
             
             return {
                 "min_volume": min_volume,
@@ -163,8 +196,17 @@ class TradingStrategy:
                     "rsi_oversold": 10
                 }
     
-    async def generate_signal(self, market_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        """Genera señal de compra o venta según indicadores técnicos"""
+    async def generate_signal(self, market_data: Dict[str, Any], regime_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
+        """
+        Genera señal de compra o venta según indicadores técnicos y régimen
+        
+        Args:
+            market_data: Datos de mercado con precio, volumen, indicadores
+            regime_info: Información del régimen de mercado (opcional)
+            
+        Returns:
+            Señal con action, precio, strength, stop_loss, take_profit, etc.
+        """
         try:
             if not market_data or "indicators" not in market_data:
                 return None
@@ -177,39 +219,61 @@ class TradingStrategy:
                 self.logger.warning("⚠️ Faltan indicadores necesarios para generar señal")
                 return None
 
-            # Calcular umbrales dinámicos
+            # Obtener parámetros actuales (ya adaptados al régimen)
+            params = self.get_current_parameters()
+            
+            # Calcular umbrales dinámicos (híbrido: usa régimen + histórico)
             dynamic_thresholds = self._calculate_dynamic_thresholds(market_data)
             
+            # Merge con parámetros del régimen
+            if params:
+                dynamic_thresholds['rsi_overbought'] = params.get('rsi_overbought', dynamic_thresholds.get('rsi_overbought', 80))
+                dynamic_thresholds['rsi_oversold'] = params.get('rsi_oversold', dynamic_thresholds.get('rsi_oversold', 20))
+                dynamic_thresholds['min_strength'] = params.get('min_signal_strength', dynamic_thresholds.get('min_strength', 0.15))
+            
             # Análisis principal con umbrales dinámicos
-            signal = self._analyze_indicators(indicators, price, dynamic_thresholds)
+            signal = self._analyze_indicators(indicators, price, dynamic_thresholds, params)
             if not signal:
                 self.consecutive_signals = 0
                 return None
+
+            # Verificar dirección permitida según régimen
+            if params and 'allow_long' in params:
+                if signal['action'] == 'BUY' and not params.get('allow_long', True):
+                    self.logger.info(f"ℹ️ BUY bloqueado por régimen de mercado")
+                    return None
+                if signal['action'] == 'SELL' and not params.get('allow_short', True):
+                    self.logger.info(f"ℹ️ SELL bloqueado por régimen de mercado")
+                    return None
 
             # Aplicar filtros con umbrales dinámicos
             if not self._apply_filters(signal, market_data, dynamic_thresholds):
                 return None
 
-            # Calcular tamaño de posición (proporcional a fuerza)
-            position_size = self._calculate_position_size(signal)
+            # Calcular tamaño de posición (proporcional a fuerza y régimen)
+            position_size = self._calculate_position_size(signal, params)
             if position_size <= 0:
                 self.logger.info("ℹ️ Tamaño de posición insuficiente para operar")
                 return None
 
-            # Completar datos de la señal
+            # Completar datos de la señal con más contexto
             signal.update({
                 "position_size": position_size,
                 "timestamp": market_data["timestamp"],
                 "symbol": market_data["symbol"],
+                "regime": regime_info.get('regime', 'unknown') if regime_info else 'unknown',
+                "dynamic_thresholds": dynamic_thresholds,
+                "volume_relative": market_data.get('volume', 0) / dynamic_thresholds.get('min_volume', 1) if dynamic_thresholds.get('min_volume', 1) > 0 else 1.0,
             })
 
             self.last_signal = signal
             self.consecutive_signals += 1
 
             self.logger.info(
-                f"📈 Señal generada: {signal['action']} {signal['symbol']} | "
-                f"{signal['reason']} | Fuerza={signal['strength']:.2f}"
+                f"✨ Señal generada: {signal['action']} {signal['symbol']} @ {price:.2f} "
+                f"(Fuerza: {signal['strength']:.2%}, Régimen: {signal['regime']})"
             )
+
             return signal
 
         except Exception as e:
@@ -219,47 +283,70 @@ class TradingStrategy:
     # ======================================================
     # ⚙️ ANÁLISIS DE INDICADORES
     # ======================================================
-    def _analyze_indicators(self, indicators: Dict[str, float], price: float, thresholds: Dict[str, float]) -> Optional[Dict[str, Any]]:
+    def _analyze_indicators(self, indicators: Dict[str, float], price: float, thresholds: Dict[str, float], params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
         """Evalúa los indicadores técnicos para generar señal"""
         try:
+            params = params or {}
+            
             fast = indicators["fast_ma"]
             slow = indicators["slow_ma"]
             rsi = indicators["rsi"]
             macd = indicators["macd"]
             macd_signal = indicators["macd_signal"]
+            vwap = indicators.get("vwap", price)  # VWAP como soporte adicional
 
             if any(pd.isna([fast, slow, rsi, macd, macd_signal])):
                 return None
 
-            # Señal de compra (usando umbrales dinámicos)
+            # Obtener parámetros (dinámicos o base)
             rsi_overbought = thresholds.get("rsi_overbought", self.config.RSI_OVERBOUGHT)
+            rsi_oversold = thresholds.get("rsi_oversold", self.config.RSI_OVERSOLD)
             min_strength = thresholds.get("min_strength", 0.18)
+            stop_loss_pct = params.get('stop_loss_pct', self.config.STOP_LOSS_PCT)
+            take_profit_ratio = params.get('take_profit_ratio', self.config.TAKE_PROFIT_RATIO)
             
+            # Señal de compra (con confirmación VWAP)
             if fast > slow and rsi < rsi_overbought and macd > macd_signal and macd > 0:
+                # Bonus si precio está por encima o cerca de VWAP
+                vwap_confirmation = price >= vwap * 0.998  # 0.2% de tolerancia
+                
                 strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=True, thresholds=thresholds)
+                
+                # Ajustar strength con VWAP
+                if vwap_confirmation:
+                    strength *= 1.1  # 10% bonus por confirmación VWAP
+                
                 if strength > min_strength:
                     return {
                         "action": "BUY",
                         "price": price,
-                        "strength": strength,
-                        "reason": "Cruce alcista + RSI + MACD",
-                        "stop_loss": round(price * (1 - self.config.STOP_LOSS_PCT), 2),
-                        "take_profit": round(price * (1 + self.config.STOP_LOSS_PCT * self.config.TAKE_PROFIT_RATIO), 2),
+                        "strength": min(1.0, strength),  # Cap a 1.0
+                        "reason": f"Cruce alcista + RSI + MACD{' + VWAP' if vwap_confirmation else ''}",
+                        "stop_loss": round(price * (1 - stop_loss_pct), 2),
+                        "take_profit": round(price * (1 + stop_loss_pct * take_profit_ratio), 2),
+                        "vwap_confirmation": vwap_confirmation,
                     }
 
-            # Señal de venta (usando umbrales dinámicos)
-            rsi_oversold = thresholds.get("rsi_oversold", self.config.RSI_OVERSOLD)
-            
+            # Señal de venta (con confirmación VWAP)
             if fast < slow and rsi > rsi_oversold and macd < macd_signal and macd < 0:
+                # Bonus si precio está por debajo o cerca de VWAP
+                vwap_confirmation = price <= vwap * 1.002  # 0.2% de tolerancia
+                
                 strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=False, thresholds=thresholds)
+                
+                # Ajustar strength con VWAP
+                if vwap_confirmation:
+                    strength *= 1.1  # 10% bonus
+                
                 if strength > min_strength:
                     return {
                         "action": "SELL",
                         "price": price,
-                        "strength": strength,
-                        "reason": "Cruce bajista + RSI + MACD",
-                        "stop_loss": round(price * (1 + self.config.STOP_LOSS_PCT), 2),
-                        "take_profit": round(price * (1 - self.config.STOP_LOSS_PCT * self.config.TAKE_PROFIT_RATIO), 2),
+                        "strength": min(1.0, strength),  # Cap a 1.0
+                        "reason": f"Cruce bajista + RSI + MACD{' + VWAP' if vwap_confirmation else ''}",
+                        "stop_loss": round(price * (1 + stop_loss_pct), 2),
+                        "take_profit": round(price * (1 - stop_loss_pct * take_profit_ratio), 2),
+                        "vwap_confirmation": vwap_confirmation,
                     }
 
             return None
@@ -315,9 +402,8 @@ class TradingStrategy:
             if (
                 self.last_signal
                 and self.last_signal["action"] == signal["action"]
-                and self.consecutive_signals >= 5  # Aumentado de 3 a 5 para aprovechar tendencias fuertes
+                and self.consecutive_signals >= 5
             ):
-                self.logger.info("⛔ Señales consecutivas del mismo tipo ignoradas")
                 return False
 
             # Volatilidad máxima dinámica
@@ -326,26 +412,22 @@ class TradingStrategy:
             if atr:
                 volatility = atr / market_data["price"]
                 if volatility > max_volatility:
-                    self.logger.info(f"⚠️ Volatilidad alta ({volatility:.4f} > {max_volatility:.4f}), señal ignorada")
                     return False
 
             # Volumen mínimo dinámico
             min_volume = thresholds.get("min_volume", 300)
             if market_data.get("volume", 0) < min_volume:
-                self.logger.info(f"⚠️ Volumen insuficiente ({market_data.get('volume', 0):.2f} < {min_volume:.2f}), señal ignorada")
                 return False
 
             # Horario (solo para acciones)
             if self.config.MARKET == "STOCK":
                 hour = market_data["timestamp"].hour
                 if not (self.config.TRADING_START_HOUR <= hour < self.config.TRADING_END_HOUR):
-                    self.logger.info("🕒 Fuera del horario de mercado")
                     return False
 
             # Fuerza mínima dinámica
             min_strength = thresholds.get("min_strength", 0.18)
             if signal["strength"] < min_strength:
-                self.logger.info(f"💤 Señal débil descartada (fuerza: {signal['strength']:.3f} < {min_strength:.3f})")
                 return False
 
             return True
@@ -353,17 +435,42 @@ class TradingStrategy:
             self.logger.exception(f"❌ Error aplicando filtros: {e}")
             return False
 
-    def _calculate_position_size(self, signal: Dict[str, Any]) -> float:
-        """Calcula el tamaño de posición basado en el riesgo y fuerza de señal"""
+    def _calculate_position_size(self, signal: Dict[str, Any], params: Dict[str, Any] = None) -> float:
+        """
+        Calcula el tamaño de posición basado en:
+        - Riesgo por trade (dinámico según régimen)
+        - Fuerza de la señal
+        - Límites de exposición
+        """
         try:
+            params = params or {}
+            
             base_capital = self.config.INITIAL_CAPITAL
-            risk_amount = base_capital * self.config.RISK_PER_TRADE
+            
+            # Usar riesgo dinámico si está disponible
+            risk_per_trade = params.get('risk_per_trade', self.config.RISK_PER_TRADE)
+            
+            risk_amount = base_capital * risk_per_trade
             risk_per_unit = abs(signal["price"] - signal["stop_loss"])
+            
             if risk_per_unit == 0:
                 return 0.0
+            
+            # Tamaño base según riesgo
             qty = risk_amount / risk_per_unit
-            qty *= signal["strength"]  # ajusta por fuerza
-            return round(min(qty, (base_capital * 0.1) / signal["price"]), 2)
+            
+            # Ajustar por fuerza de señal
+            qty *= signal["strength"]
+            
+            # Límite máximo de exposición (10% del capital)
+            max_position_value = base_capital * 0.1
+            max_qty = max_position_value / signal["price"]
+            
+            # Tomar el menor
+            final_qty = min(qty, max_qty)
+            
+            return round(final_qty, 2)
+            
         except Exception as e:
             self.logger.exception(f"❌ Error calculando posición: {e}")
             return 0.0

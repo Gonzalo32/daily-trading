@@ -200,16 +200,50 @@ class MarketDataProvider:
     # ======================================================
     # 🕰️ HISTÓRICO Y CIERRE
     # ======================================================
-    async def get_historical_data(self, symbol: str, timeframe: str, limit: int = 1000) -> Optional[pd.DataFrame]:
-        """Obtener datos históricos de un símbolo"""
+    async def get_historical_data(self, symbol: str = None, timeframe: str = None, limit: int = None, days: int = None) -> Optional[pd.DataFrame]:
+        """
+        Obtener datos históricos de un símbolo
+        
+        Args:
+            symbol: Símbolo a consultar (por defecto usa config.SYMBOL)
+            timeframe: Timeframe (por defecto usa config.TIMEFRAME)
+            limit: Número de velas a obtener (si se especifica, ignora 'days')
+            days: Número de días históricos a obtener (alternativa a 'limit')
+            
+        Returns:
+            DataFrame con OHLCV e indicadores calculados
+        """
         try:
+            symbol = symbol or self.config.SYMBOL
+            timeframe = timeframe or self.config.TIMEFRAME
+            
+            # Calcular limit basado en días si se especifica
+            if limit is None and days is not None:
+                # Calcular cuántas velas hay en X días según el timeframe
+                timeframe_minutes = {
+                    '1m': 1, '5m': 5, '15m': 15, '30m': 30,
+                    '1h': 60, '4h': 240, '1d': 1440
+                }
+                minutes_per_timeframe = timeframe_minutes.get(timeframe, 60)
+                limit = int((days * 24 * 60) / minutes_per_timeframe)
+                limit = min(limit, 1000)  # Máximo 1000 velas por seguridad
+            elif limit is None:
+                limit = 200  # Por defecto
+            
             if self.config.MARKET != "CRYPTO":
+                self.logger.warning("⚠️ Histórico solo disponible para crypto por ahora")
                 return None
 
             ohlcv = await self.exchange.fetch_ohlcv(symbol, timeframe, limit=limit)
             df = pd.DataFrame(ohlcv, columns=["timestamp", "open", "high", "low", "close", "volume"])
             df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
             df.set_index("timestamp", inplace=True)
+            
+            # Calcular indicadores técnicos para el análisis de régimen
+            df = self._calculate_indicators(df)
+            
+            self.logger.info(f"📊 Histórico obtenido: {len(df)} velas de {symbol} ({timeframe})")
+            
             return df
 
         except Exception as e:
