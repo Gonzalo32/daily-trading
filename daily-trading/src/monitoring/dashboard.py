@@ -869,9 +869,11 @@ class Dashboard:
                         rightPriceScale: {
                             borderColor: '#2b2b43',
                             scaleMargins: {
-                                top: 0.1,
-                                bottom: 0.2,
+                                top: 0.02,
+                                bottom: 0.02,
                             },
+                            mode: LightweightCharts.PriceScaleMode.Normal,
+                            autoScale: true,
                         },
                         timeScale: {
                             borderColor: '#2b2b43',
@@ -880,6 +882,29 @@ class Dashboard:
                         },
                         width: container.clientWidth,
                         height: container.clientHeight,
+                        localization: {
+                            locale: 'es-ES',
+                        },
+                        handleScroll: {
+                            mouseWheel: true,
+                            pressedMouseMove: true,
+                        },
+                        handleScale: {
+                            axisPressedMouseMove: {
+                                time: true,
+                                price: true,
+                            },
+                            mouseWheel: true,
+                            pinch: true,
+                        },
+                    });
+                    
+                    chart.timeScale().applyOptions({
+                        rightOffset: 6,
+                        barSpacing: 10,
+                        minBarSpacing: 0.5,
+                        fixRightEdge: false,
+                        lockVisibleTimeRangeOnResize: false,
                     });
                     
                     // Series principales
@@ -888,7 +913,16 @@ class Dashboard:
                         downColor: '#ef5350',
                         wickUpColor: '#26a69a',
                         wickDownColor: '#ef5350',
-                        borderVisible: false,
+                        borderUpColor: '#1e8e81',
+                        borderDownColor: '#d64c46',
+                        borderVisible: true,
+                        wickVisible: true,
+                        priceLineVisible: true,
+                        priceFormat: {
+                            type: 'price',
+                            precision: 2,
+                            minMove: 0.01,
+                        },
                     });
                     
                     volumeSeries = chart.addHistogramSeries({
@@ -898,7 +932,7 @@ class Dashboard:
                         },
                         priceScaleId: '',
                         scaleMargins: {
-                            top: 0.8,
+                            top: 0.92,
                             bottom: 0,
                         },
                     });
@@ -982,6 +1016,7 @@ class Dashboard:
                                 });
                             }
                             
+                            chart.priceScale('right').applyOptions({ autoScale: true });
                             updateLegend(candleData);
                         }
                         return;
@@ -1030,6 +1065,8 @@ class Dashboard:
                         }
                         
                         chart.timeScale().fitContent();
+                        chart.timeScale().scrollToRealTime();
+                        chart.priceScale('right').applyOptions({ autoScale: true });
                         lastHistoryLength = ohlcHistory.length;
                         
                         document.getElementById('legend-candles').textContent = historicalCandles.length;
