@@ -215,8 +215,23 @@ class TradingBot:
         """Bucle principal del bot CON preparación diaria automática"""
         self.logger.info("🔄 Iniciando bucle principal de trading...")
         
+        iteration_count = 0
+        last_status_log = datetime.now()
+        
         while self.is_running:
             try:
+                iteration_count += 1
+                current_time = datetime.now()
+                
+                # Log de estado cada 30 segundos para confirmar que está vivo
+                if (current_time - last_status_log).total_seconds() >= 30:
+                    self.logger.info(
+                        f"💓 Bot activo | Iteración #{iteration_count} | "
+                        f"PnL: {self.daily_pnl:.2f} | Trades: {self.daily_trades} | "
+                        f"Posiciones: {len(self.current_positions)}"
+                    )
+                    last_status_log = current_time
+                
                 # Verificar preparación diaria (re-preparar si es nuevo día)
                 if not await self._check_daily_preparation():
                     await asyncio.sleep(60)
@@ -231,7 +246,7 @@ class TradingBot:
                 max_daily_trades = self.current_parameters.get('max_daily_trades', 5) if self.current_parameters else 5
                 
                 if not self.risk_manager.check_daily_limits(self.daily_pnl, self.daily_trades):
-                    self.logger.warning(f"⚠️ Límites diarios alcanzados (PnL o pérdida)")
+                    self.logger.warning(f"⚠️ Límites diarios alcanzados (PnL: {self.daily_pnl:.2f} o trades: {self.daily_trades})")
                     await asyncio.sleep(300)
                     continue
                 
@@ -243,12 +258,30 @@ class TradingBot:
                 # Obtener datos de mercado
                 market_data = await self.market_data.get_latest_data()
                 if not market_data:
+                    self.logger.warning("⚠️ No se pudieron obtener datos de mercado, reintentando en 10s...")
                     await asyncio.sleep(10)
                     continue
+                
+                price = market_data.get('price', 0)
+                symbol = market_data.get('symbol', 'N/A')
                 
                 # Generar señal de trading (con régimen)
                 signal = await self.strategy.generate_signal(market_data, self.current_regime_info)
                 self.current_signal = signal  # Guardar señal actual para el dashboard
+                
+                if signal:
+                    self.logger.info(f"🔔 Señal generada: {signal['action']} {symbol} @ {signal['price']:.2f} (Fuerza: {signal['strength']:.2%})")
+                else:
+                    # Log cada 10 iteraciones para no saturar
+                    if iteration_count % 10 == 0:
+                        indicators = market_data.get('indicators', {})
+                        self.logger.info(
+                            f"🔍 Analizando {symbol} @ {price:.2f} | "
+                            f"RSI: {indicators.get('rsi', 0):.1f} | "
+                            f"EMA9: {indicators.get('fast_ma', 0):.2f} | "
+                            f"EMA21: {indicators.get('slow_ma', 0):.2f} | "
+                            f"Sin señal (condiciones no cumplidas)"
+                        )
                 
                 if signal:
                     # FILTRO ML: Verificar con modelo si la señal es buena
@@ -270,12 +303,13 @@ class TradingBot:
                         
                         # Si ML rechaza la señal, no operar
                         if not ml_decision['approved']:
-                            self.logger.info(f"🚫 Señal rechazada por filtro ML: {ml_decision['reason']}")
+                            self.logger.info(f"🚫 Señal rechazada por filtro ML: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})")
                             signal = None
                     
                     if signal:
                         # Verificar riesgo de la operación
                         if self.risk_manager.validate_trade(signal, self.current_positions):
+                            self.logger.info(f"✅ Riesgo validado, ejecutando orden...")
                             # Ejecutar orden
                             order_result = await self.order_executor.execute_order(signal)
                             
@@ -305,6 +339,8 @@ class TradingBot:
                                 await self.notifications.send_trade_notification(order_result)
                             else:
                                 self.logger.error(f"❌ Error ejecutando orden: {order_result['error']}")
+                        else:
+                            self.logger.info(f"🚫 Operación rechazada por gestor de riesgo (exposición máxima o límites alcanzados)")
                         
                 # Verificar y gestionar posiciones abiertas (con trailing stop, break-even, etc.)
                 await self._check_open_positions(market_data)

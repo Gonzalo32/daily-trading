@@ -1,43 +1,28 @@
-2025-11-20 10:47:26 | INFO | INFO | ✅ Sistema de logging inicializado correctamente.
-2025-11-20 10:47:26 | INFO | src.data.market_data | ✅ Sistema de logging inicializado correctamente.
-2025-11-20 10:47:26 | INFO | src.strategy.trading_strategy | ✅ Sistema de logging inicializado correctamente.
-2025-11-20 10:47:26 | INFO | src.strategy.dynamic_parameters | ✅ Sistema de logging inicializado correctamente.
-2025-11-20 10:47:26 | INFO | src.risk.risk_manager | ✅ Sistema de logging inicializado correctamente.
-2025-11-20 10:47:26 | INFO | src.execution.order_executor | ✅ Sistema de logging inicializado correctamente.
-2025-11-20 10:47:26 | INFO | src.strategy.market_regime | ✅ Sistema de logging inicializado correctamente.
-2025-11-20 10:47:26 | INFO | src.risk.advanced_position_manager | ✅ Sistema de logging inicializado correctamente.
-2025-11-20 10:47:26 | INFO | INFO | 🚀 Iniciando Bot de Day Trading Avanzado...
-2025-11-20 10:47:26 | INFO | INFO | ============================================================
-2025-11-20 10:47:26 | INFO | INFO | 🔧 Inicializando componentes...
-2025-11-20 10:47:27 | INFO | src.data.market_data | ✅ Conexión con Binance establecida (modo testnet: True)
-2025-11-20 10:47:27 | INFO | src.data.market_data | ✅ Proveedor de datos inicializado correctamente
-2025-11-20 10:47:29 | INFO | src.execution.order_executor | ✅ Conexión con Binance establecida (modo testnet: True)
-2025-11-20 10:47:29 | INFO | src.execution.order_executor | ✅ Ejecutor de órdenes inicializado correctamente
-2025-11-20 10:47:29 | INFO | INFO | ✅ Componentes inicializados correctamente
-2025-11-20 10:47:29 | INFO | INFO | ============================================================
-2025-11-20 10:47:29 | INFO | INFO | 📋 INICIANDO PREPARACIÓN DIARIA
-2025-11-20 10:47:29 | INFO | INFO | ============================================================
-2025-11-20 10:47:29 | INFO | INFO | 📥 Descargando histórico reciente...
-2025-11-20 10:47:30 | INFO | src.data.market_data | 📊 Histórico obtenido: 340 velas de BTC/USDT (1h)
-2025-11-20 10:47:30 | INFO | INFO | ✅ Histórico descargado: 340 períodos
-2025-11-20 10:47:30 | INFO | INFO | 🔍 Analizando régimen de mercado...
-2025-11-20 10:47:30 | INFO | src.strategy.market_regime | 🔍 Analizando régimen de mercado para BTC/USDT...
-2025-11-20 10:47:30 | INFO | src.strategy.market_regime | ✅ Régimen detectado: LOW_VOLATILITY (confianza: 67.86%)
-2025-11-20 10:47:30 | INFO | INFO | ✅ Régimen detectado: LOW_VOLATILITY (confianza: 67.86%)
-2025-11-20 10:47:30 | INFO | INFO | 🔧 Adaptando parámetros al régimen...
-2025-11-20 10:47:30 | INFO | src.strategy.dynamic_parameters | 🔧 Adaptando parámetros para régimen: low_volatility
-2025-11-20 10:47:30 | INFO | src.strategy.dynamic_parameters | ✅ Parámetros adaptados: SL=1.500%, TP=1.5R, Risk=2.00%, Style=patient
-2025-11-20 10:47:30 | INFO | src.strategy.dynamic_parameters | 🔧 Adaptando parámetros para régimen: low_volatility
-2025-11-20 10:47:30 | INFO | src.strategy.dynamic_parameters | ✅ Parámetros adaptados: SL=1.500%, TP=1.5R, Risk=2.00%, Style=patient
-2025-11-20 10:47:30 | INFO | src.strategy.trading_strategy | 🔧 Parámetros actualizados para régimen: low_volatility (confianza: 67.86%)
-2025-11-20 10:47:30 | INFO | INFO |    ├─ Estilo de trading: patient
-2025-11-20 10:47:30 | INFO | INFO |    ├─ Stop Loss: 1.50%
-2025-11-20 10:47:30 | INFO | INFO |    ├─ Take Profit: 1.5R
-2025-11-20 10:47:30 | INFO | INFO |    ├─ Riesgo por trade: 2.00%
-2025-11-20 10:47:30 | INFO | INFO |    ├─ Fuerza mínima: 10.00%
-2025-11-20 10:47:30 | INFO | INFO |    └─ Max trades diarios: 6
-2025-11-20 10:47:30 | INFO | INFO | ============================================================
-2025-11-20 10:47:30 | INFO | INFO | ✅ PREPARACIÓN DIARIA COMPLETADA
-2025-11-20 10:47:30 | INFO | INFO | 🟢 Sistema listo para operar
-2025-11-20 10:47:30 | INFO | INFO | ============================================================
-2025-11-20 10:47:30 | INFO | INFO | 🔄 Iniciando bucle principal de trading...
+2025-11-20 12:54:16 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90336.32 | RSI: 23.2 | EMA9: 91656.48 | EMA21: 91574.02 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:54:17 | INFO | INFO | 💓 Bot activo | Iteración #2321 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:54:35 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90279.53 | RSI: 22.8 | EMA9: 91650.17 | EMA21: 91571.32 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:54:49 | INFO | INFO | 💓 Bot activo | Iteración #2338 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:54:53 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90344.50 | RSI: 23.2 | EMA9: 91657.39 | EMA21: 91574.41 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:55:12 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90230.33 | RSI: 22.8 | EMA9: 91648.61 | EMA21: 91570.65 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:55:21 | INFO | INFO | 💓 Bot activo | Iteración #2355 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:55:31 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90242.40 | RSI: 22.6 | EMA9: 91644.70 | EMA21: 91568.97 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:55:51 | INFO | INFO | 💓 Bot activo | Iteración #2370 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:55:52 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90242.39 | RSI: 22.6 | EMA9: 91646.04 | EMA21: 91569.55 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:56:13 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90199.77 | RSI: 22.4 | EMA9: 91641.31 | EMA21: 91567.52 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:56:21 | INFO | INFO | 💓 Bot activo | Iteración #2385 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:56:31 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90175.09 | RSI: 22.3 | EMA9: 91638.57 | EMA21: 91566.34 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:56:49 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90159.08 | RSI: 22.2 | EMA9: 91636.79 | EMA21: 91565.58 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:56:52 | INFO | INFO | 💓 Bot activo | Iteración #2402 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:57:08 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90219.26 | RSI: 22.5 | EMA9: 91643.47 | EMA21: 91568.45 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:57:23 | INFO | INFO | 💓 Bot activo | Iteración #2418 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:57:27 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90234.91 | RSI: 22.6 | EMA9: 91645.21 | EMA21: 91569.19 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:57:47 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90216.13 | RSI: 22.5 | EMA9: 91643.13 | EMA21: 91568.30 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:57:53 | INFO | INFO | 💓 Bot activo | Iteración #2434 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:58:05 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90217.51 | RSI: 22.5 | EMA9: 91643.28 | EMA21: 91568.36 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:58:23 | INFO | INFO | 💓 Bot activo | Iteración #2450 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:58:25 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90160.01 | RSI: 22.2 | EMA9: 91636.89 | EMA21: 91565.63 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:58:45 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90130.88 | RSI: 22.1 | EMA9: 91633.65 | EMA21: 91564.24 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:58:54 | INFO | INFO | 💓 Bot activo | Iteración #2465 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:59:07 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90105.00 | RSI: 21.9 | EMA9: 91630.78 | EMA21: 91563.01 | Sin señal (condiciones no cumplidas)
+2025-11-20 12:59:26 | INFO | INFO | 💓 Bot activo | Iteración #2480 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-11-20 12:59:27 | INFO | INFO | 🔍 Analizando BTC/USDT @ 90181.31 | RSI: 22.3 | EMA9: 91639.26 | EMA21: 91566.64 | Sin señal (condiciones no cumplidas)
