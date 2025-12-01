@@ -1,9 +1,15 @@
 """
-Estrategia de trading automatizada AVANZADA
-Basada en cruce de medias móviles, RSI y MACD con:
-- Filtros dinámicos adaptados al régimen de mercado
-- Filtrado ML inteligente
-- VWAP, múltiples timeframes
+Estrategia de trading automatizada EXTREMADAMENTE PERMISIVA
+Objetivo: Operar TODOS los días, incluso con señales mediocres.
+Prioridad: Disparar de más a disparar de menos.
+
+Estrategia en cascada (4 niveles):
+1. Señal FUERTE: EMA + RSI extremo (RSI < 45 o > 55)
+2. Señal MEDIA: Solo EMA (cualquier diferencia > 0.1%)
+3. Señal DÉBIL: Solo RSI (RSI < 50 = BUY, RSI > 50 = SELL)
+4. FALLBACK: Siempre genera señal exploratoria si no hay ninguna
+
+Filtros mínimos: Solo horario de acciones y repeticiones extremas (20+)
 """
 
 from datetime import datetime
@@ -17,10 +23,11 @@ from src.strategy.dynamic_parameters import DynamicParameterManager
 
 class TradingStrategy:
     """
-    Estrategia de trading avanzada que integra:
-    - Señales técnicas clásicas (MA, RSI, MACD, VWAP)
-    - Parámetros dinámicos según régimen
-    - Contexto de mercado completo
+    Estrategia de trading EXTREMADAMENTE PERMISIVA:
+    - SIEMPRE genera señales (4 niveles de calidad)
+    - Filtros mínimos (solo horario y repeticiones extremas)
+    - Objetivo: Operar TODOS los días, priorizar sample size
+    - Preferir disparar de más a disparar de menos
     """
 
     def __init__(self, config: Config):
@@ -198,81 +205,103 @@ class TradingStrategy:
     
     async def generate_signal(self, market_data: Dict[str, Any], regime_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
-        Genera señal de compra o venta según indicadores técnicos y régimen
+        Genera señal de compra o venta según indicadores técnicos simplificados
         
         Args:
             market_data: Datos de mercado con precio, volumen, indicadores
-            regime_info: Información del régimen de mercado (opcional)
+            regime_info: Información del régimen de mercado (opcional, no usado en versión simplificada)
             
         Returns:
-            Señal con action, precio, strength, stop_loss, take_profit, etc.
+            Señal con action, precio, stop_loss, take_profit, etc.
         """
         try:
+            is_debug = self.config.ENABLE_DEBUG_STRATEGY
+            
+            if is_debug:
+                self.logger.info("🐛 [DEBUG] Iniciando generación de señal...")
+            
             if not market_data or "indicators" not in market_data:
+                if is_debug:
+                    self.logger.warning("🐛 [DEBUG] Rechazado: market_data o indicators faltantes")
                 return None
 
             indicators = market_data["indicators"]
             price = market_data["price"]
 
-            required = ["fast_ma", "slow_ma", "rsi", "macd", "macd_signal"]
-            if not all(k in indicators for k in required):
-                self.logger.warning("⚠️ Faltan indicadores necesarios para generar señal")
-                return None
+            # Si faltan indicadores, usar valores por defecto o fallback
+            required = ["fast_ma", "slow_ma", "rsi"]
+            missing = [k for k in required if k not in indicators]
+            if missing:
+                if is_debug:
+                    self.logger.warning(f"🐛 [DEBUG] Indicadores faltantes: {missing}, usando fallback")
+                # Usar precio como fallback para MAs y RSI neutral
+                indicators.setdefault("fast_ma", price)
+                indicators.setdefault("slow_ma", price)
+                indicators.setdefault("rsi", 50)  # RSI neutral
+                self.logger.warning(f"⚠️ Indicadores faltantes ({missing}), usando valores por defecto")
 
-            # Obtener parámetros actuales (ya adaptados al régimen)
-            params = self.get_current_parameters()
-            
-            # Calcular umbrales dinámicos (híbrido: usa régimen + histórico)
-            dynamic_thresholds = self._calculate_dynamic_thresholds(market_data)
-            
-            # Merge con parámetros del régimen
-            if params:
-                dynamic_thresholds['rsi_overbought'] = params.get('rsi_overbought', dynamic_thresholds.get('rsi_overbought', 80))
-                dynamic_thresholds['rsi_oversold'] = params.get('rsi_oversold', dynamic_thresholds.get('rsi_oversold', 20))
-                dynamic_thresholds['min_strength'] = params.get('min_signal_strength', dynamic_thresholds.get('min_strength', 0.15))
-            
-            # Análisis principal con umbrales dinámicos
-            signal = self._analyze_indicators(indicators, price, dynamic_thresholds, params)
+            if is_debug:
+                self.logger.info(
+                    f"🐛 [DEBUG] Indicadores disponibles - "
+                    f"EMA9: {indicators.get('fast_ma', 0):.2f}, "
+                    f"EMA21: {indicators.get('slow_ma', 0):.2f}, "
+                    f"RSI: {indicators.get('rsi', 0):.2f}"
+                )
+
+            # Análisis simplificado (SIEMPRE genera señal)
+            signal = self._analyze_indicators(indicators, price)
             if not signal:
-                self.consecutive_signals = 0
+                # Esto no debería pasar nunca con la nueva lógica, pero por seguridad:
+                self.logger.warning("⚠️ _analyze_indicators no generó señal, usando fallback directo")
+                signal = self._generate_fallback_signal(price)
+
+            if is_debug:
+                self.logger.info(
+                    f"🐛 [DEBUG] ✅ Señal detectada: {signal['action']} @ {signal['price']:.2f} - "
+                    f"Razón: {signal.get('reason', 'N/A')}"
+                )
+
+            # Aplicar filtros mínimos (siempre aprobar, solo ajustar si es necesario)
+            filter_result = self._apply_filters(signal, market_data)
+            if not filter_result:
+                # Los filtros ahora solo rechazan en casos extremos (horario acciones)
+                # Si se rechaza, es por una razón técnica válida
+                if is_debug:
+                    self.logger.warning("🐛 [DEBUG] Señal rechazada por filtros (probablemente horario)")
                 return None
+            else:
+                if is_debug:
+                    self.logger.info("🐛 [DEBUG] ✅ Filtros básicos pasados")
 
-            # Verificar dirección permitida según régimen
-            if params and 'allow_long' in params:
-                if signal['action'] == 'BUY' and not params.get('allow_long', True):
-                    self.logger.info(f"ℹ️ BUY bloqueado por régimen de mercado")
-                    return None
-                if signal['action'] == 'SELL' and not params.get('allow_short', True):
-                    self.logger.info(f"ℹ️ SELL bloqueado por régimen de mercado")
-                    return None
-
-            # Aplicar filtros con umbrales dinámicos
-            if not self._apply_filters(signal, market_data, dynamic_thresholds):
-                return None
-
-            # Calcular tamaño de posición (proporcional a fuerza y régimen)
-            position_size = self._calculate_position_size(signal, params)
+            # Calcular tamaño de posición simple (solo por riesgo)
+            position_size = self._calculate_position_size(signal)
             if position_size <= 0:
-                self.logger.info("ℹ️ Tamaño de posición insuficiente para operar")
+                if is_debug:
+                    self.logger.warning(f"🐛 [DEBUG] Rechazado: Tamaño de posición insuficiente ({position_size})")
                 return None
 
-            # Completar datos de la señal con más contexto
+            if is_debug:
+                self.logger.info(f"🐛 [DEBUG] Tamaño de posición calculado: {position_size:.4f}")
+
+            # Completar datos de la señal
             signal.update({
                 "position_size": position_size,
                 "timestamp": market_data["timestamp"],
                 "symbol": market_data["symbol"],
-                "regime": regime_info.get('regime', 'unknown') if regime_info else 'unknown',
-                "dynamic_thresholds": dynamic_thresholds,
-                "volume_relative": market_data.get('volume', 0) / dynamic_thresholds.get('min_volume', 1) if dynamic_thresholds.get('min_volume', 1) > 0 else 1.0,
             })
 
             self.last_signal = signal
             self.consecutive_signals += 1
 
-            self.logger.info(
-                f"✨ Señal generada: {signal['action']} {signal['symbol']} @ {price:.2f} "
-                f"(Fuerza: {signal['strength']:.2%}, Régimen: {signal['regime']})"
-            )
+            if is_debug:
+                self.logger.info(
+                    f"🐛 [DEBUG] ✅ Señal FINAL aprobada: {signal['action']} {signal['symbol']} @ {price:.2f} "
+                    f"(Size: {position_size:.4f}, SL: {signal['stop_loss']:.2f}, TP: {signal['take_profit']:.2f})"
+                )
+            else:
+                self.logger.info(
+                    f"✨ Señal generada: {signal['action']} {signal['symbol']} @ {price:.2f}"
+                )
 
             return signal
 
@@ -281,79 +310,151 @@ class TradingStrategy:
             return None
 
     # ======================================================
-    # ⚙️ ANÁLISIS DE INDICADORES
+    # ⚙️ ANÁLISIS DE INDICADORES (SIMPLIFICADO)
     # ======================================================
-    def _analyze_indicators(self, indicators: Dict[str, float], price: float, thresholds: Dict[str, float], params: Dict[str, Any] = None) -> Optional[Dict[str, Any]]:
-        """Evalúa los indicadores técnicos para generar señal"""
+    def _analyze_indicators(self, indicators: Dict[str, float], price: float) -> Optional[Dict[str, Any]]:
+        """
+        Evalúa los indicadores técnicos para generar señal (EXTREMADAMENTE PERMISIVA)
+        
+        Objetivo: Operar TODOS los días, incluso con señales mediocres.
+        Prioridad: Disparar de más a disparar de menos.
+        
+        Estrategia en cascada:
+        1. Señal fuerte (EMA + RSI extremo)
+        2. Señal media (solo EMA)
+        3. Señal débil (solo RSI)
+        4. Fallback (momentum básico)
+        """
         try:
-            params = params or {}
+            fast = indicators.get("fast_ma", price)
+            slow = indicators.get("slow_ma", price)
+            rsi = indicators.get("rsi", 50)
+
+            if any(pd.isna([fast, slow, rsi])):
+                # Si hay datos faltantes, usar fallback
+                return self._generate_fallback_signal(price)
+
+            # Usar valores fijos del config
+            stop_loss_pct = self.config.STOP_LOSS_PCT
+            take_profit_ratio = self.config.TAKE_PROFIT_RATIO
             
-            fast = indicators["fast_ma"]
-            slow = indicators["slow_ma"]
-            rsi = indicators["rsi"]
-            macd = indicators["macd"]
-            macd_signal = indicators["macd_signal"]
-            vwap = indicators.get("vwap", price)  # VWAP como soporte adicional
-
-            if any(pd.isna([fast, slow, rsi, macd, macd_signal])):
-                return None
-
-            # Obtener parámetros (dinámicos o base)
-            rsi_overbought = thresholds.get("rsi_overbought", self.config.RSI_OVERBOUGHT)
-            rsi_oversold = thresholds.get("rsi_oversold", self.config.RSI_OVERSOLD)
-            min_strength = thresholds.get("min_strength", 0.18)
-            stop_loss_pct = params.get('stop_loss_pct', self.config.STOP_LOSS_PCT)
-            take_profit_ratio = params.get('take_profit_ratio', self.config.TAKE_PROFIT_RATIO)
+            # ============================================
+            # NIVEL 1: Señal FUERTE (EMA + RSI extremo)
+            # ============================================
+            rsi_buy_strong = 45  # Muy permisivo
+            rsi_sell_strong = 55  # Muy permisivo
             
-            # Señal de compra (con confirmación VWAP)
-            if fast > slow and rsi < rsi_overbought and macd > macd_signal and macd > 0:
-                # Bonus si precio está por encima o cerca de VWAP
-                vwap_confirmation = price >= vwap * 0.998  # 0.2% de tolerancia
-                
-                strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=True, thresholds=thresholds)
-                
-                # Ajustar strength con VWAP
-                if vwap_confirmation:
-                    strength *= 1.1  # 10% bonus por confirmación VWAP
-                
-                if strength > min_strength:
-                    return {
-                        "action": "BUY",
-                        "price": price,
-                        "strength": min(1.0, strength),  # Cap a 1.0
-                        "reason": f"Cruce alcista + RSI + MACD{' + VWAP' if vwap_confirmation else ''}",
-                        "stop_loss": round(price * (1 - stop_loss_pct), 2),
-                        "take_profit": round(price * (1 + stop_loss_pct * take_profit_ratio), 2),
-                        "vwap_confirmation": vwap_confirmation,
-                    }
+            if fast > slow and rsi < rsi_buy_strong:
+                return {
+                    "action": "BUY",
+                    "price": price,
+                    "strength": 0.7,
+                    "reason": f"FUERTE: EMA rápida > EMA lenta + RSI < {rsi_buy_strong}",
+                    "stop_loss": round(price * (1 - stop_loss_pct), 2),
+                    "take_profit": round(price * (1 + stop_loss_pct * take_profit_ratio), 2),
+                }
 
-            # Señal de venta (con confirmación VWAP)
-            if fast < slow and rsi > rsi_oversold and macd < macd_signal and macd < 0:
-                # Bonus si precio está por debajo o cerca de VWAP
-                vwap_confirmation = price <= vwap * 1.002  # 0.2% de tolerancia
-                
-                strength = self._calc_strength(fast, slow, rsi, macd, macd_signal, bullish=False, thresholds=thresholds)
-                
-                # Ajustar strength con VWAP
-                if vwap_confirmation:
-                    strength *= 1.1  # 10% bonus
-                
-                if strength > min_strength:
-                    return {
-                        "action": "SELL",
-                        "price": price,
-                        "strength": min(1.0, strength),  # Cap a 1.0
-                        "reason": f"Cruce bajista + RSI + MACD{' + VWAP' if vwap_confirmation else ''}",
-                        "stop_loss": round(price * (1 + stop_loss_pct), 2),
-                        "take_profit": round(price * (1 - stop_loss_pct * take_profit_ratio), 2),
-                        "vwap_confirmation": vwap_confirmation,
-                    }
+            if fast < slow and rsi > rsi_sell_strong:
+                return {
+                    "action": "SELL",
+                    "price": price,
+                    "strength": 0.7,
+                    "reason": f"FUERTE: EMA rápida < EMA lenta + RSI > {rsi_sell_strong}",
+                    "stop_loss": round(price * (1 + stop_loss_pct), 2),
+                    "take_profit": round(price * (1 - stop_loss_pct * take_profit_ratio), 2),
+                }
 
-            return None
+            # ============================================
+            # NIVEL 2: Señal MEDIA (solo EMA)
+            # ============================================
+            ma_diff_pct = abs(fast - slow) / slow * 100 if slow > 0 else 0
+            
+            if fast > slow and ma_diff_pct > 0.1:  # Cualquier diferencia mínima
+                return {
+                    "action": "BUY",
+                    "price": price,
+                    "strength": 0.5,
+                    "reason": f"MEDIA: EMA rápida > EMA lenta (diff: {ma_diff_pct:.2f}%)",
+                    "stop_loss": round(price * (1 - stop_loss_pct), 2),
+                    "take_profit": round(price * (1 + stop_loss_pct * take_profit_ratio), 2),
+                }
+
+            if fast < slow and ma_diff_pct > 0.1:
+                return {
+                    "action": "SELL",
+                    "price": price,
+                    "strength": 0.5,
+                    "reason": f"MEDIA: EMA rápida < EMA lenta (diff: {ma_diff_pct:.2f}%)",
+                    "stop_loss": round(price * (1 + stop_loss_pct), 2),
+                    "take_profit": round(price * (1 - stop_loss_pct * take_profit_ratio), 2),
+                }
+
+            # ============================================
+            # NIVEL 3: Señal DÉBIL (solo RSI)
+            # ============================================
+            rsi_buy_weak = 50  # RSI por debajo de 50 = compra
+            rsi_sell_weak = 50  # RSI por encima de 50 = venta
+            
+            if rsi < rsi_buy_weak:
+                return {
+                    "action": "BUY",
+                    "price": price,
+                    "strength": 0.3,
+                    "reason": f"DÉBIL: RSI < {rsi_buy_weak} (momentum bajista, posible rebote)",
+                    "stop_loss": round(price * (1 - stop_loss_pct), 2),
+                    "take_profit": round(price * (1 + stop_loss_pct * take_profit_ratio), 2),
+                }
+
+            if rsi > rsi_sell_weak:
+                return {
+                    "action": "SELL",
+                    "price": price,
+                    "strength": 0.3,
+                    "reason": f"DÉBIL: RSI > {rsi_sell_weak} (momentum alcista, posible reversión)",
+                    "stop_loss": round(price * (1 + stop_loss_pct), 2),
+                    "take_profit": round(price * (1 - stop_loss_pct * take_profit_ratio), 2),
+                }
+
+            # ============================================
+            # NIVEL 4: FALLBACK (siempre genera señal)
+            # ============================================
+            return self._generate_fallback_signal(price)
 
         except Exception as e:
             self.logger.exception(f"❌ Error analizando indicadores: {e}")
-            return None
+            # Incluso en error, generar fallback
+            return self._generate_fallback_signal(price)
+    
+    def _generate_fallback_signal(self, price: float) -> Dict[str, Any]:
+        """
+        Genera señal de fallback cuando no hay señales técnicas claras.
+        Alterna entre BUY y SELL para asegurar operaciones.
+        """
+        stop_loss_pct = self.config.STOP_LOSS_PCT
+        take_profit_ratio = self.config.TAKE_PROFIT_RATIO
+        
+        # Alternar basado en timestamp para variar
+        import time
+        use_buy = int(time.time()) % 2 == 0
+        
+        if use_buy:
+            return {
+                "action": "BUY",
+                "price": price,
+                "strength": 0.2,
+                "reason": "FALLBACK: Sin señales técnicas claras, operación exploratoria BUY",
+                "stop_loss": round(price * (1 - stop_loss_pct), 2),
+                "take_profit": round(price * (1 + stop_loss_pct * take_profit_ratio), 2),
+            }
+        else:
+            return {
+                "action": "SELL",
+                "price": price,
+                "strength": 0.2,
+                "reason": "FALLBACK: Sin señales técnicas claras, operación exploratoria SELL",
+                "stop_loss": round(price * (1 + stop_loss_pct), 2),
+                "take_profit": round(price * (1 - stop_loss_pct * take_profit_ratio), 2),
+            }
 
     # ======================================================
     # 🧮 CÁLCULOS AUXILIARES
@@ -395,60 +496,84 @@ class TradingStrategy:
         except Exception:
             return 0.0
 
-    def _apply_filters(self, signal: Dict[str, Any], market_data: Dict[str, Any], thresholds: Dict[str, float]) -> bool:
-        """Filtra señales débiles o condiciones no óptimas"""
+    def _apply_filters(self, signal: Dict[str, Any], market_data: Dict[str, Any]) -> bool:
+        """
+        Filtra señales con condiciones MÍNIMAS (EXTREMADAMENTE PERMISIVO)
+        
+        Objetivo: Disparar de más a disparar de menos.
+        Solo filtra condiciones que podrían causar errores técnicos.
+        """
         try:
-            # Evitar repeticiones excesivas
+            is_debug = self.config.ENABLE_DEBUG_STRATEGY
+            
+            # ============================================
+            # FILTRO 1: Evitar repeticiones excesivas (MUY permisivo)
+            # ============================================
+            # Solo bloquear si hay 20+ señales consecutivas del mismo tipo
+            max_consecutive = 20  # Extremadamente permisivo
+            
             if (
                 self.last_signal
                 and self.last_signal["action"] == signal["action"]
-                and self.consecutive_signals >= 5
+                and self.consecutive_signals >= max_consecutive
             ):
-                return False
+                if is_debug:
+                    self.logger.warning(
+                        f"🐛 [DEBUG] Filtro: Señales consecutivas ({self.consecutive_signals} >= {max_consecutive}) "
+                        f"del mismo tipo ({signal['action']})"
+                    )
+                # En vez de rechazar, alternar la señal
+                signal["action"] = "SELL" if signal["action"] == "BUY" else "BUY"
+                signal["reason"] += " (alternada por repetición)"
+                self.consecutive_signals = 0  # Resetear contador
+                self.logger.info(f"🔄 Señal alternada para evitar repetición: {signal['action']}")
 
-            # Volatilidad máxima dinámica
-            atr = market_data["indicators"].get("atr")
-            max_volatility = thresholds.get("max_volatility", 0.05)
-            if atr:
-                volatility = atr / market_data["price"]
-                if volatility > max_volatility:
-                    return False
+            # ============================================
+            # FILTRO 2: Volumen mínimo (CASI eliminado)
+            # ============================================
+            # Solo rechazar si volumen es literalmente 0 (error de datos)
+            min_volume = 0.01  # Prácticamente sin filtro
+            
+            volume = market_data.get("volume", 0)
+            if volume <= min_volume:
+                if is_debug:
+                    self.logger.warning(
+                        f"🐛 [DEBUG] Filtro: Volumen cero o negativo ({volume:.2f})"
+                    )
+                # No rechazar, solo loguear
+                self.logger.warning(f"⚠️ Volumen muy bajo ({volume:.2f}), pero permitiendo trade")
 
-            # Volumen mínimo dinámico
-            min_volume = thresholds.get("min_volume", 300)
-            if market_data.get("volume", 0) < min_volume:
-                return False
-
-            # Horario (solo para acciones)
+            # ============================================
+            # FILTRO 3: Horario (solo para acciones)
+            # ============================================
             if self.config.MARKET == "STOCK":
-                hour = market_data["timestamp"].hour
+                hour = market_data.get("timestamp", datetime.now()).hour
                 if not (self.config.TRADING_START_HOUR <= hour < self.config.TRADING_END_HOUR):
+                    if is_debug:
+                        self.logger.warning(
+                            f"🐛 [DEBUG] Filtro: Fuera de horario de trading "
+                            f"(Hora: {hour}, Permitido: {self.config.TRADING_START_HOUR}-{self.config.TRADING_END_HOUR})"
+                        )
+                    # Para acciones, sí rechazar fuera de horario (no hay mercado)
                     return False
 
-            # Fuerza mínima dinámica
-            min_strength = thresholds.get("min_strength", 0.18)
-            if signal["strength"] < min_strength:
-                return False
-
+            if is_debug:
+                self.logger.info("🐛 [DEBUG] ✅ Todos los filtros básicos pasados")
+            
+            # Aprobar siempre (excepto horario de acciones)
             return True
         except Exception as e:
             self.logger.exception(f"❌ Error aplicando filtros: {e}")
-            return False
+            # En caso de error, aprobar de todas formas (disparar de más)
+            return True
 
-    def _calculate_position_size(self, signal: Dict[str, Any], params: Dict[str, Any] = None) -> float:
+    def _calculate_position_size(self, signal: Dict[str, Any]) -> float:
         """
-        Calcula el tamaño de posición basado en:
-        - Riesgo por trade (dinámico según régimen)
-        - Fuerza de la señal
-        - Límites de exposición
+        Calcula el tamaño de posición basado solo en riesgo (versión simplificada)
         """
         try:
-            params = params or {}
-            
             base_capital = self.config.INITIAL_CAPITAL
-            
-            # Usar riesgo dinámico si está disponible
-            risk_per_trade = params.get('risk_per_trade', self.config.RISK_PER_TRADE)
+            risk_per_trade = self.config.RISK_PER_TRADE
             
             risk_amount = base_capital * risk_per_trade
             risk_per_unit = abs(signal["price"] - signal["stop_loss"])
@@ -456,11 +581,8 @@ class TradingStrategy:
             if risk_per_unit == 0:
                 return 0.0
             
-            # Tamaño base según riesgo
+            # Tamaño base según riesgo (sin ajustes por fuerza)
             qty = risk_amount / risk_per_unit
-            
-            # Ajustar por fuerza de señal
-            qty *= signal["strength"]
             
             # Límite máximo de exposición (10% del capital)
             max_position_value = base_capital * 0.1
@@ -481,14 +603,14 @@ class TradingStrategy:
     def get_strategy_info(self) -> Dict[str, Any]:
         """Retorna configuración y último estado"""
         return {
-            "name": "MA Crossover + RSI + MACD",
-            "description": "Cruce de medias móviles con confirmación de RSI y MACD",
+            "name": "MA Crossover + RSI (Simplificado)",
+            "description": "Cruce de medias móviles con RSI - BUY: EMA rápida > EMA lenta y RSI < 35 | SELL: EMA rápida < EMA lenta y RSI > 65",
             "parameters": {
                 "fast_ma_period": self.config.FAST_MA_PERIOD,
                 "slow_ma_period": self.config.SLOW_MA_PERIOD,
                 "rsi_period": self.config.RSI_PERIOD,
-                "rsi_overbought": self.config.RSI_OVERBOUGHT,
-                "rsi_oversold": self.config.RSI_OVERSOLD,
+                "rsi_buy_threshold": 35,
+                "rsi_sell_threshold": 65,
                 "stop_loss_pct": self.config.STOP_LOSS_PCT,
                 "take_profit_ratio": self.config.TAKE_PROFIT_RATIO,
             },

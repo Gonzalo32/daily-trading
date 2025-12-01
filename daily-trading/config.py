@@ -95,6 +95,17 @@ class Config:
     RETRAIN_FREQUENCY = int(os.getenv("RETRAIN_FREQUENCY", "7"))  # días
 
     # ==============================
+    # 🐛 DEBUG MODE
+    # ==============================
+    ENABLE_DEBUG_STRATEGY = os.getenv("ENABLE_DEBUG_STRATEGY", "false").lower() == "true"
+
+    # ==============================
+    # 🚀 MVP MODE (Minimum Viable Product)
+    # ==============================
+    MVP_MODE_ENABLED = os.getenv("MVP_MODE_ENABLED", "true").lower() == "true"
+    MVP_MIN_TRADES_FOR_ADVANCED_FEATURES = int(os.getenv("MVP_MIN_TRADES_FOR_ADVANCED_FEATURES", "500"))
+
+    # ==============================
     # 📆 BACKTESTING
     # ==============================
     BACKTEST_START_DATE = os.getenv("BACKTEST_START_DATE", "2023-01-01")
