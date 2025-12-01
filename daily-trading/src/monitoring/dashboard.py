@@ -88,7 +88,7 @@ class Dashboard:
         """Iniciar el dashboard"""
         try:
             self.is_running = True
-            self.logger.info(f"🚀 Dashboard en puerto {self.config.DASHBOARD_PORT}")
+            self.logger.info(f"🚀 Dashboard iniciando en puerto {self.config.DASHBOARD_PORT}")
             
             config = uvicorn.Config(
                 self.app, 
@@ -97,27 +97,45 @@ class Dashboard:
                 log_level="info",
                 loop="asyncio"
             )
-            server = uvicorn.Server(config)
+            self.server = uvicorn.Server(config)
             
+            # Iniciar el servidor en una tarea en segundo plano
             async def run_server():
-                await server.serve()
+                try:
+                    await self.server.serve()
+                except Exception as e:
+                    self.logger.error(f"❌ Error en servidor dashboard: {e}")
+                    self.is_running = False
             
-            task = asyncio.create_task(run_server())
-            await asyncio.sleep(0.1)
+            # Crear tarea y no esperar (corre en segundo plano)
+            self.server_task = asyncio.create_task(run_server())
             
-            self.logger.info(f"✅ Dashboard: http://localhost:{self.config.DASHBOARD_PORT}")
+            # Esperar un momento para que el servidor inicie
+            await asyncio.sleep(2)
+            
+            self.logger.info(f"✅ Dashboard disponible en: http://localhost:{self.config.DASHBOARD_PORT}")
+            self.logger.info(f"✅ Dashboard también en: http://127.0.0.1:{self.config.DASHBOARD_PORT}")
             
         except Exception as e:
-            self.logger.error(f"❌ Error: {e}")
+            self.logger.error(f"❌ Error iniciando dashboard: {e}")
+            self.is_running = False
             raise
             
     async def stop(self):
         """Detener el dashboard"""
         try:
             self.is_running = False
+            if hasattr(self, 'server'):
+                self.server.should_exit = True
+            if hasattr(self, 'server_task'):
+                self.server_task.cancel()
+                try:
+                    await self.server_task
+                except asyncio.CancelledError:
+                    pass
             self.logger.info("🛑 Dashboard detenido")
         except Exception as e:
-            self.logger.error(f"❌ Error: {e}")
+            self.logger.error(f"❌ Error deteniendo dashboard: {e}")
             
     async def update_data(self, data: Dict[str, Any]):
         """Actualizar datos del dashboard"""
