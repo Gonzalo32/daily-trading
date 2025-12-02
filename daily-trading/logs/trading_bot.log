@@ -1,47 +1,121 @@
-2025-12-01 13:50:46 | INFO | INFO | ✅ Sistema de logging inicializado correctamente.
-2025-12-01 13:50:46 | INFO | src.data.market_data | ✅ Sistema de logging inicializado correctamente.
-2025-12-01 13:50:46 | INFO | src.strategy.trading_strategy | ✅ Sistema de logging inicializado correctamente.
-2025-12-01 13:50:46 | INFO | src.strategy.dynamic_parameters | ✅ Sistema de logging inicializado correctamente.
-2025-12-01 13:50:46 | INFO | src.risk.risk_manager | ✅ Sistema de logging inicializado correctamente.
-2025-12-01 13:50:46 | INFO | src.execution.order_executor | ✅ Sistema de logging inicializado correctamente.
-2025-12-01 13:50:46 | INFO | src.strategy.market_regime | ✅ Sistema de logging inicializado correctamente.
-2025-12-01 13:50:46 | INFO | src.risk.advanced_position_manager | ✅ Sistema de logging inicializado correctamente.
-2025-12-01 13:50:46 | INFO | INFO | 🚀 Iniciando Bot de Day Trading Avanzado...
-2025-12-01 13:50:46 | INFO | INFO | ============================================================
-2025-12-01 13:50:46 | INFO | INFO | 🔧 Inicializando componentes...
-2025-12-01 13:50:48 | INFO | src.data.market_data | ✅ Conexión con Binance establecida (modo testnet: True)
-2025-12-01 13:50:48 | INFO | src.data.market_data | ✅ Proveedor de datos inicializado correctamente
-2025-12-01 13:50:50 | INFO | src.execution.order_executor | ✅ Conexión con Binance establecida (modo testnet: True)
-2025-12-01 13:50:50 | INFO | src.execution.order_executor | ✅ Ejecutor de órdenes inicializado correctamente
-2025-12-01 13:50:50 | INFO | INFO | ✅ Componentes inicializados correctamente
-2025-12-01 13:50:50 | WARNING | INFO | ============================================================
-2025-12-01 13:50:50 | WARNING | INFO | 🚀 MODO MVP ACTIVADO
-2025-12-01 13:50:50 | WARNING | INFO | ============================================================
-2025-12-01 13:50:50 | WARNING | INFO | 📊 Trades históricos: 0 / 500
-2025-12-01 13:50:50 | WARNING | INFO | 
-2025-12-01 13:50:50 | WARNING | INFO | ✅ FEATURES ACTIVADAS (prioridad: sample size):
-2025-12-01 13:50:50 | WARNING | INFO |    - Señales técnicas básicas (EMA + RSI)
-2025-12-01 13:50:50 | WARNING | INFO |    - Logging completo para ML
-2025-12-01 13:50:50 | WARNING | INFO |    - Gestión de riesgo básica
-2025-12-01 13:50:50 | WARNING | INFO |    - Límites de trades aumentados (20/día)
-2025-12-01 13:50:50 | WARNING | INFO | 
-2025-12-01 13:50:50 | WARNING | INFO | ❌ FEATURES DESACTIVADAS (hasta 500 trades):
-2025-12-01 13:50:50 | WARNING | INFO |    - Filtro ML (no hay suficientes datos)
-2025-12-01 13:50:50 | WARNING | INFO |    - Análisis de régimen de mercado
-2025-12-01 13:50:50 | WARNING | INFO |    - Parámetros dinámicos avanzados
-2025-12-01 13:50:50 | WARNING | INFO |    - Validaciones de riesgo estrictas
-2025-12-01 13:50:50 | WARNING | INFO |    - Filtros de volatilidad/volumen restrictivos
-2025-12-01 13:50:50 | WARNING | INFO | 
-2025-12-01 13:50:50 | WARNING | INFO | 🎯 OBJETIVO: Acumular 500+ trades para entrenar ML
-2025-12-01 13:50:50 | WARNING | INFO | ============================================================
-2025-12-01 13:50:50 | INFO | INFO | 🚀 MODO MVP: Saltando preparación diaria avanzada
-2025-12-01 13:50:50 | INFO | INFO | 🔄 Iniciando bucle principal de trading...
-2025-12-01 13:50:50 | INFO | INFO | 🌅 Nuevo día detectado, ejecutando preparación diaria...
-2025-12-01 13:50:50 | INFO | INFO | ============================================================
-2025-12-01 13:50:50 | INFO | INFO | 📋 INICIANDO PREPARACIÓN DIARIA
-2025-12-01 13:50:50 | INFO | INFO | ============================================================
-2025-12-01 13:50:50 | INFO | INFO | 📥 Descargando histórico reciente...
-2025-12-01 13:50:51 | INFO | src.data.market_data | 📊 Histórico obtenido: 607 velas de BTC/USDT (1h)
-2025-12-01 13:50:51 | INFO | INFO | ✅ Histórico descargado: 607 períodos
-2025-12-01 13:50:51 | INFO | INFO | 🔍 Analizando régimen de mercado...
-2025-12-01 13:50:51 | INFO | src.strategy.market_regime | 🔍 Analizando régimen de mercado para BTC/USDT...
+2025-12-01 23:20:36 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86738.57
+2025-12-01 23:20:36 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86738.57 (Fuerza: 50.00%)
+2025-12-01 23:20:36 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:20:37 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5413874 a 86738.5700
+2025-12-01 23:20:37 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5413874
+2025-12-01 23:20:37 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:20:48 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86748.28
+2025-12-01 23:20:48 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86748.28 (Fuerza: 50.00%)
+2025-12-01 23:20:48 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:20:49 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5413901 a 86748.2800
+2025-12-01 23:20:49 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5413901
+2025-12-01 23:20:49 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:20:59 | INFO | INFO | 💓 Bot activo | Iteración #1210 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-01 23:21:00 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86592.39
+2025-12-01 23:21:00 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86592.39 (Fuerza: 50.00%)
+2025-12-01 23:21:00 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:21:00 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5413937 a 86592.3900
+2025-12-01 23:21:00 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5413937
+2025-12-01 23:21:00 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:21:11 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86763.73
+2025-12-01 23:21:11 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86763.73 (Fuerza: 50.00%)
+2025-12-01 23:21:11 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:21:13 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5413972 a 86763.7300
+2025-12-01 23:21:13 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5413972
+2025-12-01 23:21:13 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:21:26 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86756.87
+2025-12-01 23:21:26 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86756.87 (Fuerza: 50.00%)
+2025-12-01 23:21:26 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:21:27 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414020 a 86761.3900
+2025-12-01 23:21:27 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414020
+2025-12-01 23:21:27 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:21:37 | INFO | INFO | 💓 Bot activo | Iteración #1213 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-01 23:21:39 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86761.59
+2025-12-01 23:21:39 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86761.59 (Fuerza: 50.00%)
+2025-12-01 23:21:39 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:21:40 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414044 a 86761.5900
+2025-12-01 23:21:40 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414044
+2025-12-01 23:21:40 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:21:50 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86774.72
+2025-12-01 23:21:50 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86774.72 (Fuerza: 50.00%)
+2025-12-01 23:21:50 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:21:51 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414047 a 86774.7200
+2025-12-01 23:21:51 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414047
+2025-12-01 23:21:51 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:22:02 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86557.97
+2025-12-01 23:22:02 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86557.97 (Fuerza: 50.00%)
+2025-12-01 23:22:02 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:22:02 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414075 a 86557.9700
+2025-12-01 23:22:02 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414075
+2025-12-01 23:22:02 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:22:12 | INFO | INFO | 💓 Bot activo | Iteración #1216 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-01 23:22:13 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86761.69
+2025-12-01 23:22:13 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86761.69 (Fuerza: 50.00%)
+2025-12-01 23:22:13 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:22:14 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414106 a 86761.6900
+2025-12-01 23:22:14 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414106
+2025-12-01 23:22:14 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:22:25 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86763.35
+2025-12-01 23:22:25 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86763.35 (Fuerza: 50.00%)
+2025-12-01 23:22:25 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:22:26 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414121 a 86763.4400
+2025-12-01 23:22:26 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414121
+2025-12-01 23:22:26 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:22:37 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86766.49
+2025-12-01 23:22:37 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86766.49 (Fuerza: 50.00%)
+2025-12-01 23:22:37 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:22:37 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414163 a 86766.4900
+2025-12-01 23:22:37 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414163
+2025-12-01 23:22:37 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:22:47 | INFO | INFO | 💓 Bot activo | Iteración #1219 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-01 23:22:48 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86742.74
+2025-12-01 23:22:48 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86742.74 (Fuerza: 50.00%)
+2025-12-01 23:22:48 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:22:49 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414194 a 86742.7400
+2025-12-01 23:22:49 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414194
+2025-12-01 23:22:49 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:23:01 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86742.73
+2025-12-01 23:23:01 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86742.73 (Fuerza: 50.00%)
+2025-12-01 23:23:01 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:23:02 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414214 a 86742.7300
+2025-12-01 23:23:02 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414214
+2025-12-01 23:23:02 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:23:13 | INFO | src.strategy.trading_strategy | 🔄 Señal alternada para evitar repetición: SELL
+2025-12-01 23:23:13 | INFO | src.strategy.trading_strategy | ✨ Señal generada: SELL BTC/USDT @ 86742.74
+2025-12-01 23:23:13 | INFO | INFO | 🔔 Señal generada: SELL BTC/USDT @ 86742.74 (Fuerza: 50.00%)
+2025-12-01 23:23:13 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:23:13 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414221 a 86742.7400
+2025-12-01 23:23:13 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414221
+2025-12-01 23:23:13 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:23:23 | INFO | INFO | 💓 Bot activo | Iteración #1222 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-01 23:23:24 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86770.96
+2025-12-01 23:23:24 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86770.96 (Fuerza: 50.00%)
+2025-12-01 23:23:24 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:23:25 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414368 a 86770.9600
+2025-12-01 23:23:25 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414368
+2025-12-01 23:23:25 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:23:36 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86803.99
+2025-12-01 23:23:36 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86803.99 (Fuerza: 50.00%)
+2025-12-01 23:23:36 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:23:36 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414505 a 86804.0000
+2025-12-01 23:23:36 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414505
+2025-12-01 23:23:36 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:23:47 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86803.99
+2025-12-01 23:23:47 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86803.99 (Fuerza: 50.00%)
+2025-12-01 23:23:47 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:23:48 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414523 a 86803.9900
+2025-12-01 23:23:48 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414523
+2025-12-01 23:23:48 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:23:58 | INFO | INFO | 💓 Bot activo | Iteración #1225 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-01 23:23:58 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86769.80
+2025-12-01 23:23:58 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86769.80 (Fuerza: 50.00%)
+2025-12-01 23:23:58 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:23:59 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414684 a 86769.8000
+2025-12-01 23:23:59 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414684
+2025-12-01 23:23:59 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-01 23:24:10 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 86769.00
+2025-12-01 23:24:10 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 86769.00 (Fuerza: 50.00%)
+2025-12-01 23:24:10 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-01 23:24:10 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414716 a 86769.0000
+2025-12-01 23:24:10 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5414716
+2025-12-01 23:24:10 | ERROR | INFO | ❌ Error en bucle principal: 'position'

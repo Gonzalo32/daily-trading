@@ -603,14 +603,16 @@ class TradingStrategy:
     def get_strategy_info(self) -> Dict[str, Any]:
         """Retorna configuración y último estado"""
         return {
-            "name": "MA Crossover + RSI (Simplificado)",
-            "description": "Cruce de medias móviles con RSI - BUY: EMA rápida > EMA lenta y RSI < 35 | SELL: EMA rápida < EMA lenta y RSI > 65",
+            "name": "MA Crossover + RSI (Extremadamente Permisiva)",
+            "description": "Estrategia en cascada con 4 niveles: 1) Fuerte: EMA + RSI extremo (RSI < 45 o > 55), 2) Media: Solo EMA (diff > 0.1%), 3) Débil: Solo RSI (RSI < 50 = BUY, > 50 = SELL), 4) Fallback: Siempre genera señal",
             "parameters": {
                 "fast_ma_period": self.config.FAST_MA_PERIOD,
                 "slow_ma_period": self.config.SLOW_MA_PERIOD,
                 "rsi_period": self.config.RSI_PERIOD,
-                "rsi_buy_threshold": 35,
-                "rsi_sell_threshold": 65,
+                "rsi_buy_strong": 45,
+                "rsi_sell_strong": 55,
+                "rsi_buy_weak": 50,
+                "rsi_sell_weak": 50,
                 "stop_loss_pct": self.config.STOP_LOSS_PCT,
                 "take_profit_ratio": self.config.TAKE_PROFIT_RATIO,
             },
