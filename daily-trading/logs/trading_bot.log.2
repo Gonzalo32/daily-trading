@@ -1,9 +1,28 @@
-2025-12-02 09:16:42 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:42 | ERROR | INFO | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:43 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87469.54
-2025-12-02 09:16:43 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87469.54 (Fuerza: 50.00%)
-2025-12-02 09:16:43 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
-2025-12-02 09:16:44 | ERROR | src.execution.order_executor | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
+    response = await self.privatePostOrder(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11460, in request
+    response = await self.fetch2(path, api, method, params, headers, body, config)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 989, in fetch2
+    raise e
+  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 978, in fetch2
+    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 263, in fetch
+    self.handle_errors(http_status_code, http_status_text, url, method, headers, http_response, json_response, request_headers, request_body)
+    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11404, in handle_errors
+    self.throw_exactly_matched_exception(self.exceptions['exact'], message, self.id + ' ' + message)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\base\exchange.py", line 5342, in throw_exactly_matched_exception
+    raise exact[string](message)
+ccxt.base.errors.InsufficientFunds: binance Account has insufficient balance for requested action.
+2025-12-02 09:04:09 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance Account has insufficient balance for requested action.
+2025-12-02 09:04:09 | ERROR | INFO | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
+2025-12-02 09:04:11 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87392.22
+2025-12-02 09:04:11 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87392.22 (Fuerza: 50.00%)
+2025-12-02 09:04:11 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 09:04:12 | ERROR | src.execution.order_executor | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
 Traceback (most recent call last):
   File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 115, in _execute_crypto_order
     order = await self.exchange.create_order(
@@ -31,12 +50,12 @@ Traceback (most recent call last):
   File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\base\exchange.py", line 5342, in throw_exactly_matched_exception
     raise exact[string](message)
 ccxt.base.errors.InsufficientFunds: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:44 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:44 | ERROR | INFO | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:45 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87469.54
-2025-12-02 09:16:45 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87469.54 (Fuerza: 50.00%)
-2025-12-02 09:16:45 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
-2025-12-02 09:16:46 | ERROR | src.execution.order_executor | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
+2025-12-02 09:04:12 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance Account has insufficient balance for requested action.
+2025-12-02 09:04:12 | ERROR | INFO | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
+2025-12-02 09:04:13 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87393.58
+2025-12-02 09:04:13 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87393.58 (Fuerza: 50.00%)
+2025-12-02 09:04:13 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 09:04:14 | ERROR | src.execution.order_executor | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
 Traceback (most recent call last):
   File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 115, in _execute_crypto_order
     order = await self.exchange.create_order(
@@ -64,46 +83,18 @@ Traceback (most recent call last):
   File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\base\exchange.py", line 5342, in throw_exactly_matched_exception
     raise exact[string](message)
 ccxt.base.errors.InsufficientFunds: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:46 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:46 | ERROR | INFO | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:47 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87469.54
-2025-12-02 09:16:47 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87469.54 (Fuerza: 50.00%)
-2025-12-02 09:16:47 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
-2025-12-02 09:16:48 | ERROR | src.execution.order_executor | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 115, in _execute_crypto_order
-    order = await self.exchange.create_order(
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<4 lines>...
-    )
-    ^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 6141, in create_order
-    response = await self.privatePostOrder(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11460, in request
-    response = await self.fetch2(path, api, method, params, headers, body, config)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 989, in fetch2
-    raise e
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 978, in fetch2
-    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 263, in fetch
-    self.handle_errors(http_status_code, http_status_text, url, method, headers, http_response, json_response, request_headers, request_body)
-    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11404, in handle_errors
-    self.throw_exactly_matched_exception(self.exceptions['exact'], message, self.id + ' ' + message)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\base\exchange.py", line 5342, in throw_exactly_matched_exception
-    raise exact[string](message)
-ccxt.base.errors.InsufficientFunds: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:48 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:48 | ERROR | INFO | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
-2025-12-02 09:16:49 | INFO | INFO | 📡 Señal recibida: 2
-2025-12-02 09:16:49 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-02 09:16:49 | WARNING | INFO | ⚠️ Cerrando posiciones abiertas...
-2025-12-02 09:16:49 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-02 09:16:49 | WARNING | INFO | ⚠️ Cerrando posiciones abiertas...
-2025-12-02 09:16:49 | INFO | src.execution.order_executor | 💸 Posición cerrada (BTC/USDT) | PnL: -0.23
-2025-12-02 09:16:49 | INFO | INFO | ✅ Bot detenido correctamente
-2025-12-02 09:16:50 | INFO | src.execution.order_executor | 💸 Posición cerrada (BTC/USDT) | PnL: -0.23
+2025-12-02 09:04:14 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance Account has insufficient balance for requested action.
+2025-12-02 09:04:14 | ERROR | INFO | ❌ Error ejecutando orden: binance Account has insufficient balance for requested action.
+2025-12-02 09:04:15 | INFO | INFO | 💓 Bot activo | Iteración #81 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-02 09:04:15 | INFO | src.strategy.trading_strategy | 🔄 Señal alternada para evitar repetición: SELL
+2025-12-02 09:04:15 | INFO | src.strategy.trading_strategy | ✨ Señal generada: SELL BTC/USDT @ 87393.58
+2025-12-02 09:04:15 | INFO | INFO | 🔔 Señal generada: SELL BTC/USDT @ 87393.58 (Fuerza: 50.00%)
+2025-12-02 09:04:15 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 09:04:16 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5548779 a 87393.5900
+2025-12-02 09:04:16 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5548779
+2025-12-02 09:04:16 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 09:04:17 | INFO | INFO | 📡 Señal recibida: 2
+2025-12-02 09:04:17 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
+2025-12-02 09:04:17 | INFO | INFO | ✅ Bot detenido correctamente
+2025-12-02 09:04:26 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
+2025-12-02 09:04:26 | INFO | INFO | ✅ Bot detenido correctamente

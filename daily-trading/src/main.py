@@ -89,12 +89,26 @@ async def run_once():
     res = await executor.execute_order(sized_signal)
 
     if res.get("success") and res.get("order"):
+        
         opened = res["order"]
         logger.info(
             f"✅ Orden abierta: {opened['id']} "
             f"{opened['side']} {opened['symbol']} size={opened['size']} "
             f"entry={opened['entry_price']}"
         )
+        
+        position = {
+            "id": opened["id"],
+            "symbol": opened["symbol"],
+            "side": opened["side"],
+            "entry_price": opened["entry_price"],
+            "quantity": opened["size"],
+            "stop_loss": sized_signal["stop_loss"],
+            "take_profit": sized_signal["take_profit"],
+            "open_time": datetime.utcnow(),
+        }
+        
+        executor.positions.append(position)
     else:
         logger.error(f"❌ Falló la ejecución de la orden: {res.get('error')}")
 

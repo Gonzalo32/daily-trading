@@ -1,100 +1,100 @@
-    self.handle_errors(http_status_code, http_status_text, url, method, headers, http_response, json_response, request_headers, request_body)
-    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11428, in handle_errors
-    self.throw_exactly_matched_exception(self.exceptions['exact'], error, feedback)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\base\exchange.py", line 5342, in throw_exactly_matched_exception
-    raise exact[string](message)
-ccxt.base.errors.InvalidNonce: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:45:53 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:45:53 | ERROR | INFO | ❌ Error: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:45:55 | ERROR | src.execution.order_executor | ❌ Error ejecutando orden: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 111, in _execute_crypto_order
-    order = await self.exchange.create_order(
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<4 lines>...
-    )
-    ^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 6141, in create_order
-    response = await self.privatePostOrder(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11460, in request
-    response = await self.fetch2(path, api, method, params, headers, body, config)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 987, in fetch2
-    raise e
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 978, in fetch2
-    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 263, in fetch
-    self.handle_errors(http_status_code, http_status_text, url, method, headers, http_response, json_response, request_headers, request_body)
-    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11428, in handle_errors
-    self.throw_exactly_matched_exception(self.exceptions['exact'], error, feedback)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\base\exchange.py", line 5342, in throw_exactly_matched_exception
-    raise exact[string](message)
-ccxt.base.errors.InvalidNonce: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:45:55 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:45:55 | ERROR | INFO | ❌ Error: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:45:58 | ERROR | src.execution.order_executor | ❌ Error ejecutando orden: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 111, in _execute_crypto_order
-    order = await self.exchange.create_order(
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<4 lines>...
-    )
-    ^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 6141, in create_order
-    response = await self.privatePostOrder(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11460, in request
-    response = await self.fetch2(path, api, method, params, headers, body, config)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 987, in fetch2
-    raise e
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 978, in fetch2
-    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 263, in fetch
-    self.handle_errors(http_status_code, http_status_text, url, method, headers, http_response, json_response, request_headers, request_body)
-    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11428, in handle_errors
-    self.throw_exactly_matched_exception(self.exceptions['exact'], error, feedback)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\base\exchange.py", line 5342, in throw_exactly_matched_exception
-    raise exact[string](message)
-ccxt.base.errors.InvalidNonce: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:45:58 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:45:58 | ERROR | INFO | ❌ Error: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:46:00 | ERROR | src.execution.order_executor | ❌ Error ejecutando orden: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 111, in _execute_crypto_order
-    order = await self.exchange.create_order(
-            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    ...<4 lines>...
-    )
-    ^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 6141, in create_order
-    response = await self.privatePostOrder(request)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11460, in request
-    response = await self.fetch2(path, api, method, params, headers, body, config)
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 987, in fetch2
-    raise e
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 978, in fetch2
-    return await self.fetch(request['url'], request['method'], request['headers'], request['body'])
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\base\exchange.py", line 263, in fetch
-    self.handle_errors(http_status_code, http_status_text, url, method, headers, http_response, json_response, request_headers, request_body)
-    ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\async_support\binance.py", line 11428, in handle_errors
-    self.throw_exactly_matched_exception(self.exceptions['exact'], error, feedback)
-    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\venv\Lib\site-packages\ccxt\base\exchange.py", line 5342, in throw_exactly_matched_exception
-    raise exact[string](message)
-ccxt.base.errors.InvalidNonce: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:46:00 | ERROR | src.execution.order_executor | ❌ Falló la ejecución de orden: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
-2025-11-20 10:46:00 | ERROR | INFO | ❌ Error: binance {"code":-1021,"msg":"Timestamp for this request was 1000ms ahead of the server's time."}
+2025-12-02 08:43:53 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87325.04
+2025-12-02 08:43:53 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87325.04 (Fuerza: 50.00%)
+2025-12-02 08:43:53 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:43:54 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5538913 a 87325.0400
+2025-12-02 08:43:54 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5538913
+2025-12-02 08:43:54 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:44:05 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87325.05
+2025-12-02 08:44:05 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87325.05 (Fuerza: 50.00%)
+2025-12-02 08:44:05 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:44:05 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5538976 a 87325.0500
+2025-12-02 08:44:05 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5538976
+2025-12-02 08:44:05 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:44:15 | INFO | INFO | 💓 Bot activo | Iteración #7 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-02 08:44:16 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87320.02
+2025-12-02 08:44:16 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87320.02 (Fuerza: 50.00%)
+2025-12-02 08:44:16 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:44:17 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539030 a 87320.0200
+2025-12-02 08:44:17 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539030
+2025-12-02 08:44:17 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:44:27 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87332.97
+2025-12-02 08:44:27 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87332.97 (Fuerza: 50.00%)
+2025-12-02 08:44:27 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:44:28 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539119 a 87332.9700
+2025-12-02 08:44:28 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539119
+2025-12-02 08:44:28 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:44:39 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87356.37
+2025-12-02 08:44:39 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87356.37 (Fuerza: 50.00%)
+2025-12-02 08:44:39 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:44:39 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539213 a 87356.3700
+2025-12-02 08:44:39 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539213
+2025-12-02 08:44:39 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:44:49 | INFO | INFO | 💓 Bot activo | Iteración #10 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-02 08:44:50 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87353.62
+2025-12-02 08:44:50 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87353.62 (Fuerza: 50.00%)
+2025-12-02 08:44:50 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:44:51 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539290 a 87353.6300
+2025-12-02 08:44:51 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539290
+2025-12-02 08:44:51 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:45:01 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87353.63
+2025-12-02 08:45:01 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87353.63 (Fuerza: 50.00%)
+2025-12-02 08:45:01 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:45:02 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539342 a 87353.6300
+2025-12-02 08:45:02 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539342
+2025-12-02 08:45:02 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:45:13 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87353.63
+2025-12-02 08:45:13 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87353.63 (Fuerza: 50.00%)
+2025-12-02 08:45:13 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:45:13 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539411 a 87353.6300
+2025-12-02 08:45:13 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539411
+2025-12-02 08:45:13 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:45:23 | INFO | INFO | 💓 Bot activo | Iteración #13 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-02 08:45:24 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87353.63
+2025-12-02 08:45:24 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87353.63 (Fuerza: 50.00%)
+2025-12-02 08:45:24 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:45:25 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539478 a 87353.6300
+2025-12-02 08:45:25 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539478
+2025-12-02 08:45:25 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:45:36 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87356.74
+2025-12-02 08:45:36 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87356.74 (Fuerza: 50.00%)
+2025-12-02 08:45:36 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:45:36 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539515 a 87356.7400
+2025-12-02 08:45:36 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539515
+2025-12-02 08:45:36 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:45:47 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87386.57
+2025-12-02 08:45:47 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87386.57 (Fuerza: 50.00%)
+2025-12-02 08:45:47 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:45:48 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539727 a 87386.5800
+2025-12-02 08:45:48 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539727
+2025-12-02 08:45:48 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:45:58 | INFO | INFO | 💓 Bot activo | Iteración #16 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-02 08:45:58 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87435.20
+2025-12-02 08:45:58 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87435.20 (Fuerza: 50.00%)
+2025-12-02 08:45:58 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:45:59 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539941 a 87435.2000
+2025-12-02 08:45:59 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5539941
+2025-12-02 08:45:59 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:46:10 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87435.20
+2025-12-02 08:46:10 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87435.20 (Fuerza: 50.00%)
+2025-12-02 08:46:10 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:46:10 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5540011 a 87435.2000
+2025-12-02 08:46:10 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5540011
+2025-12-02 08:46:10 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:46:21 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87383.26
+2025-12-02 08:46:21 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87383.26 (Fuerza: 50.00%)
+2025-12-02 08:46:21 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:46:22 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5540100 a 87448.6800
+2025-12-02 08:46:22 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5540100
+2025-12-02 08:46:22 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:46:32 | INFO | INFO | 💓 Bot activo | Iteración #19 | PnL: 0.00 | Trades: 0 | Posiciones: 0
+2025-12-02 08:46:32 | INFO | src.strategy.trading_strategy | ✨ Señal generada: BUY BTC/USDT @ 87362.09
+2025-12-02 08:46:32 | INFO | INFO | 🔔 Señal generada: BUY BTC/USDT @ 87362.09 (Fuerza: 50.00%)
+2025-12-02 08:46:32 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-02 08:46:33 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5540179 a 87362.0900
+2025-12-02 08:46:33 | INFO | src.execution.order_executor | ✅ Orden ejecutada: 5540179
+2025-12-02 08:46:33 | ERROR | INFO | ❌ Error en bucle principal: 'position'
+2025-12-02 08:46:38 | INFO | INFO | 📡 Señal recibida: 2
+2025-12-02 08:46:38 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
+2025-12-02 08:46:38 | INFO | INFO | ✅ Bot detenido correctamente
+2025-12-02 08:46:43 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
+2025-12-02 08:46:43 | INFO | INFO | ✅ Bot detenido correctamente

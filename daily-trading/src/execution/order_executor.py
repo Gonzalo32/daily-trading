@@ -20,6 +20,7 @@ class OrderExecutor:
         self.exchange: Optional[ccxt.binance] = None
         self.is_initialized = False
         self.executed_orders: List[Dict[str, Any]] = []
+        self.positions: List[Dict[str, Any]] = []
 
     # ======================================================
     # 🔧 INICIALIZACIÓN
@@ -47,7 +48,10 @@ class OrderExecutor:
                 "apiKey": self.config.BINANCE_API_KEY,
                 "secret": self.config.BINANCE_SECRET_KEY,
                 "enableRateLimit": True,
-                "options": {"defaultType": "spot"},
+                "options": {
+                    "defaultType": "spot",
+                    "adjustForTimeDifference": True
+                },
             })
             if self.config.BINANCE_TESTNET:
                 self.exchange.set_sandbox_mode(True)
@@ -134,7 +138,12 @@ class OrderExecutor:
 
             self.executed_orders.append(position)
             self.logger.info(f"✅ Orden ejecutada: {position['id']} a {entry_price:.4f}")
-            return {"success": True, "order": position, "error": None}
+            return {
+    "success": True,
+    "order": position,
+    "position": position,
+    "error": None
+}
 
         except Exception as e:
             self.logger.exception(f"❌ Error ejecutando orden: {e}")
@@ -154,7 +163,12 @@ class OrderExecutor:
                 "entry_time": datetime.now(),
                 "status": "open",
             }
-            return {"success": True, "order": position, "error": None}
+            return {
+    "success": True,
+    "order": position,
+    "position": position,
+    "error": None
+}
 
         except Exception as e:
             self.logger.exception(f"❌ Error ejecutando orden de acciones: {e}")
