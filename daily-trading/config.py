@@ -24,10 +24,11 @@ class Config:
     # 💰 RIESGO Y CAPITAL
     # ==============================
     INITIAL_CAPITAL = float(os.getenv("INITIAL_CAPITAL", "10000"))
-    MAX_POSITIONS = int(os.getenv("MAX_POSITIONS", "3"))
+    MAX_POSITIONS = int(os.getenv("MAX_POSITIONS", "10"))
 
     # Gestión de riesgo porcentual
-    RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", "0.02"))  # 2% del capital por trade
+    # 2% del capital por trade
+    RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", "0.02"))
     MAX_DAILY_LOSS = float(os.getenv("MAX_DAILY_LOSS", "0.03"))   # 3%
     MAX_DAILY_GAIN = float(os.getenv("MAX_DAILY_GAIN", "0.05"))   # 5%
 
@@ -36,7 +37,8 @@ class Config:
     MAX_POSITION_RISK_PCT = float(os.getenv("MAX_POSITION_RISK_PCT", "1.5"))
 
     STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", "0.01"))      # 1%
-    TAKE_PROFIT_RATIO = float(os.getenv("TAKE_PROFIT_RATIO", "2.5"))  # 2.5:1 ratio (ajustado para mejor riesgo/beneficio)
+    # 2.5:1 ratio (ajustado para mejor riesgo/beneficio)
+    TAKE_PROFIT_RATIO = float(os.getenv("TAKE_PROFIT_RATIO", "2.5"))
 
     # ==============================
     # 📈 ESTRATEGIA TÉCNICA
@@ -44,8 +46,10 @@ class Config:
     FAST_MA_PERIOD = int(os.getenv("FAST_MA_PERIOD", "9"))
     SLOW_MA_PERIOD = int(os.getenv("SLOW_MA_PERIOD", "21"))
     RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
-    RSI_OVERBOUGHT = float(os.getenv("RSI_OVERBOUGHT", "80"))  # Ajustado para más oportunidades
-    RSI_OVERSOLD = float(os.getenv("RSI_OVERSOLD", "20"))  # Ajustado para más oportunidades
+    # Ajustado para más oportunidades
+    RSI_OVERBOUGHT = float(os.getenv("RSI_OVERBOUGHT", "80"))
+    # Ajustado para más oportunidades
+    RSI_OVERSOLD = float(os.getenv("RSI_OVERSOLD", "20"))
 
     # ==============================
     # 🕓 HORARIOS (acciones)
@@ -64,7 +68,8 @@ class Config:
     # Alpaca (para acciones)
     ALPACA_API_KEY = os.getenv("ALPACA_API_KEY", "")
     ALPACA_SECRET_KEY = os.getenv("ALPACA_SECRET_KEY", "")
-    ALPACA_BASE_URL = os.getenv("ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
+    ALPACA_BASE_URL = os.getenv(
+        "ALPACA_BASE_URL", "https://paper-api.alpaca.markets")
 
     # ==============================
     # 🗄️ BASE DE DATOS
@@ -83,7 +88,8 @@ class Config:
     # ==============================
     # 📢 NOTIFICACIONES
     # ==============================
-    ENABLE_NOTIFICATIONS = os.getenv("ENABLE_NOTIFICATIONS", "false").lower() == "true"
+    ENABLE_NOTIFICATIONS = os.getenv(
+        "ENABLE_NOTIFICATIONS", "false").lower() == "true"
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
@@ -97,13 +103,15 @@ class Config:
     # ==============================
     # 🐛 DEBUG MODE
     # ==============================
-    ENABLE_DEBUG_STRATEGY = os.getenv("ENABLE_DEBUG_STRATEGY", "false").lower() == "true"
+    ENABLE_DEBUG_STRATEGY = os.getenv(
+        "ENABLE_DEBUG_STRATEGY", "true").lower() == "true"
 
     # ==============================
     # 🚀 MVP MODE (Minimum Viable Product)
     # ==============================
     MVP_MODE_ENABLED = os.getenv("MVP_MODE_ENABLED", "true").lower() == "true"
-    MVP_MIN_TRADES_FOR_ADVANCED_FEATURES = int(os.getenv("MVP_MIN_TRADES_FOR_ADVANCED_FEATURES", "500"))
+    MVP_MIN_TRADES_FOR_ADVANCED_FEATURES = int(
+        os.getenv("MVP_MIN_TRADES_FOR_ADVANCED_FEATURES", "500"))
 
     # ==============================
     # 📆 BACKTESTING

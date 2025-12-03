@@ -6,7 +6,7 @@ Compatible con Binance (Testnet o Live) y preparado para Alpaca (acciones).
 
 from datetime import datetime
 from typing import Dict, List, Any, Optional
-import ccxt.async_support as ccxt  # ✅ versión asíncrona
+import ccxt.async_support as ccxt
 from config import Config
 from src.utils.logging_setup import setup_logging
 
@@ -16,7 +16,8 @@ class OrderExecutor:
 
     def __init__(self, config: Config):
         self.config = config
-        self.logger = setup_logging(__name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
+        self.logger = setup_logging(
+            __name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
         self.exchange: Optional[ccxt.binance] = None
         self.is_initialized = False
         self.executed_orders: List[Dict[str, Any]] = []
@@ -26,7 +27,6 @@ class OrderExecutor:
     # 🔧 INICIALIZACIÓN
     # ======================================================
     async def initialize(self):
-        """Inicializar el ejecutor de órdenes"""
         try:
             if self.config.MARKET == "CRYPTO":
                 await self._initialize_crypto_exchange()
@@ -36,13 +36,14 @@ class OrderExecutor:
                 raise ValueError(f"Mercado no soportado: {self.config.MARKET}")
 
             self.is_initialized = True
-            self.logger.info("✅ Ejecutor de órdenes inicializado correctamente")
+            self.logger.info(
+                "✅ Ejecutor de órdenes inicializado correctamente")
         except Exception as e:
-            self.logger.exception(f"❌ Error inicializando ejecutor de órdenes: {e}")
+            self.logger.exception(
+                f"❌ Error inicializando ejecutor de órdenes: {e}")
             raise
 
     async def _initialize_crypto_exchange(self):
-        """Inicializar conexión con Binance"""
         try:
             self.exchange = ccxt.binance({
                 "apiKey": self.config.BINANCE_API_KEY,
@@ -53,28 +54,41 @@ class OrderExecutor:
                     "adjustForTimeDifference": True
                 },
             })
+
             if self.config.BINANCE_TESTNET:
                 self.exchange.set_sandbox_mode(True)
 
             await self.exchange.load_markets()
-            self.logger.info("✅ Conexión con Binance establecida (modo testnet: %s)", self.config.BINANCE_TESTNET)
+            self.logger.info(
+                "✅ Conexión con Binance establecida (modo testnet: %s)", self.config.BINANCE_TESTNET)
 
         except Exception as e:
             self.logger.exception(f"❌ Error conectando con Binance: {e}")
             raise
 
     async def _initialize_stock_api(self):
-        """Inicializar API de acciones (Alpaca o similar)"""
         self.logger.info("ℹ️ API de acciones inicializada (modo simulado)")
 
     # ======================================================
-    # 🚀 EJECUCIÓN DE ÓRDENES
+    # 🚀 EJECUCIÓN
     # ======================================================
     async def execute_order(self, signal: Dict[str, Any]) -> Dict[str, Any]:
-        """Ejecutar orden de trading según la señal recibida"""
         try:
             if not self.is_initialized:
-                raise RuntimeError("Ejecutor de órdenes no inicializado")
+                error_msg = "Ejecutor no inicializado"
+                self.logger.error(f"❌ {error_msg}")
+                raise RuntimeError(error_msg)
+
+            # Log completo de la señal antes de ejecutar
+            self.logger.info(
+                f"📤 Ejecutando orden: {signal.get('action', 'UNKNOWN')} {signal.get('symbol', 'UNKNOWN')} "
+                f"@ {signal.get('price', 0):.2f} | "
+                f"Size: {signal.get('position_size', 0):.6f} | "
+                f"SL: {signal.get('stop_loss', 0):.2f} | "
+                f"TP: {signal.get('take_profit', 0):.2f} | "
+                f"Market: {self.config.MARKET} | "
+                f"Mode: {self.config.TRADING_MODE}"
+            )
 
             order_data = self._prepare_order(signal)
 
@@ -83,21 +97,35 @@ class OrderExecutor:
             elif self.config.MARKET == "STOCK":
                 result = await self._execute_stock_order(order_data)
             else:
-                raise ValueError(f"Mercado no soportado: {self.config.MARKET}")
+                error_msg = f"Mercado no soportado: {self.config.MARKET}"
+                self.logger.error(f"❌ {error_msg}")
+                raise ValueError(error_msg)
 
             if result["success"]:
                 self.executed_orders.append(result["order"])
-                self.logger.info(f"✅ Orden ejecutada: {result['order']['id']}")
+                self.positions.append(result["position"])
+                self.logger.info(
+                    f"✅ Trade registrado exitosamente: {result['position']['id']} "
+                    f"({result['position'].get('symbol', 'N/A')})"
+                )
             else:
-                self.logger.error(f"❌ Falló la ejecución de orden: {result['error']}")
+                error_detail = result.get('error', 'Error desconocido')
+                self.logger.error(
+                    f"❌ Falló la ejecución de orden: {error_detail} | "
+                    f"Signal: {signal.get('action')} {signal.get('symbol')} @ {signal.get('price')}"
+                )
 
             return result
+
         except Exception as e:
-            self.logger.exception(f"❌ Error ejecutando orden: {e}")
-            return {"success": False, "order": None, "error": str(e)}
+            error_msg = str(e)
+            self.logger.exception(
+                f"❌ Error ejecutando orden: {error_msg} | "
+                f"Signal: {signal.get('action', 'UNKNOWN')} {signal.get('symbol', 'UNKNOWN')} @ {signal.get('price', 0)}"
+            )
+            return {"success": False, "order": None, "position": None, "error": error_msg}
 
     def _prepare_order(self, signal: Dict[str, Any]) -> Dict[str, Any]:
-        """Preparar datos de la orden antes de enviarla al exchange"""
         return {
             "symbol": signal["symbol"],
             "type": "market",
@@ -110,8 +138,22 @@ class OrderExecutor:
         }
 
     async def _execute_crypto_order(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Ejecutar orden en Binance (modo async)"""
         try:
+            # ========================
+            # ✅ MODO PAPER REAL
+            # ========================
+            if self.config.TRADING_MODE == "PAPER":
+                position = self._create_position(order_data, fake=True)
+                return {
+                    "success": True,
+                    "order": position,
+                    "position": position,
+                    "error": None
+                }
+
+            # ========================
+            # ⚠️ MODO REAL
+            # ========================
             order = await self.exchange.create_order(
                 symbol=order_data["symbol"],
                 type=order_data["type"],
@@ -122,114 +164,119 @@ class OrderExecutor:
             ticker = await self.exchange.fetch_ticker(order_data["symbol"])
             entry_price = ticker.get("last")
 
-            position = {
-                "id": order["id"],
-                "symbol": order_data["symbol"],
-                "side": order_data["side"].upper(),
-                "entry_price": entry_price,
-                "size": order_data["amount"],
-                "stop_loss": order_data["stop_loss"],
-                "take_profit": order_data["take_profit"],
-                "entry_time": datetime.now(),
-                "status": "open",
-            }
+            position = self._create_position(order_data)
+            position["id"] = order["id"]
+            position["entry_price"] = entry_price
 
             await self._place_stop_orders(position)
 
-            self.executed_orders.append(position)
-            self.logger.info(f"✅ Orden ejecutada: {position['id']} a {entry_price:.4f}")
+            self.logger.info(
+                f"✅ Orden ejecutada en Binance: {position['id']} @ {entry_price:.2f}")
+
             return {
-    "success": True,
-    "order": position,
-    "position": position,
-    "error": None
-}
+                "success": True,
+                "order": order,
+                "position": position,
+                "error": None
+            }
 
         except Exception as e:
-            self.logger.exception(f"❌ Error ejecutando orden: {e}")
-            return {"success": False, "order": None, "error": str(e)}
+            error_msg = str(e)
+            self.logger.exception(
+                f"❌ Error ejecutando orden crypto: {error_msg} | "
+                f"Symbol: {order_data.get('symbol')} | "
+                f"Side: {order_data.get('side')} | "
+                f"Amount: {order_data.get('amount')} | "
+                f"Type: {order_data.get('type')}"
+            )
+            return {"success": False, "order": None, "position": None, "error": error_msg}
 
     async def _execute_stock_order(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Simular ejecución de orden de acciones (modo papel)"""
         try:
-            position = {
-                "id": f"stock_{datetime.now().timestamp()}",
-                "symbol": order_data["symbol"],
-                "side": order_data["side"].upper(),
-                "entry_price": order_data["price"],
-                "size": order_data["amount"],
-                "stop_loss": order_data["stop_loss"],
-                "take_profit": order_data["take_profit"],
-                "entry_time": datetime.now(),
-                "status": "open",
-            }
+            position = self._create_position(order_data, fake=True)
             return {
-    "success": True,
-    "order": position,
-    "position": position,
-    "error": None
-}
+                "success": True,
+                "order": position,
+                "position": position,
+                "error": None
+            }
 
         except Exception as e:
-            self.logger.exception(f"❌ Error ejecutando orden de acciones: {e}")
-            return {"success": False, "order": None, "error": str(e)}
+            error_msg = str(e)
+            self.logger.exception(
+                f"❌ Error ejecutando orden acciones: {error_msg} | "
+                f"Symbol: {order_data.get('symbol')} | "
+                f"Side: {order_data.get('side')} | "
+                f"Amount: {order_data.get('amount')}"
+            )
+            return {"success": False, "order": None, "position": None, "error": error_msg}
+
+    def _create_position(self, order_data: Dict[str, Any], fake: bool = False) -> Dict[str, Any]:
+        return {
+            "id": f"paper_{datetime.utcnow().timestamp()}" if fake else "",
+            "symbol": order_data["symbol"],
+            "side": order_data["side"].upper(),
+            "entry_price": order_data["price"],
+            "size": order_data["amount"],
+            "stop_loss": order_data["stop_loss"],
+            "take_profit": order_data["take_profit"],
+            "entry_time": datetime.utcnow(),
+            "status": "open",
+        }
 
     async def _place_stop_orders(self, position: Dict[str, Any]):
-        """Preparado para implementar OCO o Stop-Limit en el futuro"""
         return None
 
     # ======================================================
-    # 🔁 CIERRE DE POSICIONES
+    # 🔁 CIERRE
     # ======================================================
     async def close_position(self, position: Dict[str, Any]) -> Dict[str, Any]:
-        """Cerrar posición abierta"""
-        close_side = "sell" if position["side"] == "BUY" else "buy"
         try:
-            close_order = await self.exchange.create_order(
-                symbol=position["symbol"],
-                type="market",
-                side=close_side,
-                amount=position["size"],
+            if self.config.TRADING_MODE == "PAPER":
+                exit_price = position["entry_price"]  # cero PnL simulado
+            else:
+                close_side = "sell" if position["side"] == "BUY" else "buy"
+                await self.exchange.create_order(
+                    symbol=position["symbol"],
+                    type="market",
+                    side=close_side,
+                    amount=position["size"],
+                )
+
+                ticker = await self.exchange.fetch_ticker(position["symbol"])
+                exit_price = ticker.get("last")
+
+            pnl = (
+                (exit_price - position["entry_price"]) * position["size"]
+                if position["side"] == "BUY"
+                else
+                (position["entry_price"] - exit_price) * position["size"]
             )
 
-            ticker = await self.exchange.fetch_ticker(position["symbol"])
-            exit_price = ticker.get("last")
+            self.logger.info(
+                f"💸 Posición cerrada {position['symbol']} | PnL: {pnl:.2f}")
 
-            if position["side"] == "BUY":
-                pnl = (exit_price - position["entry_price"]) * position["size"]
-            else:
-                pnl = (position["entry_price"] - exit_price) * position["size"]
-
-            self.logger.info(f"💸 Posición cerrada ({position['symbol']}) | PnL: {pnl:.2f}")
             return {"success": True, "pnl": pnl, "exit_price": exit_price, "error": None}
 
         except Exception as e:
             self.logger.exception(f"❌ Error cerrando posición: {e}")
             return {"success": False, "pnl": 0.0, "error": str(e)}
 
-    # ======================================================
-    # 📊 CONSULTAS Y GESTIÓN
-    # ======================================================
     def get_order_history(self) -> List[Dict[str, Any]]:
-        """Obtener historial de órdenes ejecutadas"""
         return list(self.executed_orders)
 
     async def cancel_all_orders(self):
-        """Cancelar todas las órdenes abiertas"""
         try:
-            await self.exchange.cancel_all_orders()
-            self.logger.info("✅ Todas las órdenes canceladas exitosamente")
+            if self.exchange:
+                await self.exchange.cancel_all_orders()
+                self.logger.info("✅ Todas las órdenes canceladas")
         except Exception as e:
             self.logger.exception(f"❌ Error cancelando órdenes: {e}")
 
-    # ======================================================
-    # 🧹 CIERRE DE CONEXIONES
-    # ======================================================
     async def close(self):
-        """Cerrar conexión del exchange"""
         try:
-            if self.exchange is not None:
+            if self.exchange:
                 await self.exchange.close()
-            self.logger.info("✅ Conexión del ejecutor cerrada correctamente")
+            self.logger.info("✅ Conexión del ejecutor cerrada")
         except Exception as e:
             self.logger.exception(f"❌ Error al cerrar OrderExecutor: {e}")

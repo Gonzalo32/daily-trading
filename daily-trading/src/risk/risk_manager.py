@@ -36,7 +36,8 @@ class RiskManager:
     def __init__(self, config: Config, state: Optional[RiskState] = None):
         self.config = config
         self.state = state or RiskState(equity=config.INITIAL_CAPITAL)
-        self.logger = setup_logging(__name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
+        self.logger = setup_logging(
+            __name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
         self.trade_history: List[Dict[str, Any]] = []
 
     # ======================================================
@@ -46,19 +47,23 @@ class RiskManager:
         """Verifica si la operación cumple los criterios de riesgo."""
         try:
             if not self._check_daily_limits():
-                self.logger.warning("⚠️ Límite diario de pérdida o trades alcanzado.")
+                self.logger.warning(
+                    "⚠️ Límite diario de pérdida o trades alcanzado.")
                 return False
 
             if len(current_positions) >= self.config.MAX_POSITIONS:
-                self.logger.warning("⚠️ Número máximo de posiciones abiertas alcanzado.")
+                self.logger.warning(
+                    "⚠️ Número máximo de posiciones abiertas alcanzado.")
                 return False
 
             if not self._check_total_exposure(signal, current_positions):
-                self.logger.warning("⚠️ Exposición total excede el límite permitido.")
+                self.logger.warning(
+                    "⚠️ Exposición total excede el límite permitido.")
                 return False
 
             if not self._check_correlation(signal, current_positions):
-                self.logger.warning("⚠️ Posición correlacionada con existentes.")
+                self.logger.warning(
+                    "⚠️ Posición correlacionada con existentes.")
                 return False
 
             return True
@@ -74,26 +79,29 @@ class RiskManager:
         # Usar valores actualizados si se proporcionan, sino usar del estado
         pnl = daily_pnl if daily_pnl is not None else self.state.daily_pnl
         trades = daily_trades if daily_trades is not None else self.state.trades_today
-        
+
         max_loss = self.state.equity * self.config.MAX_DAILY_LOSS
         max_gain = self.state.equity * self.config.MAX_DAILY_GAIN
         max_trades = getattr(self.config, "MAX_DAILY_TRADES", 20)
-        
+
         # Verificar si se alcanzó el límite de pérdida
         if pnl < -max_loss:
-            self.logger.warning(f"⚠️ Límite de pérdida diaria alcanzado: {pnl:.2f} / {-max_loss:.2f}")
+            self.logger.warning(
+                f"⚠️ Límite de pérdida diaria alcanzado: {pnl:.2f} / {-max_loss:.2f}")
             return False
-            
+
         # Verificar si se alcanzó el límite de ganancia (opcional)
         if pnl > max_gain:
-            self.logger.info(f"✅ Límite de ganancia diaria alcanzado: {pnl:.2f} / {max_gain:.2f}")
+            self.logger.info(
+                f"✅ Límite de ganancia diaria alcanzado: {pnl:.2f} / {max_gain:.2f}")
             return False
-            
+
         # Verificar límite de trades
         if trades >= max_trades:
-            self.logger.warning(f"⚠️ Límite de trades diarios alcanzado: {trades} / {max_trades}")
+            self.logger.warning(
+                f"⚠️ Límite de trades diarios alcanzado: {trades} / {max_trades}")
             return False
-            
+
         return True
 
     def _check_daily_limits(self) -> bool:
@@ -103,17 +111,33 @@ class RiskManager:
     def _check_total_exposure(self, signal: Dict[str, Any], current_positions: List[Dict[str, Any]]) -> bool:
         """Limita la exposición total (por ej. máx. 50% del capital)."""
         try:
-            total_exposure = sum(pos["position_size"] * pos["entry_price"] for pos in current_positions)
-            new_exposure = signal["position_size"] * signal["price"]
+            total_exposure = sum(
+                pos.get("size", 0) * pos.get("entry_price", 0) for pos in current_positions)
+            new_exposure = signal.get(
+                "position_size", 0) * signal.get("price", 0)
             max_exposure = self.state.equity * 0.5
-            return total_exposure + new_exposure <= max_exposure
-        except Exception:
+            is_valid = total_exposure + new_exposure <= max_exposure
+            if not is_valid:
+                self.logger.warning(
+                    f"⚠️ Exposición excede límite: {total_exposure + new_exposure:.2f} / {max_exposure:.2f} "
+                    f"(actual: {total_exposure:.2f}, nueva: {new_exposure:.2f})"
+                )
+            return is_valid
+        except Exception as e:
+            self.logger.error(f"❌ Error calculando exposición total: {e}")
             return False
 
     def _check_correlation(self, signal: Dict[str, Any], current_positions: List[Dict[str, Any]]) -> bool:
         """Evita posiciones duplicadas del mismo símbolo."""
-        same_symbol = [p for p in current_positions if p["symbol"] == signal["symbol"]]
-        return len(same_symbol) == 0
+        same_symbol = [
+            p for p in current_positions if p.get("symbol") == signal.get("symbol")]
+        is_valid = len(same_symbol) == 0
+        if not is_valid:
+            self.logger.warning(
+                f"⚠️ Ya existe posición abierta para {signal.get('symbol')} "
+                f"({len(same_symbol)} posiciones activas)"
+            )
+        return is_valid
 
     # ======================================================
     # 💰 SIZING Y PROTECCIÓN
@@ -154,24 +178,50 @@ class RiskManager:
         try:
             price = market_data["price"]
             side = position["side"].upper()
-            sl = position["stop_loss"]
-            tp = position["take_profit"]
+            symbol = position.get("symbol", "UNKNOWN")
+            sl = position.get("stop_loss")
+            tp = position.get("take_profit")
 
-            if side == "BUY" and (price <= sl or price >= tp):
-                reason = "Stop Loss" if price <= sl else "Take Profit"
-                self.logger.info(f"🛑 {reason} alcanzado ({price}) para {position['symbol']}")
-                return True
+            # Verificar Stop Loss y Take Profit
+            if side == "BUY" and sl and tp:
+                if price <= sl:
+                    self.logger.info(
+                        f"🛑 [{symbol}] Stop Loss alcanzado: {price:.2f} <= {sl:.2f}")
+                    return True
+                if price >= tp:
+                    self.logger.info(
+                        f"🛑 [{symbol}] Take Profit alcanzado: {price:.2f} >= {tp:.2f}")
+                    return True
 
-            if side == "SELL" and (price >= sl or price <= tp):
-                reason = "Stop Loss" if price >= sl else "Take Profit"
-                self.logger.info(f"🛑 {reason} alcanzado ({price}) para {position['symbol']}")
-                return True
+            if side == "SELL" and sl and tp:
+                if price >= sl:
+                    self.logger.info(
+                        f"🛑 [{symbol}] Stop Loss alcanzado: {price:.2f} >= {sl:.2f}")
+                    return True
+                if price <= tp:
+                    self.logger.info(
+                        f"🛑 [{symbol}] Take Profit alcanzado: {price:.2f} <= {tp:.2f}")
+                    return True
 
-            # Tiempo máximo de posición (ej. 4h)
+            # TIME STOP OBLIGATORIO: Cerrar cualquier posición abierta más de 120 segundos
             entry_time = position.get("entry_time")
-            if entry_time and datetime.now() - entry_time > timedelta(hours=4):
-                self.logger.info("⏰ Tiempo máximo de posición alcanzado")
-                return True
+            if entry_time:
+                # Convertir string a datetime si es necesario
+                if isinstance(entry_time, str):
+                    try:
+                        entry_time = datetime.fromisoformat(
+                            entry_time.replace('Z', '+00:00'))
+                    except:
+                        entry_time = datetime.now()
+
+                time_diff = datetime.now() - entry_time
+                time_seconds = time_diff.total_seconds()
+
+                # TIME STOP OBLIGATORIO: 120 segundos (2 minutos)
+                if time_seconds > 120:
+                    self.logger.info(
+                        f"⏰ [{symbol}] TIME STOP OBLIGATORIO: {time_seconds:.1f} segundos (>120s)")
+                    return True
 
             return False
         except Exception as e:
@@ -199,7 +249,8 @@ class RiskManager:
                 "reason": trade_data.get("reason", "")
             })
 
-            self.logger.info(f"📘 Trade registrado: {trade_data.get('symbol')} | PnL={pnl:.2f}")
+            self.logger.info(
+                f"📘 Trade registrado: {trade_data.get('symbol')} | PnL={pnl:.2f}")
         except Exception as e:
             self.logger.exception(f"❌ Error registrando trade: {e}")
 
@@ -210,9 +261,12 @@ class RiskManager:
             total_trades = len(trades)
             pnl_list = [t["pnl"] for t in trades]
 
-            win_rate = len([p for p in pnl_list if p > 0]) / total_trades if total_trades else 0
-            sharpe_ratio = np.mean(pnl_list) / np.std(pnl_list) if len(pnl_list) > 1 and np.std(pnl_list) > 0 else 0
-            drawdown = (self.state.peak_equity - self.state.equity) / self.state.peak_equity
+            win_rate = len([p for p in pnl_list if p > 0]) / \
+                total_trades if total_trades else 0
+            sharpe_ratio = np.mean(
+                pnl_list) / np.std(pnl_list) if len(pnl_list) > 1 and np.std(pnl_list) > 0 else 0
+            drawdown = (self.state.peak_equity -
+                        self.state.equity) / self.state.peak_equity
 
             metrics = {
                 "daily_pnl": self.state.daily_pnl,
@@ -227,7 +281,8 @@ class RiskManager:
             self.logger.debug(f"📊 Métricas de riesgo: {metrics}")
             return metrics
         except Exception as e:
-            self.logger.exception(f"❌ Error calculando métricas de riesgo: {e}")
+            self.logger.exception(
+                f"❌ Error calculando métricas de riesgo: {e}")
             return {}
 
     # ======================================================
@@ -238,9 +293,11 @@ class RiskManager:
         self.state.equity = new_equity
         if new_equity > self.state.peak_equity:
             self.state.peak_equity = new_equity
-        drawdown = (self.state.peak_equity - new_equity) / self.state.peak_equity
+        drawdown = (self.state.peak_equity - new_equity) / \
+            self.state.peak_equity
         self.state.max_drawdown = max(self.state.max_drawdown, drawdown)
-        self.logger.debug(f"💰 Equity actualizado: {new_equity:.2f} | DD={drawdown:.2%}")
+        self.logger.debug(
+            f"💰 Equity actualizado: {new_equity:.2f} | DD={drawdown:.2%}")
 
     def reset_daily_metrics(self):
         """Reinicia métricas diarias."""
@@ -250,4 +307,5 @@ class RiskManager:
 
     def emergency_stop(self):
         """Detiene toda actividad de trading."""
-        self.logger.critical("🚨 PARADA DE EMERGENCIA ACTIVADA: trading detenido inmediatamente")
+        self.logger.critical(
+            "🚨 PARADA DE EMERGENCIA ACTIVADA: trading detenido inmediatamente")
