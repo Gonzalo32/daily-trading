@@ -291,7 +291,10 @@ class TradingStrategy:
             })
 
             self.last_signal = signal
-            self.consecutive_signals += 1
+            if self.last_signal and self.last_signal["action"] == signal["action"]:
+                self.consecutive_signals += 1
+            else:
+                self.consecutive_signals = 1
 
             if is_debug:
                 self.logger.info(
@@ -365,29 +368,34 @@ class TradingStrategy:
                 }
 
             # ============================================
-            # NIVEL 2: Señal MEDIA (solo EMA)
+            # NIVEL 2: Señal MEDIA (solo EMA - ultra permisivo)
             # ============================================
+
+            # Diferencia entre medias (informativa)
             ma_diff_pct = abs(fast - slow) / slow * 100 if slow > 0 else 0
-            
-            if fast > slow and ma_diff_pct > 0.1:  # Cualquier diferencia mínima
+
+            # BUY si EMA rápida está arriba (sin umbral mínimo)
+            if fast > slow:
                 return {
                     "action": "BUY",
                     "price": price,
                     "strength": 0.5,
-                    "reason": f"MEDIA: EMA rápida > EMA lenta (diff: {ma_diff_pct:.2f}%)",
+                    "reason": f"MEDIA: EMA rápida > EMA lenta (diff: {ma_diff_pct:.4f}%)",
                     "stop_loss": round(price * (1 - stop_loss_pct), 2),
                     "take_profit": round(price * (1 + stop_loss_pct * take_profit_ratio), 2),
                 }
 
-            if fast < slow and ma_diff_pct > 0.1:
+            # SELL si EMA rápida está abajo (sin umbral mínimo)
+            if fast < slow:
                 return {
                     "action": "SELL",
                     "price": price,
                     "strength": 0.5,
-                    "reason": f"MEDIA: EMA rápida < EMA lenta (diff: {ma_diff_pct:.2f}%)",
+                    "reason": f"MEDIA: EMA rápida < EMA lenta (diff: {ma_diff_pct:.4f}%)",
                     "stop_loss": round(price * (1 + stop_loss_pct), 2),
                     "take_profit": round(price * (1 - stop_loss_pct * take_profit_ratio), 2),
                 }
+
 
             # ============================================
             # NIVEL 3: Señal DÉBIL (solo RSI)
@@ -510,7 +518,7 @@ class TradingStrategy:
             # FILTRO 1: Evitar repeticiones excesivas (MUY permisivo)
             # ============================================
             # Solo bloquear si hay 20+ señales consecutivas del mismo tipo
-            max_consecutive = 20  # Extremadamente permisivo
+            max_consecutive = 8  # Extremadamente permisivo
             
             if (
                 self.last_signal

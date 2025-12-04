@@ -230,37 +230,28 @@ class OrderExecutor:
     # ======================================================
     # 🔁 CIERRE
     # ======================================================
-    async def close_position(self, position: Dict[str, Any]) -> Dict[str, Any]:
+    async def close_position(self, position):
+
         try:
-            if self.config.TRADING_MODE == "PAPER":
-                exit_price = position["entry_price"]  # cero PnL simulado
+            exit_price = await self.market_service.get_current_price(position["symbol"])
+
+            entry_price = position["entry_price"]
+            size = position["size"]
+
+            if position["side"].lower() == "buy":
+                pnl = (exit_price - entry_price) * size
             else:
-                close_side = "sell" if position["side"] == "BUY" else "buy"
-                await self.exchange.create_order(
-                    symbol=position["symbol"],
-                    type="market",
-                    side=close_side,
-                    amount=position["size"],
-                )
+                pnl = (entry_price - exit_price) * size
 
-                ticker = await self.exchange.fetch_ticker(position["symbol"])
-                exit_price = ticker.get("last")
-
-            pnl = (
-                (exit_price - position["entry_price"]) * position["size"]
-                if position["side"] == "BUY"
-                else
-                (position["entry_price"] - exit_price) * position["size"]
-            )
-
-            self.logger.info(
-                f"💸 Posición cerrada {position['symbol']} | PnL: {pnl:.2f}")
-
-            return {"success": True, "pnl": pnl, "exit_price": exit_price, "error": None}
+            return {
+                "success": True,
+                "exit_price": exit_price,
+                "pnl": pnl
+            }
 
         except Exception as e:
-            self.logger.exception(f"❌ Error cerrando posición: {e}")
-            return {"success": False, "pnl": 0.0, "error": str(e)}
+            self.logger.error(f"❌ Error cerrando posición: {e}")
+            return {"success": False, "error": str(e)}
 
     def get_order_history(self) -> List[Dict[str, Any]]:
         return list(self.executed_orders)

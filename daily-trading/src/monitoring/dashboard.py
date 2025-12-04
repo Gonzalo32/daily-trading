@@ -65,17 +65,16 @@ class Dashboard:
             await websocket.accept()
             self.websocket_connections.append(websocket)
             
-            try:
-                await websocket.send_text(json.dumps(self.current_data))
-                
+            try:                
                 while True:
                     try:
                         await websocket.send_text(json.dumps(self.current_data))
-                    except Exception as e:
-                        self.logger.error(f"Error WebSocket: {e}")
+                        await asyncio.sleep(1)
+                    except WebSocketDisconnect:
                         break
-                    await asyncio.sleep(1)
-                    
+                    except Exception as e:
+                        self.logger.error("❌ WebSocket error", exc_info=True)
+                        break   
             except WebSocketDisconnect:
                 if websocket in self.websocket_connections:
                     self.websocket_connections.remove(websocket)

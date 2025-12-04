@@ -81,7 +81,6 @@ class AdvancedPositionManager:
             # TIME STOP OBLIGATORIO: Verificar edad de la posición PRIMERO
             open_time = position.get('open_time') or position.get('entry_time')
             if open_time:
-                # Convertir string a datetime si es necesario
                 if isinstance(open_time, str):
                     try:
                         open_time = datetime.fromisoformat(
@@ -94,35 +93,32 @@ class AdvancedPositionManager:
 
                 position_age = (datetime.now() - open_time).total_seconds()
 
-                # FORCE CLOSE: Cerrar cualquier posición abierta >= 120 segundos
-                if position_age >= 120:
+                # ✅ FORCE CIERRE SOLO SI MVP = TRUE Y PASARON 120s
+                if mvp_mode and position_age >= 120:
+
                     self.logger.info(
-                        f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, tiempo: {position_age:.1f}s"
+                        f"⏰ FORCE TIME CLOSE (MVP) -> {position_id}, {symbol}, tiempo: {position_age:.1f}s"
                     )
 
-                    # Cerrar realmente si tenemos executor
-                    if executor and risk_manager:
+                    if executor:
                         try:
-                            # Cerrar posición a precio de mercado
                             close_result = await executor.close_position(position)
 
                             if close_result.get('success'):
-                                # Calcular PnL
                                 pnl = close_result.get('pnl', 0.0)
+                                if risk_manager:
+                                    risk_manager.register_trade({
+                                        'symbol': symbol,
+                                        'action': position.get('side', 'UNKNOWN'),
+                                        'price': close_result.get('exit_price', current_price),
+                                        'position_size': position.get('size', 0),
+                                        'pnl': pnl,
+                                        'reason': 'Force time close MVP (120s)'
+                                    })
 
-                                # Registrar trade en RiskManager
-                                risk_manager.register_trade({
-                                    'symbol': symbol,
-                                    'action': position.get('side', 'UNKNOWN'),
-                                    'price': close_result.get('exit_price', current_price),
-                                    'position_size': position.get('size', 0),
-                                    'pnl': pnl,
-                                    'reason': 'Force time close (120s)'
-                                })
-
-                                # Remover de lista de posiciones activas
                                 if positions_list and position in positions_list:
                                     positions_list.remove(position)
+
                                 if risk_manager:
                                     risk_manager.unregister_position()
 
@@ -132,26 +128,25 @@ class AdvancedPositionManager:
 
                                 return {
                                     'action': 'close',
-                                    'reason': f'Force time close ({position_age:.1f}s)',
+                                    'reason': f'Force time close MVP ({position_age:.1f}s)',
                                     'should_close': True,
                                     'closed': True,
                                     'pnl': pnl
                                 }
+
                             else:
                                 self.logger.error(
                                     f"❌ Error cerrando posición {position_id}: {close_result.get('error', 'Unknown')}"
                                 )
+
                         except Exception as e:
                             self.logger.error(
                                 f"❌ Error en force time close: {e}")
+
                     else:
-                        # Si no hay executor, solo devolver decisión de cierre
-                        return {
-                            'action': 'close',
-                            'reason': f'Force time close ({position_age:.1f}s)',
-                            'should_close': True,
-                            'closed': False
-                        }
+                        self.logger.warning(
+                            f"⚠️ No hay executor disponible para cerrar posición {position_id}"
+                        )
 
             # Log de evaluación
             self.logger.info(

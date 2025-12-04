@@ -359,7 +359,7 @@ class TradingBot:
 
                 # Verificar límites diarios (más permisivo en MVP)
                 if self.mvp_mode:
-                    max_daily_trades = 20  # Mucho más permisivo en MVP
+                    max_daily_trades = 9999  # Mucho más permisivo en MVP
                     # En MVP, solo verificar pérdida máxima diaria (no ganancia máxima)
                     max_loss = self.config.INITIAL_CAPITAL * self.config.MAX_DAILY_LOSS
                     if self.daily_pnl < -max_loss:
@@ -579,9 +579,6 @@ class TradingBot:
                 # Verificar y gestionar posiciones abiertas (con trailing stop, break-even, etc.)
                 await self._check_open_positions(market_data)
 
-                # CIERRE FORZADO: Iterar sobre TODAS las posiciones en executor.positions
-                await self._force_close_positions(market_data)
-
                 # Actualizar dashboard
                 if self.dashboard:
                     try:
@@ -691,7 +688,6 @@ class TradingBot:
                 # Si AdvancedPositionManager cerró realmente la posición, actualizar PnL y continuar
                 if management_decision.get('closed', False):
                     pnl = management_decision.get('pnl', 0.0)
-                    self.daily_pnl += pnl
                     # También remover de executor.positions si está ahí
                     if position in self.order_executor.positions:
                         self.order_executor.positions.remove(position)
@@ -837,142 +833,6 @@ class TradingBot:
             except Exception as e:
                 self.logger.error(
                     f"❌ Error gestionando posición {position.get('id')}: {e}")
-
-    async def _force_close_positions(self, market_data):
-        """
-        CIERRE FORZADO: Itera sobre TODAS las posiciones en executor.positions
-        y las cierra si cumplen condiciones (SL/TP/Time Stop obligatorio de 120s)
-        """
-        try:
-            # Iterar sobre TODAS las posiciones en executor.positions
-            for position in self.order_executor.positions[:]:
-                try:
-                    position_id = position.get('id', 'unknown')
-                    symbol = position.get('symbol', 'UNKNOWN')
-
-                    # TIME STOP OBLIGATORIO: Verificar si pasaron 120 segundos PRIMERO
-                    entry_time = position.get(
-                        'entry_time') or position.get('open_time')
-                    if entry_time:
-                        # Convertir string a datetime si es necesario
-                        if isinstance(entry_time, str):
-                            try:
-                                entry_time = datetime.fromisoformat(
-                                    entry_time.replace('Z', '+00:00'))
-                            except:
-                                try:
-                                    entry_time = datetime.fromisoformat(
-                                        entry_time)
-                                except:
-                                    entry_time = datetime.now()
-
-                        time_diff = datetime.now() - entry_time
-                        time_seconds = time_diff.total_seconds()
-
-                        # FORCE CLOSE: Cerrar cualquier posición abierta más de 120 segundos
-                        if time_seconds >= 120:
-                            self.logger.info(
-                                f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, tiempo: {time_seconds:.1f}s"
-                            )
-
-                            # Cerrar posición a precio de mercado
-                            close_result = await self.order_executor.close_position(position)
-
-                            if close_result.get('success'):
-                                # Calcular PnL
-                                pnl = close_result.get('pnl', 0.0)
-
-                                # Registrar trade en RiskManager
-                                self.risk_manager.register_trade({
-                                    'symbol': symbol,
-                                    'action': position.get('side', 'UNKNOWN'),
-                                    'price': close_result.get('exit_price', market_data.get('price', 0)),
-                                    'position_size': position.get('size', 0),
-                                    'pnl': pnl,
-                                    'reason': 'Force time close (120s)'
-                                })
-
-                                # Remover de executor.positions
-                                if position in self.order_executor.positions:
-                                    self.order_executor.positions.remove(
-                                        position)
-
-                                # Remover también de current_positions si está ahí
-                                if position in self.current_positions:
-                                    self.current_positions.remove(position)
-
-                                # Actualizar PnL diario
-                                self.daily_pnl += pnl
-
-                                self.logger.info(
-                                    f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, PnL: {pnl:.2f}"
-                                )
-
-                                # Continuar con siguiente posición (esta ya está cerrada)
-                                continue
-                            else:
-                                self.logger.error(
-                                    f"❌ Error en force time close de {position_id}: {close_result.get('error', 'Unknown')}"
-                                )
-
-                    # Log de evaluación (siempre visible)
-                    self.logger.info(
-                        f"🔍 [FORCE CLOSE] Evaluando posición {position_id} ({symbol})"
-                    )
-
-                    # Verificar si debe cerrarse (SL/TP)
-                    should_close = self.risk_manager.should_close_position(
-                        position, market_data)
-
-                    if should_close:
-                        self.logger.info(
-                            f"🔒 [FORCE CLOSE] Cerrando posición {position_id} ({symbol}) | "
-                            f"Razón: SL/TP/Time Stop alcanzado"
-                        )
-
-                        # Cerrar posición
-                        close_result = await self.order_executor.close_position(position)
-
-                        if close_result.get('success'):
-                            # Remover de executor.positions
-                            if position in self.order_executor.positions:
-                                self.order_executor.positions.remove(position)
-
-                            # Remover también de current_positions si está ahí
-                            if position in self.current_positions:
-                                self.current_positions.remove(position)
-
-                            # Actualizar PnL diario
-                            pnl = close_result.get('pnl', 0.0)
-                            self.daily_pnl += pnl
-
-                            # Registrar trade en RiskManager
-                            self.risk_manager.register_trade({
-                                'symbol': symbol,
-                                'action': position.get('side', 'UNKNOWN'),
-                                'price': close_result.get('exit_price', position.get('entry_price', 0)),
-                                'position_size': position.get('size', 0),
-                                'pnl': pnl,
-                                'reason': 'Force close (SL/TP/Time Stop)'
-                            })
-
-                            self.logger.info(
-                                f"✅ [FORCE CLOSE] Posición {position_id} ({symbol}) cerrada exitosamente | "
-                                f"PnL: {pnl:.2f}"
-                            )
-                        else:
-                            self.logger.error(
-                                f"❌ [FORCE CLOSE] Error cerrando posición {position_id}: {close_result.get('error', 'Unknown error')}"
-                            )
-
-                except Exception as e:
-                    self.logger.error(
-                        f"❌ [FORCE CLOSE] Error procesando posición {position.get('id', 'unknown')}: {e}"
-                    )
-
-        except Exception as e:
-            self.logger.error(
-                f"❌ [FORCE CLOSE] Error en ciclo de cierre forzado: {e}")
 
     async def _close_all_positions(self):
         """Cerrar todas las posiciones abiertas"""

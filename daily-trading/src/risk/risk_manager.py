@@ -89,7 +89,7 @@ class RiskManager:
 
         max_loss = self.state.equity * self.config.MAX_DAILY_LOSS
         max_gain = self.state.equity * self.config.MAX_DAILY_GAIN
-        max_trades = getattr(self.config, "MAX_DAILY_TRADES", 20)
+        max_trades = getattr(self.config, "MAX_DAILY_TRADES", none)
 
         # Verificar si se alcanzó el límite de pérdida
         if pnl < -max_loss:
@@ -242,9 +242,11 @@ class RiskManager:
         """Registra un trade en el historial y actualiza métricas."""
         try:
             pnl = trade_data.get("pnl", 0.0)
+            self.state.balance += pnl
             self.state.daily_pnl += pnl
             self.state.total_pnl += pnl
             self.state.trades_today += 1
+
 
             self.trade_history.append({
                 "timestamp": datetime.now(),
