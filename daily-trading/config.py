@@ -24,7 +24,7 @@ class Config:
     # 💰 RIESGO Y CAPITAL
     # ==============================
     INITIAL_CAPITAL = float(os.getenv("INITIAL_CAPITAL", "10000"))
-    MAX_POSITIONS = int(os.getenv("MAX_POSITIONS", "10"))
+    MAX_POSITIONS = int(os.getenv("MAX_POSITIONS", "50"))
 
     # Gestión de riesgo porcentual
     # 2% del capital por trade
@@ -126,6 +126,7 @@ class Config:
     RETRY_DELAY = int(os.getenv("RETRY_DELAY", "5"))
     CONNECTION_TIMEOUT = int(os.getenv("CONNECTION_TIMEOUT", "30"))
 
+    FORCE_CLOSE_TIMEOUT = 60 
     # ==============================
     # 🔧 FUNCIONES ÚTILES
     # ==============================

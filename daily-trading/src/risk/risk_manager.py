@@ -71,6 +71,13 @@ class RiskManager:
             self.logger.exception(f"❌ Error validando operación: {e}")
             return False
 
+    def unregister_position(self):
+        """Se llama cuando una posición se cierra"""
+        if self.state.trades_today > 0:
+            self.state.trades_today -= 1
+        self.logger.info(
+            f"🧹 Slot liberado - posiciones abiertas: {self.open_positions}"
+        )
     def check_daily_limits(self, daily_pnl: float = None, daily_trades: int = None) -> bool:
         """
         Verifica límites diarios de pérdida y cantidad de trades.

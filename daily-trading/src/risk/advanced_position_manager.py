@@ -123,6 +123,8 @@ class AdvancedPositionManager:
                                 # Remover de lista de posiciones activas
                                 if positions_list and position in positions_list:
                                     positions_list.remove(position)
+                                if risk_manager:
+                                    risk_manager.unregister_position()
 
                                 self.logger.info(
                                     f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, PnL: {pnl:.2f}"
