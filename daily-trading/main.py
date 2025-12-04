@@ -841,7 +841,7 @@ class TradingBot:
             if close_result['success']:
                 self.current_positions.remove(position)
                 self.daily_pnl += close_result['pnl']
-
+ 
     def _build_dashboard_payload(self, market_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Construir un payload serializable para el dashboard web"""
         positions = []
