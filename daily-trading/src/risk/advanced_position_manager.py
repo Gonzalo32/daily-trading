@@ -97,11 +97,14 @@ class AdvancedPositionManager:
                 # FORCE CLOSE: Cerrar cualquier posición abierta >= 120 segundos
                 if mvp_mode and position_age >= 120:
                     self.logger.info(
+                        f"⏱ edad de posición: {position_age:.2f}s")
+                    self.logger.info(
                         f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, tiempo: {position_age:.1f}s"
                     )
 
                     if executor and risk_manager:
-                        close_result = await executor.close_position(position)
+                        # ✅ Pasar current_price para obtener precio real de salida
+                        close_result = await executor.close_position(position, current_price=current_price)
 
                         if close_result.get("success"):
 

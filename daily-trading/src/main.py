@@ -8,14 +8,15 @@ from src.data.market_data import MarketDataProvider
 from src.execution.order_executor import OrderExecutor
 from src.strategy.trading_strategy import TradingStrategy
 from src.risk.risk_manager import RiskManager, RiskState
-from src.execution.advanced_position_manager import AdvancedPositionManager
+from src.risk.advanced_position_manager import AdvancedPositionManager
 from src.utils.logging_setup import setup_logging
 
 
 async def main_loop():
 
     cfg = Config()
-    logger = setup_logging(__name__, logfile=cfg.LOG_FILE, log_level=cfg.LOG_LEVEL)
+    logger = setup_logging(__name__, logfile=cfg.LOG_FILE,
+                           log_level=cfg.LOG_LEVEL)
 
     market = MarketDataProvider(cfg)
     executor = OrderExecutor(cfg)

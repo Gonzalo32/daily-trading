@@ -44,10 +44,20 @@ class OrderExecutor:
             raise
 
     async def _initialize_crypto_exchange(self):
+        """
+        Inicializa el exchange de Binance.
+        En PAPER mode, puede funcionar sin credenciales (solo lectura de precios).
+        En LIVE mode, requiere credenciales válidas.
+        """
         try:
+            # En PAPER mode, podemos usar el exchange sin credenciales para obtener precios
+            # En LIVE mode, las credenciales son obligatorias
+            api_key = self.config.BINANCE_API_KEY if self.config.TRADING_MODE == "LIVE" else None
+            secret = self.config.BINANCE_SECRET_KEY if self.config.TRADING_MODE == "LIVE" else None
+
             self.exchange = ccxt.binance({
-                "apiKey": self.config.BINANCE_API_KEY,
-                "secret": self.config.BINANCE_SECRET_KEY,
+                "apiKey": api_key or "",
+                "secret": secret or "",
                 "enableRateLimit": True,
                 "options": {
                     "defaultType": "spot",
@@ -59,12 +69,22 @@ class OrderExecutor:
                 self.exchange.set_sandbox_mode(True)
 
             await self.exchange.load_markets()
+
+            mode_info = f"PAPER (solo lectura)" if self.config.TRADING_MODE == "PAPER" else "LIVE"
             self.logger.info(
-                "✅ Conexión con Binance establecida (modo testnet: %s)", self.config.BINANCE_TESTNET)
+                f"✅ Conexión con Binance establecida | Modo: {mode_info} | Testnet: {self.config.BINANCE_TESTNET}")
 
         except Exception as e:
-            self.logger.exception(f"❌ Error conectando con Binance: {e}")
-            raise
+            # En PAPER mode, si falla la inicialización, solo advertimos (no bloqueamos)
+            if self.config.TRADING_MODE == "PAPER":
+                self.logger.warning(
+                    f"⚠️ No se pudo inicializar exchange de Binance en PAPER mode: {e}. "
+                    f"Los precios se obtendrán del parámetro current_price pasado al cerrar posiciones."
+                )
+                self.exchange = None
+            else:
+                self.logger.exception(f"❌ Error conectando con Binance: {e}")
+                raise
 
     async def _initialize_stock_api(self):
         self.logger.info("ℹ️ API de acciones inicializada (modo simulado)")
@@ -230,15 +250,21 @@ class OrderExecutor:
     # ======================================================
     # 🔁 CIERRE DE POSICIONES
     # ======================================================
-    async def close_position(self, position: dict) -> dict:
+    async def close_position(self, position: dict, current_price: Optional[float] = None) -> dict:
         """
-        Cierra una posición y calcula el PnL.
-        Funciona tanto en PAPER como en REAL (usa el ticker del exchange si hay).
+        Cierra una posición y calcula el PnL usando precios reales del mercado.
+
+        Args:
+            position: Diccionario con datos de la posición a cerrar
+            current_price: Precio actual del mercado (opcional, se obtiene del exchange si no se proporciona)
+
+        Returns:
+            Dict con success, exit_price, pnl, position
         """
         try:
             symbol = position["symbol"]
             side = str(position["side"]).upper()
-            # Tus posiciones se crean con "size", no con "quantity"
+            # Las posiciones pueden tener "size" o "quantity"
             size = position.get("size") or position.get("quantity")
             entry = float(position["entry_price"])
 
@@ -246,19 +272,46 @@ class OrderExecutor:
                 raise ValueError(
                     f"size/quantity no definido en posición: {position}")
 
-            # Precio de salida
+            # ============================================
+            # OBTENER PRECIO DE SALIDA REAL
+            # ============================================
             exit_price: float
-            if self.config.MARKET == "CRYPTO" and self.exchange:
-                ticker = await self.exchange.fetch_ticker(symbol)
-                exit_price = float(ticker["last"])
-            else:
-                # Fallback: cerramos al último precio conocido o al entry
-                exit_price = float(position.get("current_price", entry))
 
-            # PnL
+            # Prioridad 1: Usar current_price pasado como parámetro (más confiable)
+            if current_price is not None:
+                exit_price = float(current_price)
+                self.logger.debug(
+                    f"💰 Usando precio pasado como parámetro: {exit_price:.2f}")
+
+            # Prioridad 2: Obtener del exchange (precio real en tiempo real)
+            elif self.config.MARKET == "CRYPTO" and self.exchange:
+                try:
+                    ticker = await self.exchange.fetch_ticker(symbol)
+                    exit_price = float(ticker.get(
+                        "last", ticker.get("close", entry)))
+                    self.logger.debug(
+                        f"💰 Precio obtenido del exchange: {exit_price:.2f}")
+                except Exception as e:
+                    self.logger.warning(
+                        f"⚠️ No se pudo obtener precio del exchange: {e}. "
+                        f"Usando precio de entrada como fallback."
+                    )
+                    exit_price = entry
+
+            # Prioridad 3: Fallback al precio de entrada (último recurso)
+            else:
+                self.logger.warning(
+                    f"⚠️ No hay exchange disponible ni precio proporcionado para {symbol}. "
+                    f"Usando precio de entrada como fallback (PnL será 0)."
+                )
+                exit_price = entry
+
+            # ============================================
+            # CALCULAR PnL
+            # ============================================
             if side == "BUY":
                 pnl = (exit_price - entry) * size
-            else:  # SELL
+            else:  # SELL/SHORT
                 pnl = (entry - exit_price) * size
 
             # Marcar posición como cerrada
@@ -273,7 +326,8 @@ class OrderExecutor:
 
             self.logger.info(
                 f"💸 Posición cerrada {symbol} | {side} | "
-                f"Entry={entry:.2f} Exit={exit_price:.2f} PnL={pnl:.2f}"
+                f"Entry={entry:.2f} Exit={exit_price:.2f} PnL={pnl:.2f} | "
+                f"Size={size:.6f}"
             )
 
             return {
@@ -287,7 +341,9 @@ class OrderExecutor:
             self.logger.exception(f"❌ Error cerrando posición: {e}")
             return {
                 "success": False,
-                "error": str(e)
+                "error": str(e),
+                "exit_price": position.get("entry_price", 0),
+                "pnl": 0.0
             }
 
     def get_order_history(self) -> List[Dict[str, Any]]:
@@ -308,46 +364,3 @@ class OrderExecutor:
             self.logger.info("✅ Conexión del ejecutor cerrada")
         except Exception as e:
             self.logger.exception(f"❌ Error al cerrar OrderExecutor: {e}")
-
-    # src/execution/order_executor.py
-
-    async def close_position(self, position: dict) -> dict:
-        try:
-            symbol = position["symbol"]
-            side = position["side"]
-            size = position["quantity"]
-            entry = position["entry_price"]
-
-            ticker = await self.exchange.fetch_ticker(symbol)
-            exit_price = ticker["last"]
-
-            # PnL
-            if side.upper() == "BUY":
-                pnl = (exit_price - entry) * size
-            else:
-                pnl = (entry - exit_price) * size
-
-            # Remover de posiciones activas
-            if position in self.positions:
-                self.positions.remove(position)
-
-            # LOG
-            self.logger.info(
-                f"💸 Posición cerrada {symbol} | "
-                f"{side} | Entry={entry:.2f} "
-                f"Exit={exit_price:.2f} "
-                f"PnL={pnl:.2f}"
-            )
-
-            return {
-                "success": True,
-                "exit_price": exit_price,
-                "pnl": pnl,
-            }
-
-        except Exception as e:
-            self.logger.error(f"❌ Error cerrando posición: {e}")
-            return {
-                "success": False,
-                "error": str(e)
-            }
