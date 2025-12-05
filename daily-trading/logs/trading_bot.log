@@ -1,198 +1,190 @@
-2025-12-05 11:28:39 | INFO | INFO | 🐛 [DEBUG] ML no disponible o deshabilitado - saltando filtro ML
-2025-12-05 11:28:39 | WARNING | INFO | ⚠️ [MVP] Exposición máxima superada: 6791659.35 / 8000.00
-2025-12-05 11:28:39 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
-2025-12-05 11:28:39 | INFO | src.execution.order_executor | 📤 Ejecutando orden: SELL BTC/USDT @ 90379.48 | Size: 3.477167 | SL: 90422.62 | TP: 90293.20 | Market: CRYPTO | Mode: PAPER
-2025-12-05 11:28:39 | INFO | src.execution.order_executor | ✅ Trade registrado exitosamente: paper_1764955719.513864 (BTC/USDT)
-2025-12-05 11:28:39 | INFO | INFO | 🚀 [MVP] ✅ Trade #23: SELL BTC/USDT @ 90379.48 (Size: 3.4772, SL: 90422.62, TP: 90293.20)
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955677.41901 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955679.089523 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955680.757027 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955682.438814 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955684.119632 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955686.957 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955688.643392 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955691.469032 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955693.711183 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955695.955587 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955697.63984 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955699.303913 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955700.990308 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955702.68083 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955704.371763 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955706.611101 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955708.860171 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955710.543747 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955712.242713 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955714.475949 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955716.175603 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955717.84815 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:39 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955719.513864 (BTC/USDT) @ 90379.48
-2025-12-05 11:28:41 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Iniciando generación de señal...
-2025-12-05 11:28:41 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Indicadores disponibles - EMA9: 90384.08, EMA21: 90496.26, RSI: 12.05
-2025-12-05 11:28:41 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Señal detectada: SELL @ 90446.84 - Razón: MEDIA: EMA rápida < EMA lenta (diff: 0.1240%)
-2025-12-05 11:28:41 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Todos los filtros básicos pasados
-2025-12-05 11:28:41 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Filtros básicos pasados
-2025-12-05 11:28:41 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Tamaño de posición calculado: 0.0100
-2025-12-05 11:28:41 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Señal FINAL aprobada: SELL BTC/USDT @ 90446.84 (Size: 0.0100, SL: 91351.31, TP: 88185.67)
-2025-12-05 11:28:41 | INFO | INFO | 🔔 Señal generada: SELL BTC/USDT @ 90446.84 (Fuerza: 50.00%)
-2025-12-05 11:28:41 | INFO | INFO | 📏 Señal procesada por size_and_protect: Size=3.477167, SL=90489.98, TP=90360.56
-2025-12-05 11:28:41 | INFO | INFO | 🐛 [DEBUG] ML no disponible o deshabilitado - saltando filtro ML
-2025-12-05 11:28:41 | WARNING | INFO | ⚠️ [MVP] Exposición máxima superada: 7106158.12 / 8000.00
-2025-12-05 11:28:41 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
-2025-12-05 11:28:41 | INFO | src.execution.order_executor | 📤 Ejecutando orden: SELL BTC/USDT @ 90446.84 | Size: 3.477167 | SL: 90489.98 | TP: 90360.56 | Market: CRYPTO | Mode: PAPER
-2025-12-05 11:28:41 | INFO | src.execution.order_executor | ✅ Trade registrado exitosamente: paper_1764955721.774013 (BTC/USDT)
-2025-12-05 11:28:41 | INFO | INFO | 🚀 [MVP] ✅ Trade #24: SELL BTC/USDT @ 90446.84 (Size: 3.4772, SL: 90489.98, TP: 90360.56)
-2025-12-05 11:28:41 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955677.41901 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:41 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:41 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90433.71
-2025-12-05 11:28:41 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955677.41901 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90387.97 Exit=90446.84 PnL=-193.06 | Size=3.279405
-2025-12-05 11:28:42 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955677.41901 cerrada exitosamente | PnL: -193.06
-2025-12-05 11:28:42 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-193.06 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955679.089523 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:42 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90434.28
-2025-12-05 11:28:42 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955679.089523 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90387.97 Exit=90446.84 PnL=-190.68 | Size=3.239041
-2025-12-05 11:28:42 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955679.089523 cerrada exitosamente | PnL: -190.68
-2025-12-05 11:28:42 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-190.68 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955680.757027 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:42 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90434.28
-2025-12-05 11:28:42 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955680.757027 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90387.97 Exit=90446.85 PnL=-190.71 | Size=3.239041
-2025-12-05 11:28:42 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955680.757027 cerrada exitosamente | PnL: -190.71
-2025-12-05 11:28:42 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-190.71 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955682.438814 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:42 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:42 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90434.28
-2025-12-05 11:28:42 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955682.438814 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90387.97 Exit=90446.85 PnL=-190.71 | Size=3.239041
-2025-12-05 11:28:43 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955682.438814 cerrada exitosamente | PnL: -190.71
-2025-12-05 11:28:43 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-190.71 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955684.119632 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:43 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90434.28
-2025-12-05 11:28:43 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955684.119632 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90387.97 Exit=90446.85 PnL=-190.71 | Size=3.239041
-2025-12-05 11:28:43 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955684.119632 cerrada exitosamente | PnL: -190.71
-2025-12-05 11:28:43 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-190.71 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955686.957 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:43 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90434.29
-2025-12-05 11:28:43 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955686.957 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90387.98 Exit=90446.84 PnL=-190.65 | Size=3.239041
-2025-12-05 11:28:43 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955686.957 cerrada exitosamente | PnL: -190.65
-2025-12-05 11:28:43 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-190.65 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955688.643392 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:43 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:43 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90434.29
-2025-12-05 11:28:43 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955688.643392 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90387.98 Exit=90446.84 PnL=-190.65 | Size=3.238991
-2025-12-05 11:28:44 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955688.643392 cerrada exitosamente | PnL: -190.65
-2025-12-05 11:28:44 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-190.65 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955691.469032 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90446.31
-2025-12-05 11:28:44 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955691.469032 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90400.00 Exit=90446.84 PnL=-151.71 | Size=3.238991
-2025-12-05 11:28:44 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955691.469032 cerrada exitosamente | PnL: -151.71
-2025-12-05 11:28:44 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-151.71 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955693.711183 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955695.955587 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955697.63984 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955699.303913 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955700.990308 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955702.68083 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955704.371763 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90426.65
-2025-12-05 11:28:44 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955704.371763 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90379.48 Exit=90446.84 PnL=-214.21 | Size=3.180035
-2025-12-05 11:28:44 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955704.371763 cerrada exitosamente | PnL: -214.21
-2025-12-05 11:28:44 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-214.21 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955706.611101 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:44 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:44 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90426.64
-2025-12-05 11:28:44 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955706.611101 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90379.47 Exit=90446.84 PnL=-214.24 | Size=3.180035
-2025-12-05 11:28:45 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955706.611101 cerrada exitosamente | PnL: -214.24
-2025-12-05 11:28:45 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-214.24 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955708.860171 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:45 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955710.543747 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:45 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90426.64
-2025-12-05 11:28:45 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955710.543747 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90379.47 Exit=90446.84 PnL=-214.24 | Size=3.180035
-2025-12-05 11:28:45 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955710.543747 cerrada exitosamente | PnL: -214.24
-2025-12-05 11:28:45 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-214.24 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955712.242713 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:45 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90422.62
-2025-12-05 11:28:45 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955712.242713 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90379.48 Exit=90446.84 PnL=-234.23 | Size=3.477224
-2025-12-05 11:28:45 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955712.242713 cerrada exitosamente | PnL: -234.23
-2025-12-05 11:28:45 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-234.23 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955714.475949 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:45 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:45 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90422.62
-2025-12-05 11:28:45 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955714.475949 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:46 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90379.48 Exit=90446.84 PnL=-234.22 | Size=3.477167
-2025-12-05 11:28:46 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955714.475949 cerrada exitosamente | PnL: -234.22
-2025-12-05 11:28:46 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-234.22 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:46 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955716.175603 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:46 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:46 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90422.62
-2025-12-05 11:28:46 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955716.175603 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:47 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90379.48 Exit=90446.84 PnL=-234.22 | Size=3.477167
-2025-12-05 11:28:47 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955716.175603 cerrada exitosamente | PnL: -234.22
-2025-12-05 11:28:47 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-234.22 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:47 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955717.84815 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:47 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:47 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90422.62
-2025-12-05 11:28:47 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955717.84815 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:47 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90379.48 Exit=90446.84 PnL=-234.22 | Size=3.477167
-2025-12-05 11:28:47 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955717.84815 cerrada exitosamente | PnL: -234.22
-2025-12-05 11:28:47 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-234.22 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:47 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955719.513864 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:47 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:47 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90446.84 >= 90422.62
-2025-12-05 11:28:47 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764955719.513864 | Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:48 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90379.48 Exit=90446.84 PnL=-234.22 | Size=3.477167
-2025-12-05 11:28:48 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764955719.513864 cerrada exitosamente | PnL: -234.22
-2025-12-05 11:28:48 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-234.22 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
-2025-12-05 11:28:48 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764955721.774013 (BTC/USDT) @ 90446.84
-2025-12-05 11:28:49 | WARNING | INFO | ⚠️ Límite de pérdida diaria alcanzado (MVP): -3302.70
-2025-12-05 11:33:49 | INFO | INFO | 💓 Bot activo | Iteración #26 | PnL: -3302.70 | Trades: 24 | Posiciones: 8
-2025-12-05 11:33:49 | WARNING | INFO | ⚠️ Límite de pérdida diaria alcanzado (MVP): -3302.70
-2025-12-05 11:33:51 | INFO | INFO | 📡 Señal recibida: 2
-2025-12-05 11:33:51 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-05 11:33:51 | WARNING | INFO | ⚠️ Cerrando posiciones abiertas...
-2025-12-05 11:33:51 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90399.99 Exit=90394.01 PnL=-19.02 | Size=3.180035
-2025-12-05 11:33:52 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90399.99 Exit=90394.01 PnL=19.02 | Size=3.180035
-2025-12-05 11:33:53 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90399.99 Exit=90394.01 PnL=19.02 | Size=3.180035
-2025-12-05 11:33:54 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90399.99 Exit=90394.01 PnL=19.02 | Size=3.180035
-2025-12-05 11:33:54 | INFO | INFO | 📡 Señal recibida: 2
-2025-12-05 11:33:54 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-05 11:33:54 | WARNING | INFO | ⚠️ Cerrando posiciones abiertas...
-2025-12-05 11:33:54 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90399.99 Exit=90394.01 PnL=19.02 | Size=3.180035
-2025-12-05 11:33:54 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90399.99 Exit=90394.01 PnL=19.02 | Size=3.180035
-2025-12-05 11:33:54 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90399.99 Exit=90394.01 PnL=19.02 | Size=3.180035
-2025-12-05 11:33:55 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90379.47 Exit=90394.01 PnL=46.24 | Size=3.180035
-2025-12-05 11:33:55 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90446.84 Exit=90394.01 PnL=183.70 | Size=3.477167
-2025-12-05 11:33:55 | INFO | INFO | ✅ Bot detenido correctamente
-2025-12-05 11:33:56 | INFO | INFO | 📡 Señal recibida: 2
-2025-12-05 11:33:56 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-05 11:33:56 | INFO | INFO | ✅ Bot detenido correctamente
-2025-12-05 11:33:57 | INFO | INFO | 📡 Señal recibida: 2
-2025-12-05 11:33:57 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-05 11:33:57 | INFO | INFO | ✅ Bot detenido correctamente
-2025-12-05 11:33:58 | INFO | INFO | 📡 Señal recibida: 2
-2025-12-05 11:33:58 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-05 11:33:58 | INFO | INFO | ✅ Bot detenido correctamente
-2025-12-05 11:33:58 | INFO | INFO | 📡 Señal recibida: 2
-2025-12-05 11:33:58 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-05 11:33:58 | INFO | INFO | ✅ Bot detenido correctamente
-2025-12-05 11:33:58 | INFO | INFO | 📡 Señal recibida: 2
-2025-12-05 11:33:58 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
-2025-12-05 11:33:58 | INFO | INFO | ✅ Bot detenido correctamente
+2025-12-05 11:44:36 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956666.469137 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:36 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956669.313026 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:36 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956671.549134 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:36 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956673.254002 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:36 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956674.933022 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:36 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956676.614963 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Iniciando generación de señal...
+2025-12-05 11:44:38 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Indicadores disponibles - EMA9: 90375.40, EMA21: 90411.72, RSI: 31.53
+2025-12-05 11:44:38 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Señal detectada: SELL @ 90150.07 - Razón: MEDIA: EMA rápida < EMA lenta (diff: 0.0402%)
+2025-12-05 11:44:38 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Todos los filtros básicos pasados
+2025-12-05 11:44:38 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Filtros básicos pasados
+2025-12-05 11:44:38 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Tamaño de posición calculado: 0.0100
+2025-12-05 11:44:38 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Señal FINAL aprobada: SELL BTC/USDT @ 90150.07 (Size: 0.0100, SL: 91051.57, TP: 87896.32)
+2025-12-05 11:44:38 | INFO | INFO | 🔔 Señal generada: SELL BTC/USDT @ 90150.07 (Fuerza: 50.00%)
+2025-12-05 11:44:38 | INFO | INFO | 📏 Señal procesada por size_and_protect: Size=0.188813, SL=90256.00, TP=89938.22
+2025-12-05 11:44:38 | INFO | INFO | 🐛 [DEBUG] ML no disponible o deshabilitado - saltando filtro ML
+2025-12-05 11:44:38 | WARNING | INFO | ⚠️ [MVP] Exposición máxima superada: 356576.62 / 8000.00
+2025-12-05 11:44:38 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-05 11:44:38 | INFO | src.execution.order_executor | 📤 Ejecutando orden: SELL BTC/USDT @ 90150.07 | Size: 0.188813 | SL: 90256.00 | TP: 89938.22 | Market: CRYPTO | Mode: PAPER
+2025-12-05 11:44:38 | INFO | src.execution.order_executor | ✅ Trade registrado exitosamente: paper_1764956678.280208 (BTC/USDT)
+2025-12-05 11:44:38 | INFO | INFO | 🚀 [MVP] ✅ Trade #73: SELL BTC/USDT @ 90150.07 (Size: 0.1888, SL: 90256.00, TP: 89938.22)
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956546.95515 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956632.567994 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956642.3176 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956643.989865 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956645.660039 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956647.914979 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956650.748647 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956652.415249 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956654.115076 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956656.961596 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956658.630595 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956660.314305 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956661.978514 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956664.226159 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956666.469137 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956669.313026 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956671.549134 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956673.254002 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956674.933022 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956676.614963 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:38 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956678.280208 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Iniciando generación de señal...
+2025-12-05 11:44:40 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Indicadores disponibles - EMA9: 90375.40, EMA21: 90411.72, RSI: 31.53
+2025-12-05 11:44:40 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Señal detectada: SELL @ 90150.07 - Razón: MEDIA: EMA rápida < EMA lenta (diff: 0.0402%)
+2025-12-05 11:44:40 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Todos los filtros básicos pasados
+2025-12-05 11:44:40 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Filtros básicos pasados
+2025-12-05 11:44:40 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Tamaño de posición calculado: 0.0100
+2025-12-05 11:44:40 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Señal FINAL aprobada: SELL BTC/USDT @ 90150.07 (Size: 0.0100, SL: 91051.57, TP: 87896.32)
+2025-12-05 11:44:40 | INFO | INFO | 🔔 Señal generada: SELL BTC/USDT @ 90150.07 (Fuerza: 50.00%)
+2025-12-05 11:44:40 | INFO | INFO | 📏 Señal procesada por size_and_protect: Size=0.188813, SL=90256.00, TP=89938.22
+2025-12-05 11:44:40 | INFO | INFO | 🐛 [DEBUG] ML no disponible o deshabilitado - saltando filtro ML
+2025-12-05 11:44:40 | WARNING | INFO | ⚠️ [MVP] Exposición máxima superada: 373598.13 / 8000.00
+2025-12-05 11:44:40 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-05 11:44:40 | INFO | src.execution.order_executor | 📤 Ejecutando orden: SELL BTC/USDT @ 90150.07 | Size: 0.188813 | SL: 90256.00 | TP: 89938.22 | Market: CRYPTO | Mode: PAPER
+2025-12-05 11:44:40 | INFO | src.execution.order_executor | ✅ Trade registrado exitosamente: paper_1764956680.538313 (BTC/USDT)
+2025-12-05 11:44:40 | INFO | INFO | 🚀 [MVP] ✅ Trade #74: SELL BTC/USDT @ 90150.07 (Size: 0.1888, SL: 90256.00, TP: 89938.22)
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956546.95515 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956632.567994 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956642.3176 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956643.989865 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956645.660039 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956647.914979 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956650.748647 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956652.415249 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956654.115076 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956656.961596 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956658.630595 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956660.314305 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956661.978514 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956664.226159 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956666.469137 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956669.313026 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956671.549134 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956673.254002 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956674.933022 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956676.614963 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956678.280208 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:40 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956680.538313 (BTC/USDT) @ 90150.07
+2025-12-05 11:44:42 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Iniciando generación de señal...
+2025-12-05 11:44:42 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Indicadores disponibles - EMA9: 90375.40, EMA21: 90411.72, RSI: 31.53
+2025-12-05 11:44:42 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Señal detectada: SELL @ 90260.43 - Razón: MEDIA: EMA rápida < EMA lenta (diff: 0.0402%)
+2025-12-05 11:44:42 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Todos los filtros básicos pasados
+2025-12-05 11:44:42 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Filtros básicos pasados
+2025-12-05 11:44:42 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] Tamaño de posición calculado: 0.0100
+2025-12-05 11:44:42 | INFO | src.strategy.trading_strategy | 🐛 [DEBUG] ✅ Señal FINAL aprobada: SELL BTC/USDT @ 90260.43 (Size: 0.0100, SL: 91163.03, TP: 88003.92)
+2025-12-05 11:44:42 | INFO | INFO | 🔔 Señal generada: SELL BTC/USDT @ 90260.43 (Fuerza: 50.00%)
+2025-12-05 11:44:42 | INFO | INFO | 📏 Señal procesada por size_and_protect: Size=0.188813, SL=90366.36, TP=90048.58
+2025-12-05 11:44:42 | INFO | INFO | 🐛 [DEBUG] ML no disponible o deshabilitado - saltando filtro ML
+2025-12-05 11:44:42 | WARNING | INFO | ⚠️ [MVP] Exposición máxima superada: 390640.47 / 8000.00
+2025-12-05 11:44:42 | INFO | INFO | 🚀 [MVP] Ejecutando orden (prioridad: sample size)
+2025-12-05 11:44:42 | INFO | src.execution.order_executor | 📤 Ejecutando orden: SELL BTC/USDT @ 90260.43 | Size: 0.188813 | SL: 90366.36 | TP: 90048.58 | Market: CRYPTO | Mode: PAPER
+2025-12-05 11:44:42 | INFO | src.execution.order_executor | ✅ Trade registrado exitosamente: paper_1764956682.840665 (BTC/USDT)
+2025-12-05 11:44:42 | INFO | INFO | 🚀 [MVP] ✅ Trade #75: SELL BTC/USDT @ 90260.43 (Size: 0.1888, SL: 90366.36, TP: 90048.58)
+2025-12-05 11:44:42 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956546.95515 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:42 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956632.567994 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:42 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:42 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90210.05
+2025-12-05 11:44:42 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956632.567994 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:43 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90102.15 Exit=90233.00 PnL=-24.25 | Size=0.185351
+2025-12-05 11:44:43 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956632.567994 cerrada exitosamente | PnL: -24.25
+2025-12-05 11:44:43 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-24.25 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:43 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956642.3176 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:43 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:43 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90210.05
+2025-12-05 11:44:43 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956642.3176 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:43 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90102.15 Exit=90233.00 PnL=-24.25 | Size=0.185351
+2025-12-05 11:44:43 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956642.3176 cerrada exitosamente | PnL: -24.25
+2025-12-05 11:44:43 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-24.25 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:43 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956643.989865 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:43 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:43 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90210.05
+2025-12-05 11:44:43 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956643.989865 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90102.15 Exit=90232.99 PnL=-24.25 | Size=0.185351
+2025-12-05 11:44:44 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956643.989865 cerrada exitosamente | PnL: -24.25
+2025-12-05 11:44:44 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-24.25 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956645.660039 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90210.05
+2025-12-05 11:44:44 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956645.660039 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90102.15 Exit=90232.99 PnL=-24.25 | Size=0.185351
+2025-12-05 11:44:44 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956645.660039 cerrada exitosamente | PnL: -24.25
+2025-12-05 11:44:44 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-24.25 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956647.914979 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956650.748647 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956652.415249 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956654.115076 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956656.961596 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956658.630595 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956660.314305 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956661.978514 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956664.226159 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956666.469137 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956669.313026 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90257.97
+2025-12-05 11:44:44 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956669.313026 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90150.07 Exit=90232.99 PnL=-15.37 | Size=0.185351
+2025-12-05 11:44:44 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956669.313026 cerrada exitosamente | PnL: -15.37
+2025-12-05 11:44:44 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-15.37 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956671.549134 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90255.98
+2025-12-05 11:44:44 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956671.549134 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90150.06 Exit=90232.99 PnL=-15.66 | Size=0.188813
+2025-12-05 11:44:44 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956671.549134 cerrada exitosamente | PnL: -15.66
+2025-12-05 11:44:44 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-15.66 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956673.254002 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:44 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:44 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90255.98
+2025-12-05 11:44:44 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956673.254002 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:45 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90150.06 Exit=90232.99 PnL=-15.66 | Size=0.188813
+2025-12-05 11:44:45 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956673.254002 cerrada exitosamente | PnL: -15.66
+2025-12-05 11:44:45 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-15.66 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:45 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956674.933022 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:45 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:45 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90255.98
+2025-12-05 11:44:45 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956674.933022 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:46 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90150.06 Exit=90232.99 PnL=-15.66 | Size=0.188813
+2025-12-05 11:44:46 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956674.933022 cerrada exitosamente | PnL: -15.66
+2025-12-05 11:44:46 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-15.66 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:46 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956676.614963 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:46 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:46 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90256.00
+2025-12-05 11:44:46 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956676.614963 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:47 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90150.07 Exit=90232.99 PnL=-15.66 | Size=0.188813
+2025-12-05 11:44:47 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956676.614963 cerrada exitosamente | PnL: -15.66
+2025-12-05 11:44:47 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-15.66 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:47 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956678.280208 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:47 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:47 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90256.00
+2025-12-05 11:44:47 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956678.280208 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:48 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90150.07 Exit=90232.99 PnL=-15.66 | Size=0.188813
+2025-12-05 11:44:48 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956678.280208 cerrada exitosamente | PnL: -15.66
+2025-12-05 11:44:48 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-15.66 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:48 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956680.538313 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:48 | INFO | src.risk.advanced_position_manager | 🛑 [BTC/USDT] Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:48 | INFO | src.risk.risk_manager | 🛑 [BTC/USDT] Stop Loss alcanzado: 90260.43 >= 90256.00
+2025-12-05 11:44:48 | INFO | INFO | 🔒 [BTC/USDT] Cerrando posición paper_1764956680.538313 | Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:48 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90150.07 Exit=90232.99 PnL=-15.66 | Size=0.188813
+2025-12-05 11:44:48 | INFO | INFO | ✅ [BTC/USDT] Posición paper_1764956680.538313 cerrada exitosamente | PnL: -15.66
+2025-12-05 11:44:48 | INFO | INFO | ✅ Posición cerrada: BTC/USDT - PnL=-15.66 - Tipo: stop_loss - Razón: Stop Loss/Take Profit alcanzado
+2025-12-05 11:44:48 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764956682.840665 (BTC/USDT) @ 90260.43
+2025-12-05 11:44:49 | WARNING | INFO | ⚠️ Límite de pérdida diaria alcanzado (MVP): -332.77
+2025-12-05 11:49:49 | INFO | INFO | 💓 Bot activo | Iteración #99 | PnL: -332.77 | Trades: 75 | Posiciones: 12
+2025-12-05 11:49:49 | WARNING | INFO | ⚠️ Límite de pérdida diaria alcanzado (MVP): -332.77
+2025-12-05 11:54:49 | INFO | INFO | 💓 Bot activo | Iteración #100 | PnL: -332.77 | Trades: 75 | Posiciones: 12
+2025-12-05 11:54:49 | WARNING | INFO | ⚠️ Límite de pérdida diaria alcanzado (MVP): -332.77
+2025-12-05 11:59:49 | INFO | INFO | 💓 Bot activo | Iteración #101 | PnL: -332.77 | Trades: 75 | Posiciones: 12
+2025-12-05 11:59:49 | WARNING | INFO | ⚠️ Límite de pérdida diaria alcanzado (MVP): -332.77
