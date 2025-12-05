@@ -52,6 +52,12 @@ async def main_loop():
 
             if signal:
 
+                # ✅ EVITAR MULTI-POSICIONES (NO STACK)
+                if executor.positions:
+                    logger.info("⏸️ Hay una posición abierta → no se abre trade nuevo")
+                    await asyncio.sleep(cfg.POLL_INTERVAL)
+                    continue
+
                 if risk._check_daily_limits():
 
                     signal = risk.size_and_protect(
