@@ -75,9 +75,8 @@ class RiskManager:
         """Se llama cuando una posición se cierra"""
         if self.state.trades_today > 0:
             self.state.trades_today -= 1
-        self.logger.info(
-            f"🧹 Slot liberado - posiciones abiertas: {self.open_positions}"
-        )
+        self.logger.info("🧹 Slot liberado")
+
     def check_daily_limits(self, daily_pnl: float = None, daily_trades: int = None) -> bool:
         """
         Verifica límites diarios de pérdida y cantidad de trades.
@@ -89,7 +88,7 @@ class RiskManager:
 
         max_loss = self.state.equity * self.config.MAX_DAILY_LOSS
         max_gain = self.state.equity * self.config.MAX_DAILY_GAIN
-        max_trades = getattr(self.config, "MAX_DAILY_TRADES", none)
+        max_trades = getattr(self.config, "MAX_DAILY_TRADES", None)
 
         # Verificar si se alcanzó el límite de pérdida
         if pnl < -max_loss:
@@ -150,7 +149,13 @@ class RiskManager:
     # 💰 SIZING Y PROTECCIÓN
     # ======================================================
     def size_and_protect(self, signal: Dict[str, Any], atr: Optional[float] = None) -> Dict[str, Any]:
-        """Calcula tamaño de posición, stop loss y take profit."""
+        """
+        Calcula tamaño de posición, stop loss y take profit.
+
+        Risk/Reward objetivo: 1:3
+        - Stop Loss: Mantiene distancia corta (ATR)
+        - Take Profit: Mínimo STOP_DISTANCE * 3
+        """
         try:
             price = signal["price"]
             atr_value = atr if atr and atr > 0 else price * 0.015  # 1.5% por defecto
@@ -159,12 +164,19 @@ class RiskManager:
             risk_amount = self.state.equity * risk_pct
             qty = max(risk_amount / atr_value, 0.0001)
 
+            # Calcular Stop Loss (mantiene distancia corta)
             if signal["action"].lower() == "buy":
                 stop_loss = price - atr_value
-                take_profit = price + atr_value * 2
+                stop_distance = atr_value  # Distancia del stop loss
             else:
                 stop_loss = price + atr_value
-                take_profit = price - atr_value * 2
+                stop_distance = atr_value  # Distancia del stop loss
+
+            # Calcular Take Profit: Mínimo STOP_DISTANCE * 3 (Risk/Reward 1:3)
+            if signal["action"].lower() == "buy":
+                take_profit = price + stop_distance * 3
+            else:
+                take_profit = price - stop_distance * 3
 
             signal.update({
                 "position_size": round(qty, 6),
@@ -173,7 +185,8 @@ class RiskManager:
             })
 
             self.logger.debug(
-                f"🧮 Sizing calculado | {signal['symbol']} | Qty={qty:.4f} | SL={stop_loss:.2f} | TP={take_profit:.2f}"
+                f"🧮 Sizing calculado | {signal['symbol']} | Qty={qty:.4f} | "
+                f"SL={stop_loss:.2f} | TP={take_profit:.2f} | R:R=1:3"
             )
             return signal
         except Exception as e:
@@ -246,7 +259,6 @@ class RiskManager:
             self.state.daily_pnl += pnl
             self.state.total_pnl += pnl
             self.state.trades_today += 1
-
 
             self.trade_history.append({
                 "timestamp": datetime.now(),

@@ -188,3 +188,25 @@
 2025-12-05 11:54:49 | WARNING | INFO | ⚠️ Límite de pérdida diaria alcanzado (MVP): -332.77
 2025-12-05 11:59:49 | INFO | INFO | 💓 Bot activo | Iteración #101 | PnL: -332.77 | Trades: 75 | Posiciones: 12
 2025-12-05 11:59:49 | WARNING | INFO | ⚠️ Límite de pérdida diaria alcanzado (MVP): -332.77
+2025-12-05 12:02:34 | INFO | INFO | 📡 Señal recibida: 2
+2025-12-05 12:02:34 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
+2025-12-05 12:02:34 | WARNING | INFO | ⚠️ Cerrando posiciones abiertas...
+2025-12-05 12:02:35 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90268.00 Exit=90275.21 PnL=-1.67 | Size=0.230972
+2025-12-05 12:02:35 | INFO | INFO | 📡 Señal recibida: 2
+2025-12-05 12:02:35 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
+2025-12-05 12:02:35 | WARNING | INFO | ⚠️ Cerrando posiciones abiertas...
+2025-12-05 12:02:35 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90159.62 Exit=90275.21 PnL=-21.42 | Size=0.185351
+2025-12-05 12:02:35 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90159.62 Exit=90275.21 PnL=-21.42 | Size=0.185351
+2025-12-05 12:02:36 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90159.62 Exit=90275.21 PnL=21.42 | Size=0.185351
+2025-12-05 12:02:36 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90159.63 Exit=90275.21 PnL=-21.42 | Size=0.185351
+2025-12-05 12:02:37 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90159.63 Exit=90275.21 PnL=21.42 | Size=0.185351
+2025-12-05 12:02:37 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90159.63 Exit=90275.21 PnL=21.42 | Size=0.185351
+2025-12-05 12:02:38 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90159.63 Exit=90275.21 PnL=21.42 | Size=0.185351
+2025-12-05 12:02:39 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90159.62 Exit=90275.21 PnL=21.42 | Size=0.185351
+2025-12-05 12:02:39 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90159.62 Exit=90275.21 PnL=21.42 | Size=0.185351
+2025-12-05 12:02:39 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90150.07 Exit=90233.96 PnL=15.55 | Size=0.185351
+2025-12-05 12:02:40 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | BUY | Entry=90150.06 Exit=90233.96 PnL=15.55 | Size=0.185351
+2025-12-05 12:02:40 | INFO | src.execution.order_executor | 💸 Posición cerrada BTC/USDT | SELL | Entry=90260.43 Exit=90233.96 PnL=5.00 | Size=0.188813
+2025-12-05 12:02:40 | INFO | INFO | ✅ Bot detenido correctamente
+2025-12-05 12:04:49 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
+2025-12-05 12:04:49 | INFO | INFO | ✅ Bot detenido correctamente

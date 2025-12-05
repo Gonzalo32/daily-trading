@@ -99,7 +99,7 @@ async def main_loop():
                     position=position,
                     current_price=market_data["price"],
                     market_data=market_data,
-                    mvp_mode=True,   # ⬅️ MVP ACTIVADO
+                    mvp_mode=False,   # ⬅️ MVP DESACTIVADO
                     executor=executor,
                     risk_manager=risk,
                     positions_list=executor.positions

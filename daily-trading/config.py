@@ -18,13 +18,13 @@ class Config:
     TRADING_MODE = os.getenv("TRADING_MODE", "PAPER").upper()  # PAPER | LIVE
     MARKET = os.getenv("MARKET", "CRYPTO").upper()             # CRYPTO | STOCK
     SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
-    TIMEFRAME = os.getenv("TIMEFRAME", "1h")
+    TIMEFRAME = os.getenv("TIMEFRAME", "5m")
 
     # ==============================
     # 💰 RIESGO Y CAPITAL
     # ==============================
     INITIAL_CAPITAL = float(os.getenv("INITIAL_CAPITAL", "10000"))
-    MAX_POSITIONS = int(os.getenv("MAX_POSITIONS", "50"))
+    MAX_POSITIONS = int(os.getenv("MAX_POSITIONS", "1"))
 
     # Gestión de riesgo porcentual
     # 2% del capital por trade
@@ -34,7 +34,7 @@ class Config:
 
     # Alternativas compatibles con versiones previas
     MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "3"))
-    MAX_POSITION_RISK_PCT = float(os.getenv("MAX_POSITION_RISK_PCT", "1.5"))
+    MAX_POSITION_RISK_PCT = float(os.getenv("MAX_POSITION_RISK_PCT", "0.5"))
 
     STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", "0.01"))      # 1%
     # 2.5:1 ratio (ajustado para mejor riesgo/beneficio)
@@ -47,9 +47,9 @@ class Config:
     SLOW_MA_PERIOD = int(os.getenv("SLOW_MA_PERIOD", "21"))
     RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
     # Ajustado para más oportunidades
-    RSI_OVERBOUGHT = float(os.getenv("RSI_OVERBOUGHT", "80"))
+    RSI_OVERBOUGHT = float(os.getenv("RSI_OVERBOUGHT", "65"))
     # Ajustado para más oportunidades
-    RSI_OVERSOLD = float(os.getenv("RSI_OVERSOLD", "20"))
+    RSI_OVERSOLD = float(os.getenv("RSI_OVERSOLD", "35"))
 
     # ==============================
     # 🕓 HORARIOS (acciones)

@@ -72,7 +72,7 @@ def create_basic_config():
 TRADING_MODE=PAPER
 MARKET=CRYPTO
 SYMBOL=BTC/USDT
-TIMEFRAME=1m
+TIMEFRAME=15m
 
 # Configuración de estrategia
 FAST_MA_PERIOD=5
