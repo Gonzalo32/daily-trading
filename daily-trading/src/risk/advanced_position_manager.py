@@ -94,61 +94,53 @@ class AdvancedPositionManager:
                 position_age = (datetime.now() - open_time).total_seconds()
 
                 # ✅ FORCE CIERRE SOLO SI MVP = TRUE Y PASARON 120s
+                # FORCE CLOSE: Cerrar cualquier posición abierta >= 120 segundos
                 if mvp_mode and position_age >= 120:
-
                     self.logger.info(
-                        f"⏰ FORCE TIME CLOSE (MVP) -> {position_id}, {symbol}, tiempo: {position_age:.1f}s"
+                        f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, tiempo: {position_age:.1f}s"
                     )
 
-                    if executor:
-                        try:
-                            close_result = await executor.close_position(position)
+                    if executor and risk_manager:
+                        close_result = await executor.close_position(position)
 
-                            if close_result.get('success'):
-                                pnl = close_result.get('pnl', 0.0)
-                                if risk_manager:
-                                    risk_manager.register_trade({
-                                        'symbol': symbol,
-                                        'action': position.get('side', 'UNKNOWN'),
-                                        'price': close_result.get('exit_price', current_price),
-                                        'position_size': position.get('size', 0),
-                                        'pnl': pnl,
-                                        'reason': 'Force time close MVP (120s)'
-                                    })
+                        if close_result.get("success"):
 
-                                if positions_list and position in positions_list:
-                                    positions_list.remove(position)
+                            pnl = close_result.get("pnl", 0.0)
 
-                                if risk_manager:
-                                    risk_manager.unregister_position()
+                            risk_manager.register_trade({
+                                "symbol": symbol,
+                                "action": position["side"],
+                                "price": close_result["exit_price"],
+                                "position_size": position.get("size") or position.get("quantity"),
+                                "pnl": pnl,
+                                "reason": "Force close (120s)"
+                            })
 
-                                self.logger.info(
-                                    f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, PnL: {pnl:.2f}"
-                                )
+                            # ✅ ACTUALIZAR EQUITY REAL
+                            current_equity = risk_manager.state.equity
+                            risk_manager.update_equity(current_equity + pnl)
 
-                                return {
-                                    'action': 'close',
-                                    'reason': f'Force time close MVP ({position_age:.1f}s)',
-                                    'should_close': True,
-                                    'closed': True,
-                                    'pnl': pnl
-                                }
+                            # Limpiar tracking
+                            self.cleanup_position(position_id)
 
-                            else:
-                                self.logger.error(
-                                    f"❌ Error cerrando posición {position_id}: {close_result.get('error', 'Unknown')}"
-                                )
+                            self.logger.info(
+                                f"✅ Posición cerrada -> {symbol} | "
+                                f"PnL: {pnl:.2f} | "
+                                f"Equity: {risk_manager.state.equity:.2f}"
+                            )
 
-                        except Exception as e:
+                            return {
+                                "action": "close",
+                                "should_close": True,
+                                "closed": True,
+                                "pnl": pnl
+                            }
+
+                        else:
                             self.logger.error(
-                                f"❌ Error en force time close: {e}")
-
-                    else:
-                        self.logger.warning(
-                            f"⚠️ No hay executor disponible para cerrar posición {position_id}"
-                        )
-
-            # Log de evaluación
+                                f"❌ Error cerrando posición {position_id}: {close_result.get('error')}"
+                            )
+            # Log de evaluación -----------------------------
             self.logger.info(
                 f"🔍 [MVP={mvp_mode}] Evaluando posición {position_id} ({symbol}) @ {current_price:.2f}"
             )

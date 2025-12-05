@@ -1,149 +1,109 @@
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'coroutine' object is not subscriptable
-Traceback (most recent call last):
-  File "C:\Users\Administrador\Desktop\daily-trading\daily-trading\src\execution\order_executor.py", line 236, in close_position
-    exit_price = await self.market_service.get_current_price(position["symbol"])
-                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-TypeError: 'coroutine' object is not subscriptable
-2025-12-04 12:00:26 | INFO | INFO | ✅ Bot detenido correctamente
+2025-12-05 09:31:52 | INFO | INFO | 🔔 Señal generada: SELL BTC/USDT @ 91191.38 (Fuerza: 50.00%)
+2025-12-05 09:31:52 | INFO | INFO | 📏 Señal procesada por size_and_protect: Size=0.025709, SL=97025.85, TP=79522.44
+2025-12-05 09:31:52 | INFO | INFO | 🐛 [DEBUG] ML no disponible o deshabilitado - saltando filtro ML
+2025-12-05 09:31:52 | WARNING | INFO | ⚠️ [MVP] Máximo de posiciones simultáneas alcanzado: 50/50
+2025-12-05 09:31:52 | WARNING | INFO | ⚠️ Trade rechazado por límites básicos de MVP
+2025-12-05 09:31:52 | INFO | INFO | 🚫 Operación rechazada por gestor de riesgo (exposición máxima o límites alcanzados)
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948432.68083 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948434.940979 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948436.627904 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948438.317131 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948440.553045 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948442.220343 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948443.905927 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948445.583659 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948447.265674 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948449.519395 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948451.194265 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948452.889016 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948454.562354 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948456.820393 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948458.519713 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948460.177727 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948461.858175 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948464.132264 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948465.802328 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948467.483071 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948469.768222 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948471.434182 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948473.120851 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948475.385217 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948477.0836 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948478.766409 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948480.442974 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948482.685221 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948484.407658 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948486.651281 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948488.913602 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948491.157302 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948493.400981 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948495.677336 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948497.360413 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948499.613308 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948501.272087 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948502.981054 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948504.657406 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948506.330037 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948508.628949 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948510.886761 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948512.583188 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948514.272419 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948515.942518 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948517.633501 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948519.325618 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948522.175233 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948523.865185 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:52 | INFO | src.risk.advanced_position_manager | 🔍 [MVP=True] Evaluando posición paper_1764948526.114146 (BTC/USDT) @ 91191.38
+2025-12-05 09:31:53 | INFO | INFO | 🛑 Deteniendo Bot de Day Trading...
+2025-12-05 09:31:53 | WARNING | INFO | ⚠️ Cerrando posiciones abiertas...
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | ERROR | src.execution.order_executor | ❌ Error cerrando posición: 'quantity'
+2025-12-05 09:31:53 | INFO | INFO | ✅ Bot detenido correctamente

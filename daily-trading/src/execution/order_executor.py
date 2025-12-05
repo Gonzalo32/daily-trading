@@ -228,30 +228,67 @@ class OrderExecutor:
         return None
 
     # ======================================================
-    # 🔁 CIERRE
+    # 🔁 CIERRE DE POSICIONES
     # ======================================================
-    async def close_position(self, position):
-
+    async def close_position(self, position: dict) -> dict:
+        """
+        Cierra una posición y calcula el PnL.
+        Funciona tanto en PAPER como en REAL (usa el ticker del exchange si hay).
+        """
         try:
-            exit_price = await self.market_service.get_current_price(position["symbol"])
+            symbol = position["symbol"]
+            side = str(position["side"]).upper()
+            # Tus posiciones se crean con "size", no con "quantity"
+            size = position.get("size") or position.get("quantity")
+            entry = float(position["entry_price"])
 
-            entry_price = position["entry_price"]
-            size = position["size"]
+            if not size:
+                raise ValueError(
+                    f"size/quantity no definido en posición: {position}")
 
-            if position["side"].lower() == "buy":
-                pnl = (exit_price - entry_price) * size
+            # Precio de salida
+            exit_price: float
+            if self.config.MARKET == "CRYPTO" and self.exchange:
+                ticker = await self.exchange.fetch_ticker(symbol)
+                exit_price = float(ticker["last"])
             else:
-                pnl = (entry_price - exit_price) * size
+                # Fallback: cerramos al último precio conocido o al entry
+                exit_price = float(position.get("current_price", entry))
+
+            # PnL
+            if side == "BUY":
+                pnl = (exit_price - entry) * size
+            else:  # SELL
+                pnl = (entry - exit_price) * size
+
+            # Marcar posición como cerrada
+            position["status"] = "closed"
+            position["exit_price"] = exit_price
+            position["exit_time"] = datetime.utcnow()
+            position["pnl"] = pnl
+
+            # Sacarla de la lista interna de posiciones activas
+            if position in self.positions:
+                self.positions.remove(position)
+
+            self.logger.info(
+                f"💸 Posición cerrada {symbol} | {side} | "
+                f"Entry={entry:.2f} Exit={exit_price:.2f} PnL={pnl:.2f}"
+            )
 
             return {
                 "success": True,
                 "exit_price": exit_price,
-                "pnl": pnl
+                "pnl": pnl,
+                "position": position,
             }
 
         except Exception as e:
-            self.logger.error(f"❌ Error cerrando posición: {e}")
-            return {"success": False, "error": str(e)}
+            self.logger.exception(f"❌ Error cerrando posición: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
 
     def get_order_history(self) -> List[Dict[str, Any]]:
         return list(self.executed_orders)
@@ -271,3 +308,46 @@ class OrderExecutor:
             self.logger.info("✅ Conexión del ejecutor cerrada")
         except Exception as e:
             self.logger.exception(f"❌ Error al cerrar OrderExecutor: {e}")
+
+    # src/execution/order_executor.py
+
+    async def close_position(self, position: dict) -> dict:
+        try:
+            symbol = position["symbol"]
+            side = position["side"]
+            size = position["quantity"]
+            entry = position["entry_price"]
+
+            ticker = await self.exchange.fetch_ticker(symbol)
+            exit_price = ticker["last"]
+
+            # PnL
+            if side.upper() == "BUY":
+                pnl = (exit_price - entry) * size
+            else:
+                pnl = (entry - exit_price) * size
+
+            # Remover de posiciones activas
+            if position in self.positions:
+                self.positions.remove(position)
+
+            # LOG
+            self.logger.info(
+                f"💸 Posición cerrada {symbol} | "
+                f"{side} | Entry={entry:.2f} "
+                f"Exit={exit_price:.2f} "
+                f"PnL={pnl:.2f}"
+            )
+
+            return {
+                "success": True,
+                "exit_price": exit_price,
+                "pnl": pnl,
+            }
+
+        except Exception as e:
+            self.logger.error(f"❌ Error cerrando posición: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
