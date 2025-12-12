@@ -1,0 +1,27 @@
+# Librerías de análisis técnico y datos
+ccxt>=4.0.0
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Librerías de visualización
+matplotlib>=3.8.0
+seaborn>=0.13.0
+
+# Machine Learning
+scikit-learn>=1.3.0
+joblib>=1.3.0
+tensorflow>=2.15.0
+
+# API y Web
+fastapi>=0.104.0
+uvicorn>=0.24.0
+websockets>=12.0
+
+# Utilidades
+python-dotenv>=1.0.0
+requests>=2.31.0
+aiohttp>=3.9.0
+schedule>=1.2.0
+
+# Nota: asyncio, logging, json, datetime, time, threading, queue, sqlite3 
+# son módulos integrados en Python y no necesitan instalarse
