@@ -80,7 +80,10 @@ async def main_loop():
                                 "quantity": opened["size"],
                                 "stop_loss": signal["stop_loss"],
                                 "take_profit": signal["take_profit"],
-                                "open_time": datetime.utcnow()
+                                "open_time": datetime.utcnow(),
+                                "risk_amount": signal["risk_amount"],
+                                "atr_value": signal["atr_value"],
+                                "r_value": signal["r_value"],
                             }
 
                             executor.positions.append(position)

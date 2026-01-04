@@ -307,7 +307,9 @@ class OrderExecutor:
             # =====================================================
             from src.ml.trade_recorder import TradeRecorder
             recorder = TradeRecorder()
-            recorder.record_trade(position, exit_price, pnl)
+            recorder.record_trade(    position=position,
+                                    exit_price=exit_price,
+                                    pnl=pnl,)
 
             self.logger.info(
                 f"💸 Posición cerrada {symbol} | {side} | "

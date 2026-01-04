@@ -60,7 +60,9 @@ class TradingBot:
         self.trade_recorder = TradeRecorder() if self.config.ENABLE_ML else None
 
         self.ml_filter = MLSignalFilter(
-            self.config) if self.config.ENABLE_ML else None
+            model_path=self.config.ML_MODEL_PATH,
+            min_probability=self.config.ML_MIN_PROBABILITY,
+        ) if self.config.ENABLE_ML else None
 
         # Estado del bot
         self.is_running = False
@@ -372,7 +374,8 @@ class TradingBot:
                     # pero nunca pasar el techo global de config
                     if self.current_parameters:
                         max_daily_trades = min(
-                            self.current_parameters.get('max_daily_trades', self.config.MAX_DAILY_TRADES),
+                            self.current_parameters.get(
+                                'max_daily_trades', self.config.MAX_DAILY_TRADES),
                             self.config.MAX_DAILY_TRADES
                         )
                     else:
@@ -848,7 +851,7 @@ class TradingBot:
             if close_result['success']:
                 self.current_positions.remove(position)
                 self.daily_pnl += close_result['pnl']
- 
+
     def _build_dashboard_payload(self, market_data: Optional[Dict[str, Any]]) -> Dict[str, Any]:
         """Construir un payload serializable para el dashboard web"""
         positions = []
