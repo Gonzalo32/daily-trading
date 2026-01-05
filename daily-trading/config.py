@@ -5,13 +5,17 @@ Compatible con Binance Testnet (cripto) y Alpaca Paper Trading (acciones)
 """
 
 import os
-from dotenv import load_dotenv
 
 # Cargar variables del archivo .env si existe
-load_dotenv()
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv no instalado, usar solo variables de entorno
 
 
 class Config:
+    """Configuración centralizada del bot de trading."""
     # ==============================
     # 🧩 CONFIGURACIÓN GENERAL
     # ==============================
@@ -19,7 +23,7 @@ class Config:
     MARKET = os.getenv("MARKET", "CRYPTO").upper()             # CRYPTO | STOCK
     SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
     TIMEFRAME = os.getenv("TIMEFRAME", "5m")
-
+    POLL_INTERVAL = 1.0
     # ==============================
     # 💰 RIESGO Y CAPITAL
     # ==============================
@@ -145,15 +149,17 @@ class Config:
 
     @classmethod
     def is_crypto(cls):
+        """Verifica si el mercado es cripto."""
         return cls.MARKET == "CRYPTO"
 
     @classmethod
     def is_paper_mode(cls):
+        """Verifica si está en modo paper trading."""
         return cls.TRADING_MODE == "PAPER"
 
     @classmethod
     def summary(cls):
-        """Imprime un resumen de la configuración cargada"""
+        """Imprime un resumen de la configuración cargada."""
         summary_data = {
             "Trading Mode": cls.TRADING_MODE,
             "Market": cls.MARKET,

@@ -1,0 +1,11 @@
+[MESSAGES CONTROL]
+disable=
+    import-error,
+    fixme,
+    logging-fstring-interpolation,
+    broad-except,
+    bare-except,
+    redefined-outer-name,
+    reimported,
+    unused-argument
+
