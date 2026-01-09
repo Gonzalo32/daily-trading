@@ -1,13 +1,7 @@
-"""
-Módulo para registrar trades en CSV para entrenamiento ML.
-"""
 # pylint: disable=import-error,logging-fstring-interpolation,broad-except
-# pylint: disable=import-outside-toplevel,wrong-import-order
-
-import os
 
 import pandas as pd
-
+import os
 from src.utils.logging_setup import setup_logging
 
 
@@ -67,11 +61,9 @@ class TradeRecorder:
             df = pd.DataFrame([record])
             df.to_csv(self.data_file, mode="a", index=False, header=False)
 
-            symbol = record['symbol']
-            target = record['target']
-            msg = (f"💾 Trade guardado ML | {symbol} | "
-                   f"PnL={pnl:.2f} | Target={target}")
-            self.logger.info(msg)
+            self.logger.info(
+                f"💾 Trade guardado ML | {record['symbol']} | PnL={pnl:.2f} | Target={record['target']}"
+            )
 
             # ENTRENAMIENTO AUTOMÁTICO (llamado correctamente)
             from src.ml.auto_trainer import auto_train_if_needed

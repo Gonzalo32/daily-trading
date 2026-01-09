@@ -9,17 +9,14 @@ Este módulo centraliza TODAS las métricas del sistema para:
 4. Registrar features faltantes para ML futuro
 """
 # pylint: disable=import-error,logging-fstring-interpolation,broad-except,fixme
-# pylint: disable=too-many-instance-attributes,too-many-arguments,too-many-positional-arguments
-# pylint: disable=too-many-locals,consider-using-max-builtin,wrong-import-order
 
 import os
-import sqlite3
+import pandas as pd
+import numpy as np
 from datetime import datetime, date, timedelta
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
-
-import pandas as pd
-import numpy as np
+import sqlite3
 
 from src.utils.logging_setup import setup_logging
 
@@ -308,15 +305,12 @@ class MetricsCollector:
                 'daily_pnl', 0) if bot_state else None
             daily_trades_before = bot_state.get(
                 'daily_trades', 0) if bot_state else None
-            consecutive_signals = (bot_state.get('consecutive_signals', 0)
-                                  if bot_state else None)
+            consecutive_signals = bot_state.get(
+                'consecutive_signals', 0) if bot_state else None
 
             # Crear métrica de trade
-            symbol = position.get('symbol', 'UNK')
-            side = position.get('side', 'UNK')
-            trade_id = f"{entry_time.isoformat()}_{symbol}_{side}"
             trade_metric = TradeMetrics(
-                trade_id=trade_id,
+                trade_id=f"{entry_time.isoformat()}_{position.get('symbol', 'UNK')}_{position.get('side', 'UNK')}",
                 timestamp=entry_time or datetime.now(),
                 symbol=position.get('symbol', 'UNKNOWN'),
                 side=position.get('side', 'BUY').upper(),
@@ -679,17 +673,13 @@ class MetricsCollector:
         returns_array = np.array(returns)
         excess_returns = returns_array - risk_free_rate
         downside_returns = excess_returns[excess_returns < 0]
-        downside_std = (np.std(downside_returns)
-                       if len(downside_returns) > 0 else 0.0)
+        downside_std = np.std(downside_returns) if len(
+            downside_returns) > 0 else 0.0
 
-        return ((np.mean(excess_returns) / downside_std)
-                if downside_std > 0 else 0.0)
+        return (np.mean(excess_returns) / downside_std) if downside_std > 0 else 0.0
 
     def _load_trades_since(self, cutoff_date):
-        """
-        Carga trades desde la base de datos desde una fecha dada
-        y los convierte a TradeMetrics.
-        """
+        """Carga trades desde la base de datos desde una fecha dada y los convierte a TradeMetrics."""
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 

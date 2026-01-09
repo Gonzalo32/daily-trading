@@ -7,8 +7,6 @@ Archivo principal que orquesta todos los componentes del sistema con:
 - Gestión avanzada de posiciones
 """
 # pylint: disable=logging-fstring-interpolation,broad-except,redefined-outer-name,reimported,bare-except
-# pylint: disable=too-many-lines,too-many-instance-attributes,too-many-locals,too-many-nested-blocks
-# pylint: disable=too-many-branches,too-many-statements,import-outside-toplevel
 
 import asyncio
 import signal
@@ -217,20 +215,19 @@ class TradingBot:
             # Log de parámetros clave
             trading_style = self.current_parameters.get('trading_style', 'balanced')
             self.logger.info(f"   ├─ Estilo de trading: {trading_style}")
-
+            
             stop_loss = self.current_parameters.get('stop_loss_pct', 0.01)
             self.logger.info(f"   ├─ Stop Loss: {stop_loss:.2%}")
-
+            
             tp_ratio = self.current_parameters.get('take_profit_ratio', 2.0)
             self.logger.info(f"   ├─ Take Profit: {tp_ratio:.1f}R")
-
+            
             risk = self.current_parameters.get('risk_per_trade', 0.02)
             self.logger.info(f"   ├─ Riesgo por trade: {risk:.2%}")
-
+            
             min_strength = self.current_parameters.get('min_signal_strength', 0.15)
             self.logger.info(f"   ├─ Fuerza mínima: {min_strength:.2%}")
-
-
+            
             max_trades = self.current_parameters.get('max_daily_trades', 5)
             self.logger.info(f"   └─ Max trades diarios: {max_trades}")
 
@@ -359,7 +356,7 @@ class TradingBot:
 
                 # Verificar preparación diaria (re-preparar si es nuevo día)
                 limits_ok = await self.risk_manager.check_daily_limits(
-                    daily_pnl=self.daily_pnl,
+                    daily_pnl=self.daily_pnl, 
                     daily_trades=self.daily_trades
                 )
                 if not limits_ok:
@@ -394,7 +391,7 @@ class TradingBot:
                         max_daily_trades = self.config.MAX_DAILY_TRADES
 
                     limits_ok = self.risk_manager.check_daily_limits(
-                        daily_pnl=self.daily_pnl,
+                        daily_pnl=self.daily_pnl, 
                         daily_trades=self.daily_trades
                     )
                     if not limits_ok:
@@ -406,9 +403,8 @@ class TradingBot:
 
                 if self.daily_trades >= max_daily_trades:
                     if not self.mvp_mode:
-                        msg = (f"⚠️ Máximo de trades diarios alcanzado "
-                               f"({self.daily_trades}/{max_daily_trades})")
-                        self.logger.warning(msg)
+                        self.logger.warning(
+                            f"⚠️ Máximo de trades diarios alcanzado ({self.daily_trades}/{max_daily_trades})")
                     await asyncio.sleep(300)
                     continue
 
@@ -428,12 +424,8 @@ class TradingBot:
                 self.current_signal = signal  # Guardar señal actual para el dashboard
 
                 if signal:
-                    action = signal['action']
-                    price = signal['price']
-                    strength = signal['strength']
-                    msg = (f"🔔 Señal generada: {action} {symbol} @ {price:.2f} "
-                           f"(Fuerza: {strength:.2%})")
-                    self.logger.info(msg)
+                    self.logger.info(
+                        f"🔔 Señal generada: {signal['action']} {symbol} @ {signal['price']:.2f} (Fuerza: {signal['strength']:.2%})")
                 else:
                     # Log cada 10 iteraciones para no saturar
                     if iteration_count % 10 == 0:
@@ -461,10 +453,7 @@ class TradingBot:
 
                     # FILTRO ML: Solo usar si NO es modo MVP y NO es debug
                     ml_decision = None
-                    has_ml_model = (self.ml_filter and
-                                   self.ml_filter.is_model_available())
-                    use_ml_filter = (not self.mvp_mode and not is_debug and
-                                    has_ml_model)
+                    use_ml_filter = not self.mvp_mode and not is_debug and self.ml_filter and self.ml_filter.is_model_available()
 
                     if use_ml_filter:
                         bot_state = {
@@ -483,11 +472,8 @@ class TradingBot:
 
                         # Si ML rechaza la señal, no operar
                         if not ml_decision['approved']:
-                            reason = ml_decision['reason']
-                            prob = ml_decision.get('probability', 0)
-                            msg = (f"🚫 Señal rechazada por filtro ML: {reason} "
-                                   f"(P(win)={prob:.2%})")
-                            self.logger.info(msg)
+                            self.logger.info(
+                                f"🚫 Señal rechazada por filtro ML: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})")
                             signal = None
                     elif is_debug and self.ml_filter and self.ml_filter.is_model_available():
                         # En modo debug, evaluar ML pero no rechazar
@@ -550,15 +536,12 @@ class TradingBot:
                         # Ejecutar si está validado o en modo MVP/debug
                         if risk_valid:
                             if self.mvp_mode:
-                                msg = "🚀 [MVP] Ejecutando orden (prioridad: sample size)"
-                                self.logger.info(msg)
+                                self.logger.info(
+                                    "🚀 [MVP] Ejecutando orden (prioridad: sample size)")
                             elif is_debug:
-                                risk_ok = self.risk_manager.validate_trade(
-                                    signal, self.current_positions)
-                                if not risk_ok:
-                                    msg = ("🐛 [DEBUG] ⚠️ Ejecutando orden a pesar de "
-                                           "validación de riesgo fallida (MODO DEBUG)")
-                                    self.logger.warning(msg)
+                                if not self.risk_manager.validate_trade(signal, self.current_positions):
+                                    self.logger.warning(
+                                        "🐛 [DEBUG] ⚠️ Ejecutando orden a pesar de validación de riesgo fallida (MODO DEBUG)")
                                 msg = ("🐛 [DEBUG] ✅ Ejecutando orden "
                                        "(MODO DEBUG - filtros ignorados)")
                                 self.logger.info(msg)
@@ -597,14 +580,10 @@ class TradingBot:
                                            f"SL: {sl:.2f}, TP: {tp:.2f})")
                                     self.logger.info(msg)
                                 else:
-                                    action = signal['action']
-                                    symbol = signal['symbol']
-                                    price = signal['price']
-                                    strength = signal['strength']
-                                    regime = signal.get('regime', 'unknown')
-                                    msg = (f"✅ {action} {symbol} @ {price} "
-                                           f"(Fuerza: {strength:.2%}, Régimen: {regime})")
-                                    self.logger.info(msg)
+                                    self.logger.info(
+                                        f"✅ {signal['action']} {signal['symbol']} @ {signal['price']} "
+                                        f"(Fuerza: {signal['strength']:.2%}, Régimen: {signal.get('regime', 'unknown')})"
+                                    )
 
                                 # Guardar contexto para el trade recorder
                                 # (SIEMPRE en MVP para generar datos ML)
@@ -615,17 +594,14 @@ class TradingBot:
                                         self.trade_recorder = TradeRecorder()
 
                                     if self.trade_recorder:
-                                        regime_copy = (self.current_regime_info.copy()
-                                                      if self.current_regime_info else {})
                                         self.position_market_data[position['id']] = {
                                             'market_data': market_data.copy(),
-                                            'regime_info': regime_copy,
+                                            'regime_info': self.current_regime_info.copy() if self.current_regime_info else {},
                                             'ml_decision': ml_decision,
                                             'bot_state': {
                                                 'daily_pnl': self.daily_pnl,
                                                 'daily_trades': self.daily_trades,
-                                                'consecutive_signals':
-                                                    self.strategy.consecutive_signals,
+                                                'consecutive_signals': self.strategy.consecutive_signals,
                                             }
                                         }
 
@@ -634,9 +610,8 @@ class TradingBot:
                                 self.logger.error(
                                     f"❌ Error ejecutando orden: {order_result['error']}")
                         else:
-                            msg = ("🚫 Operación rechazada por gestor de riesgo "
-                                   "(exposición máxima o límites alcanzados)")
-                            self.logger.info(msg)
+                            self.logger.info(
+                                "🚫 Operación rechazada por gestor de riesgo (exposición máxima o límites alcanzados)")
 
                 # Verificar y gestionar posiciones abiertas (con trailing stop, break-even, etc.)
                 await self._check_open_positions(market_data)
@@ -693,9 +668,9 @@ class TradingBot:
 
                     # FORCE CLOSE: Cerrar cualquier posición abierta más de 30 segundos
                     if time_seconds >= 30:
-                        msg = (f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, "
-                               f"tiempo: {time_seconds:.1f}s")
-                        self.logger.info(msg)
+                        self.logger.info(
+                            f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, tiempo: {time_seconds:.1f}s"
+                        )
 
                         # Cerrar posición a precio de mercado
                         close_result = await self.order_executor.close_position(position)
@@ -725,16 +700,16 @@ class TradingBot:
                             # Actualizar PnL diario
                             self.daily_pnl += pnl
 
-                            msg = (f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, "
-                                   f"PnL: {pnl:.2f}")
-                            self.logger.info(msg)
+                            self.logger.info(
+                                f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, PnL: {pnl:.2f}"
+                            )
 
                             # Continuar con siguiente posición (esta ya está cerrada)
                             continue
-
-                        error_msg = close_result.get('error', 'Unknown')
-                        msg = f"❌ Error en force time close de {position_id}: {error_msg}"
-                        self.logger.error(msg)
+                        else:
+                            self.logger.error(
+                                f"❌ Error en force time close de {position_id}: {close_result.get('error', 'Unknown')}"
+                            )
 
                 # 1. Gestión avanzada de posición (pasar mvp_mode, executor, risk_manager y lista)
                 management_decision = await self.position_manager.manage_position(
@@ -791,20 +766,18 @@ class TradingBot:
                         self.current_positions.remove(position)
                         self.daily_pnl += close_result['pnl']
 
-                        pnl_val = close_result['pnl']
-                        msg = (f"✅ [{symbol}] Posición {position_id} "
-                               f"cerrada exitosamente | PnL: {pnl_val:.2f}")
-                        self.logger.info(msg)
+                        self.logger.info(
+                            f"✅ [{symbol}] Posición {position_id} cerrada exitosamente | "
+                            f"PnL: {close_result['pnl']:.2f}"
+                        )
 
                         # Determinar tipo de salida
                         exit_type = 'unknown'
                         if 'trailing' in management_decision.get('reason', '').lower():
                             exit_type = 'trailing_stop'
-                        elif ('break-even' in management_decision.get('reason', '').lower() or
-                              'breakeven' in management_decision.get('reason', '').lower()):
+                        elif 'break-even' in management_decision.get('reason', '').lower() or 'breakeven' in management_decision.get('reason', '').lower():
                             exit_type = 'break_even'
-                        elif ('time' in management_decision.get('reason', '').lower() or
-                              'tiempo' in management_decision.get('reason', '').lower()):
+                        elif 'time' in management_decision.get('reason', '').lower() or 'tiempo' in management_decision.get('reason', '').lower():
                             exit_type = 'time_stop'
                         elif 'stop loss' in management_decision.get('reason', '').lower():
                             exit_type = 'stop_loss'
@@ -840,22 +813,15 @@ class TradingBot:
                                 if self.mvp_mode:
                                     try:
                                         df = self.trade_recorder.get_training_data()
-                                        has_data = df is not None and not df.empty
-                                        self.total_trades_count = len(df) if has_data else 0
-                                        min_trades = (
-                                            self.config.MVP_MIN_TRADES_FOR_ADVANCED_FEATURES)
-                                        remaining = min_trades - self.total_trades_count
+                                        self.total_trades_count = len(
+                                            df) if df is not None and not df.empty else 0
+                                        remaining = self.config.MVP_MIN_TRADES_FOR_ADVANCED_FEATURES - self.total_trades_count
                                         if remaining > 0:
-                                            min_t = self.config.MVP_MIN_TRADES_FOR_ADVANCED_FEATURES
-                                            msg = (f"📊 [MVP] Progreso: "
-                                                   f"{self.total_trades_count}/{min_t} "
-                                                   f"trades ({remaining} restantes)")
-                                            self.logger.info(msg)
+                                            self.logger.info(
+                                                f"📊 [MVP] Progreso: {self.total_trades_count}/{self.config.MVP_MIN_TRADES_FOR_ADVANCED_FEATURES} trades ({remaining} restantes)")
                                         else:
-                                            msg = ("🎉 [MVP] ¡500 trades alcanzados! "
-                                                   "El bot cambiará a modo avanzado "
-                                                   "en el próximo reinicio")
-                                            self.logger.warning(msg)
+                                            self.logger.warning(
+                                                "🎉 [MVP] ¡500 trades alcanzados! El bot cambiará a modo avanzado en el próximo reinicio")
                                     except Exception as e:
                                         self.logger.warning(
                                             f"⚠️ No se pudo actualizar contador MVP: {e}")
@@ -895,8 +861,7 @@ class TradingBot:
                 'entry_price': self._safe_float(position.get('entry_price')),
                 'size': self._safe_float(position.get('size')),
                 'stop_loss': self._safe_float(position.get('stop_loss')),
-                'take_profit': self._safe_float(
-                    position.get('take_profit')),
+                'take_profit': self._safe_float(position.get('take_profit')),
                 'entry_time': entry_time,
                 'pnl': self._safe_float(position.get('pnl', 0.0)) or 0.0,
             })
@@ -908,11 +873,9 @@ class TradingBot:
             'max_drawdown': None,
         }
 
-        current_balance = float(self.config.INITIAL_CAPITAL + self.daily_pnl)
-        peak_balance = float(max(self.config.INITIAL_CAPITAL, current_balance))
         balance = {
-            'current': current_balance,
-            'peak': peak_balance,
+            'current': float(self.config.INITIAL_CAPITAL + self.daily_pnl),
+            'peak': float(max(self.config.INITIAL_CAPITAL, self.config.INITIAL_CAPITAL + self.daily_pnl)),
             'exposure': sum(
                 (self._safe_float(p.get('size')) or 0.0) *
                 (self._safe_float(p.get('entry_price')) or 0.0)
@@ -1035,10 +998,7 @@ class TradingBot:
 
         self.logger.info("✅ Componentes inicializados correctamente")
 
-    def _validate_trade_mvp(
-            self, signal: Dict[str, Any],
-            current_positions: List[Dict[str, Any]]
-    ) -> bool:
+    def _validate_trade_mvp(self, signal: Dict[str, Any], current_positions: List[Dict[str, Any]]) -> bool:
         """
         Validación simplificada de riesgo para modo MVP
         Solo verifica que no estemos TOTALMENTE fuera de control.

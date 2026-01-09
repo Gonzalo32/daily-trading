@@ -3,7 +3,6 @@ Gestor de riesgo del bot de trading
 Implementa controles de riesgo, sizing de posición y métricas de rendimiento.
 """
 # pylint: disable=import-error,logging-fstring-interpolation,broad-except,bare-except
-# pylint: disable=too-many-return-statements,consider-using-max-builtin
 
 from dataclasses import dataclass
 from datetime import datetime, date
@@ -45,10 +44,7 @@ class RiskManager:
     # ======================================================
     # 🔒 VALIDACIONES DE RIESGO
     # ======================================================
-    def validate_trade(
-            self, signal: Dict[str, Any],
-            current_positions: List[Dict[str, Any]]
-    ) -> bool:
+    def validate_trade(self, signal: Dict[str, Any], current_positions: List[Dict[str, Any]]) -> bool:
         """Verifica si la operación cumple los criterios de riesgo."""
         try:
             if not self.check_daily_limits():
@@ -115,10 +111,7 @@ class RiskManager:
 
         return True
 
-    def _check_total_exposure(
-            self, signal: Dict[str, Any],
-            current_positions: List[Dict[str, Any]]
-    ) -> bool:
+    def _check_total_exposure(self, signal: Dict[str, Any], current_positions: List[Dict[str, Any]]) -> bool:
         """Limita la exposición total (por ej. máx. 50% del capital)."""
         try:
             total_exposure = sum(
@@ -128,11 +121,10 @@ class RiskManager:
             max_exposure = self.state.equity * (0.9 if self.config.TRAINING_MODE else 0.5)
             is_valid = total_exposure + new_exposure <= max_exposure
             if not is_valid:
-                new_exp = new_exposure
-                msg = (f"⚠️ Exposición excede límite: {total_exposure + new_exp:.2f} "
-                       f"/ {max_exposure:.2f} (actual: {total_exposure:.2f}, "
-                       f"nueva: {new_exp:.2f})")
-                self.logger.warning(msg)
+                self.logger.warning(
+                    f"⚠️ Exposición excede límite: {total_exposure + new_exposure:.2f} / {max_exposure:.2f} "
+                    f"(actual: {total_exposure:.2f}, nueva: {new_exposure:.2f})"
+                )
             return is_valid
         except Exception as e:
             self.logger.error(f"❌ Error calculando exposición total: {e}")
@@ -149,13 +141,7 @@ class RiskManager:
     # ======================================================
     # 💰 SIZING Y PROTECCIÓN
     # ======================================================
-    def size_and_protect(
-            self, signal: Dict[str, Any],
-            atr: Optional[float] = None
-    ) -> Dict[str, Any]:
-        """
-        Calcula el tamaño de la posición y niveles de stop/take profit.
-        """
+    def size_and_protect(self, signal: Dict[str, Any], atr: Optional[float] = None) -> Dict[str, Any]:
         try:
             price = signal["price"]
             atr_value = atr if atr and atr > 0 else price * 0.005
