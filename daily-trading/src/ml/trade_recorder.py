@@ -40,6 +40,16 @@ class TradeRecorder:
             if position.get("exit_time") and position.get("entry_time"):
                 duration = (position["exit_time"] - position["entry_time"]).total_seconds()
 
+            # Manejo seguro de r_value (puede ser None)
+            r_value = position.get("r_value")
+            if r_value is None:
+                r_value = 1.0
+            else:
+                try:
+                    r_value = float(r_value)
+                except (ValueError, TypeError):
+                    r_value = 1.0
+            
             record = {
                 "timestamp": position.get("entry_time"),
                 "symbol": position.get("symbol"),
@@ -53,9 +63,9 @@ class TradeRecorder:
                 "duration_seconds": duration,
                 "risk_amount": position.get("risk_amount"),
                 "atr_value": position.get("atr_value"),
-                "r_value": position.get("r_value"),
+                "r_value": r_value,
                 # TARGET 1 = ganó al menos 1R
-                "target": 1 if pnl >= position.get("r_value", 1) else 0
+                "target": 1 if pnl >= r_value else 0
             }
 
             df = pd.DataFrame([record])

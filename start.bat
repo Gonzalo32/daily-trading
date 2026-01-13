@@ -3,6 +3,10 @@ REM ===============================
 REM Bot de Trading - Inicio Rápido
 REM ===============================
 
+REM Configurar codificación UTF-8 para soporte de emojis
+chcp 65001 >nul 2>&1
+set PYTHONUTF8=1
+
 echo.
 echo ╔════════════════════════════════════════════╗
 echo ║   🚀 Iniciando Bot de Trading...           ║

@@ -1,0 +1,5 @@
+# Ignorar todos los reportes de diagnóstico
+# (son generados localmente y pueden contener info sensible)
+
+*
+!.gitignore

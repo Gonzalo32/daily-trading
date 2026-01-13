@@ -1,0 +1,146 @@
+╔══════════════════════════════════════════════════════════════╗
+║           ✅ PROYECTO LISTO PARA GIT COMMIT                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+📋 RESUMEN DE CAMBIOS
+────────────────────────────────────────────────────────────────
+
+✅ ARCHIVOS NUEVOS (10):
+   1. README.md                      - Documentación principal
+   2. env.example                    - Ejemplo configuración
+   3. setup_windows.bat              - Setup automático
+   4. GIT_INSTRUCCIONES.md           - Guía de git
+   5. CAMBIOS_UNIFICACION_PNL.md     - Changelog técnico
+   6. PREPARADO_PARA_GIT.md          - Instrucciones finales
+   7. daily-trading/src/state/       - Módulo persistencia
+   8. daily-trading/state.json.example - Ejemplo estado
+   9. ENTRYPOINT.md                  - Doc entrypoint
+  10. PERSISTENCIA_IMPLEMENTADA.md   - Doc persistencia
+
+✅ ARCHIVOS MODIFICADOS (8):
+   1. .gitignore                     - Actualizado completo
+   2. daily-trading/main.py          - PnL unificado
+   3. daily-trading/src/risk/risk_manager.py - Sizing fix
+   4. daily-trading/src/ml/trade_recorder.py - r_value fix
+   5. daily-trading/src/ml/ml_signal_filter.py - Robusto
+   6. start.bat                      - UTF-8 encoding
+   7. daily-trading/start.bat        - UTF-8 encoding
+   8. daily-trading/.gitignore       - Creado
+
+✅ ARCHIVOS IGNORADOS (no se suben):
+   - venv/                           - Entorno virtual
+   - .env                            - Config local
+   - state.json                      - Estado bot
+   - logs/                           - Logs locales
+   - __pycache__/                    - Cache Python
+
+╔══════════════════════════════════════════════════════════════╗
+║           🚀 COMANDOS PARA EJECUTAR                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+1️⃣ VERIFICAR ESTADO
+────────────────────────────────────────────────────────────────
+git status
+
+2️⃣ AGREGAR TODOS LOS CAMBIOS
+────────────────────────────────────────────────────────────────
+git add .
+
+3️⃣ COMMIT
+────────────────────────────────────────────────────────────────
+git commit -m "feat: estabilización completa - PnL unificado, sizing corregido, persistencia
+
+- Unificar PnL en RiskManager (única fuente de verdad)
+- Fix bug sizing: 0.011 -> 10.646 BTC corregido
+- Fix TradeRecorder: r_value=None manejado sin crash
+- Fix encoding UTF-8 en Windows
+- Implementar StateManager para persistencia
+- Límite exposición 50% equity
+- README completo con instrucciones setup
+- Setup automático (setup_windows.bat)
+- Smoke tests: 3/3 pasados
+- Documentación completa actualizada"
+
+4️⃣ PUSH
+────────────────────────────────────────────────────────────────
+git push
+
+O si es primera vez:
+git remote add origin <tu-repo-url>
+git branch -M main
+git push -u origin main
+
+╔══════════════════════════════════════════════════════════════╗
+║           🔄 CLONAR EN OTRA COMPUTADORA                     ║
+╚══════════════════════════════════════════════════════════════╝
+
+MÉTODO 1: Setup Automático (Recomendado)
+────────────────────────────────────────────────────────────────
+git clone <tu-repo-url>
+cd daily-trading
+setup_windows.bat
+start.bat
+
+MÉTODO 2: Manual
+────────────────────────────────────────────────────────────────
+git clone <tu-repo-url>
+cd daily-trading
+python -m venv venv
+venv\Scripts\activate
+cd daily-trading
+pip install -r requirements.txt
+python main.py
+
+╔══════════════════════════════════════════════════════════════╗
+║           ✅ VERIFICACIONES PRE-COMMIT                      ║
+╚══════════════════════════════════════════════════════════════╝
+
+✓ .gitignore actualizado
+✓ README.md con instrucciones completas
+✓ env.example sin secretos
+✓ setup_windows.bat funcional
+✓ No hay .env en staging
+✓ No hay state.json en staging
+✓ No hay venv/ en staging
+✓ Smoke tests: 3/3 pasados
+✓ Bot funciona correctamente
+
+╔══════════════════════════════════════════════════════════════╗
+║           📊 ESTADO DEL PROYECTO                            ║
+╚══════════════════════════════════════════════════════════════╝
+
+🟢 Sistema: ESTABLE Y OPERATIVO
+🟢 PnL: Unificado en RiskManager
+🟢 Sizing: Bug corregido (no se infla)
+🟢 TradeRecorder: Robusto (no crashea)
+🟢 Persistencia: Implementada (StateManager)
+🟢 Encoding: UTF-8 funcionando
+🟢 Tests: 3/3 pasados
+🟢 Documentación: Completa
+🟢 Setup: Automático disponible
+
+╔══════════════════════════════════════════════════════════════╗
+║           📚 ARCHIVOS DE REFERENCIA                         ║
+╚══════════════════════════════════════════════════════════════╝
+
+Para más información, lee:
+
+1. README.md                       - Inicio y setup
+2. GIT_INSTRUCCIONES.md            - Guía detallada git
+3. PREPARADO_PARA_GIT.md           - Checklist completo
+4. CAMBIOS_UNIFICACION_PNL.md      - Changelog técnico
+5. env.example                     - Configuración ejemplo
+
+╔══════════════════════════════════════════════════════════════╗
+║           🎯 PRÓXIMOS PASOS                                 ║
+╚══════════════════════════════════════════════════════════════╝
+
+1. Ejecuta: git add .
+2. Ejecuta: git commit -m "..." (ver arriba)
+3. Ejecuta: git push
+4. ✅ Listo para clonar en cualquier PC
+
+════════════════════════════════════════════════════════════════
+Fecha: 2026-01-12
+Estado: ✅ LISTO PARA COMMIT
+════════════════════════════════════════════════════════════════

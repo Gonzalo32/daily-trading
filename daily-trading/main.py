@@ -26,6 +26,7 @@ from src.utils.logger import setup_logger
 from src.utils.notifications import NotificationManager
 from src.ml.trade_recorder import TradeRecorder
 from src.ml.ml_signal_filter import MLSignalFilter
+from src.state.state_manager import StateManager
 
 
 class TradingBot:
@@ -45,6 +46,37 @@ class TradingBot:
         self.market_data = MarketDataProvider(self.config)
         self.strategy = TradingStrategy(self.config)
         self.risk_manager = RiskManager(self.config)
+        
+        # Gestor de persistencia de estado
+        self.state_manager = StateManager("state.json")
+        
+        # Restaurar estado persistido (si existe)
+        persisted_state = self.state_manager.load()
+        if persisted_state:
+            self.risk_manager.state.equity = persisted_state.get(
+                "equity", self.risk_manager.state.equity
+            )
+            self.risk_manager.state.daily_pnl = persisted_state.get(
+                "daily_pnl", 0.0
+            )
+            self.risk_manager.state.trades_today = persisted_state.get(
+                "trades_today", 0
+            )
+            self.risk_manager.state.peak_equity = persisted_state.get(
+                "peak_equity", self.risk_manager.state.peak_equity
+            )
+            self.risk_manager.state.max_drawdown = persisted_state.get(
+                "max_drawdown", 0.0
+            )
+            
+            self.logger.info(
+                "🔁 Estado restaurado | Equity=%.2f | PnL=%.2f | Trades=%d | Peak=%.2f",
+                self.risk_manager.state.equity,
+                self.risk_manager.state.daily_pnl,
+                self.risk_manager.state.trades_today,
+                self.risk_manager.state.peak_equity
+            )
+        
         self.order_executor = OrderExecutor(self.config)
         self.dashboard = Dashboard(
             self.config) if self.config.ENABLE_DASHBOARD else None
@@ -66,8 +98,7 @@ class TradingBot:
         # Estado del bot
         self.is_running = False
         self.current_positions = []
-        self.daily_pnl = 0.0
-        self.daily_trades = 0
+        # ELIMINADO: daily_pnl y daily_trades ahora viven en risk_manager.state (ÚNICA FUENTE DE VERDAD)
         self.current_signal = None  # Señal actual que está analizando
         self.position_market_data = {}  # Guardar datos de mercado al abrir posiciones
 
@@ -232,7 +263,7 @@ class TradingBot:
             self.logger.info(f"   └─ Max trades diarios: {max_trades}")
 
             # 4. Verificar modelo ML
-            if self.ml_filter and self.ml_filter.is_model_available():
+            if self.ml_filter is not None and self.ml_filter.is_model_available():
                 self.logger.info("✅ Modelo ML cargado y disponible")
                 model_info = self.ml_filter.get_model_info()
                 self.logger.info(
@@ -349,17 +380,23 @@ class TradingBot:
                 if (current_time - last_status_log).total_seconds() >= 30:
                     self.logger.info(
                         f"💓 Bot activo | Iteración #{iteration_count} | "
-                        f"PnL: {self.daily_pnl:.2f} | Trades: {self.daily_trades} | "
+                        f"PnL: {self.risk_manager.state.daily_pnl:.2f} | Trades: {self.risk_manager.state.trades_today} | "
                         f"Posiciones: {len(self.current_positions)}"
                     )
                     last_status_log = current_time
 
-                # Verificar preparación diaria (re-preparar si es nuevo día)
-                limits_ok = await self.risk_manager.check_daily_limits(
-                    daily_pnl=self.daily_pnl, 
-                    daily_trades=self.daily_trades
-                )
-                if not limits_ok:
+                # Verificar límites diarios (leer de risk_manager.state)
+                if self.risk_manager.state.daily_pnl <= -self.config.MAX_DAILY_LOSS:
+                    self.logger.warning(
+                        f"⛔ Límite de pérdida diaria alcanzado: {self.risk_manager.state.daily_pnl:.2f}"
+                    )
+                    await asyncio.sleep(60)
+                    continue
+                
+                if self.risk_manager.state.trades_today >= self.config.MAX_DAILY_TRADES:
+                    self.logger.warning(
+                        f"⛔ Límite de trades diarios alcanzado: {self.risk_manager.state.trades_today}"
+                    )
                     await asyncio.sleep(60)
                     continue
 
@@ -453,7 +490,7 @@ class TradingBot:
 
                     # FILTRO ML: Solo usar si NO es modo MVP y NO es debug
                     ml_decision = None
-                    use_ml_filter = not self.mvp_mode and not is_debug and self.ml_filter and self.ml_filter.is_model_available()
+                    use_ml_filter = not self.mvp_mode and not is_debug and self.ml_filter is not None and self.ml_filter.is_model_available()
 
                     if use_ml_filter:
                         bot_state = {
@@ -475,7 +512,7 @@ class TradingBot:
                             self.logger.info(
                                 f"🚫 Señal rechazada por filtro ML: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})")
                             signal = None
-                    elif is_debug and self.ml_filter and self.ml_filter.is_model_available():
+                    elif is_debug and self.ml_filter is not None and self.ml_filter.is_model_available():
                         # En modo debug, evaluar ML pero no rechazar
                         bot_state = {
                             'daily_pnl': self.daily_pnl,
@@ -697,8 +734,8 @@ class TradingBot:
                             if position in self.order_executor.positions:
                                 self.order_executor.positions.remove(position)
 
-                            # Actualizar PnL diario
-                            self.daily_pnl += pnl
+                            # Actualizar estado en RiskManager (ÚNICA FUENTE DE VERDAD)
+                            self.risk_manager.apply_trade_result(pnl)
 
                             self.logger.info(
                                 f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, PnL: {pnl:.2f}"
@@ -764,12 +801,23 @@ class TradingBot:
 
                     if close_result['success']:
                         self.current_positions.remove(position)
-                        self.daily_pnl += close_result['pnl']
+                        
+                        # Actualizar estado en RiskManager (ÚNICA FUENTE DE VERDAD)
+                        self.risk_manager.apply_trade_result(close_result['pnl'])
 
                         self.logger.info(
                             f"✅ [{symbol}] Posición {position_id} cerrada exitosamente | "
                             f"PnL: {close_result['pnl']:.2f}"
                         )
+                        
+                        # Guardar estado después de cerrar posición
+                        self.state_manager.save({
+                            "equity": self.risk_manager.state.equity,
+                            "daily_pnl": self.risk_manager.state.daily_pnl,
+                            "trades_today": self.risk_manager.state.trades_today,
+                            "peak_equity": self.risk_manager.state.peak_equity,
+                            "max_drawdown": self.risk_manager.state.max_drawdown,
+                        })
 
                         # Determinar tipo de salida
                         exit_type = 'unknown'
@@ -1081,6 +1129,18 @@ async def main():
         await bot.start()
     except KeyboardInterrupt:
         print("\n🛑 Interrupción del usuario")
+        bot.logger.info("🛑 Guardando estado antes de salir...")
+        
+        # Guardar estado al salir
+        bot.state_manager.save({
+            "equity": bot.risk_manager.state.equity,
+            "daily_pnl": bot.risk_manager.state.daily_pnl,
+            "trades_today": bot.risk_manager.state.trades_today,
+            "peak_equity": bot.risk_manager.state.peak_equity,
+            "max_drawdown": bot.risk_manager.state.max_drawdown,
+        })
+        
+        bot.logger.info("✅ Estado guardado correctamente")
     except Exception as e:
         print(f"❌ Error fatal: {e}")
     finally:

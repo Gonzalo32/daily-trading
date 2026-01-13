@@ -1,0 +1,8 @@
+{
+  "equity": 10234.5,
+  "daily_pnl": 234.5,
+  "trades_today": 17,
+  "peak_equity": 10500.0,
+  "max_drawdown": 0.025,
+  "last_saved_at": "2026-01-12T18:42:11.231Z"
+}

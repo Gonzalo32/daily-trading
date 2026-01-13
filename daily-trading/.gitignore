@@ -1,0 +1,40 @@
+# Estado del bot (no commitear)
+state.json
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtualenv
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Datos ML
+src/ml/training_data.csv
+
+# Modelos entrenados
+models/*.pkl
+!models/.gitkeep
+
+# Base de datos
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporales
+*.tmp
+*.bak

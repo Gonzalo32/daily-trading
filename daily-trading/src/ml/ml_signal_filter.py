@@ -5,12 +5,19 @@ Usa Machine Learning para filtrar señales y predecir probabilidad de éxito
 # pylint: disable=import-error,logging-fstring-interpolation,broad-except,unused-argument
 
 import os
-import joblib
 import pandas as pd
 from typing import Dict, Any, Optional
 from datetime import datetime
 
 from src.utils.logging_setup import setup_logging
+
+# Import opcional de joblib (no crashear si no está)
+try:
+    import joblib
+    JOBLIB_AVAILABLE = True
+except ImportError:
+    JOBLIB_AVAILABLE = False
+    joblib = None
 
 
 class MLSignalFilter:
@@ -48,6 +55,15 @@ class MLSignalFilter:
     # ======================================================
     def load_model(self) -> bool:
         try:
+            # Verificar si joblib está disponible
+            if not JOBLIB_AVAILABLE:
+                self.logger.warning(
+                    "⚠️ joblib no está instalado. ML deshabilitado. "
+                    "Instalar con: pip install joblib"
+                )
+                self.model_loaded = False
+                return False
+
             if not os.path.exists(self.model_path):
                 self.logger.warning(
                     f"⚠️ Modelo ML no encontrado en {self.model_path}. "

@@ -78,6 +78,29 @@ class RiskManager:
             self.state.trades_today -= 1
         self.logger.info("🧹 Slot liberado")
 
+    def apply_trade_result(self, pnl: float) -> None:
+        """
+        ÚNICA FUENTE DE VERDAD: Actualiza equity, daily_pnl y trades_today.
+        Se llama cuando se cierra una posición.
+        """
+        self.state.equity += pnl
+        self.state.daily_pnl += pnl
+        self.state.trades_today += 1
+        self.state.total_pnl += pnl
+
+        # Actualizar peak equity y max drawdown
+        if self.state.equity > self.state.peak_equity:
+            self.state.peak_equity = self.state.equity
+
+        drawdown = (self.state.peak_equity - self.state.equity) / self.state.peak_equity
+        if drawdown > self.state.max_drawdown:
+            self.state.max_drawdown = drawdown
+
+        self.logger.info(
+            f"💰 Trade aplicado | PnL={pnl:.2f} | Equity={self.state.equity:.2f} | "
+            f"Daily PnL={self.state.daily_pnl:.2f} | Trades hoy={self.state.trades_today}"
+        )
+
     def check_daily_limits(self, daily_pnl: float = None, daily_trades: int = None) -> bool:
         """
         Verifica límites diarios de pérdida y cantidad de trades.
@@ -142,21 +165,50 @@ class RiskManager:
     # 💰 SIZING Y PROTECCIÓN
     # ======================================================
     def size_and_protect(self, signal: Dict[str, Any], atr: Optional[float] = None) -> Dict[str, Any]:
+        """
+        Valida y ajusta el tamaño de posición.
+        Si la señal ya tiene stop_loss, lo respeta.
+        Si no, calcula uno basado en ATR.
+        
+        IMPORTANTE: size siempre en BTC, notional en USDT se calcula aparte.
+        """
         try:
             price = signal["price"]
             atr_value = atr if atr and atr > 0 else price * 0.005
-
+            
+            # Si la señal ya tiene stop_loss, usarlo (la estrategia ya lo calculó)
+            if "stop_loss" in signal and signal["stop_loss"] > 0:
+                stop_loss = signal["stop_loss"]
+                stop_distance = abs(price - stop_loss)
+            else:
+                # Calcular stop_loss basado en ATR
+                if signal["action"].lower() == "buy":
+                    stop_loss = price - atr_value
+                    stop_distance = atr_value
+                else:
+                    stop_loss = price + atr_value
+                    stop_distance = atr_value
+            
+            # Calcular tamaño de posición basado en DISTANCIA REAL de stop
             risk_pct = self.config.RISK_PER_TRADE
             risk_amount = self.state.equity * risk_pct
-            qty = max(risk_amount / atr_value, 0.0001)
-
-            # Stop Loss
-            if signal["action"].lower() == "buy":
-                stop_loss = price - atr_value
-                stop_distance = atr_value
-            else:
-                stop_loss = price + atr_value
-                stop_distance = atr_value
+            
+            # FÓRMULA CORRECTA: qty (BTC) = risk_amount (USD) / stop_distance (USD)
+            qty_btc = risk_amount / stop_distance
+            
+            # Calcular notional (valor en USDT) para límites de exposición
+            notional_usdt = qty_btc * price
+            max_exposure = self.state.equity * 0.5  # Límite: 50% del equity
+            
+            # Ajustar qty si excede límite de exposición
+            if notional_usdt > max_exposure:
+                qty_btc = max_exposure / price
+                self.logger.warning(
+                    f"⚠️ Position ajustada por exposición: {notional_usdt:.2f} -> {max_exposure:.2f} USDT"
+                )
+            
+            # Mínimo técnico
+            qty_btc = max(qty_btc, 0.0001)
 
             # Take profit
             if signal["action"].lower() == "buy":
@@ -167,18 +219,21 @@ class RiskManager:
             # 🔥 FEATURES EXTRA PARA ML / TradeRecorder
             signal['risk_amount'] = risk_amount
             signal['atr_value'] = atr_value
-            signal['r_value'] = abs(price - stop_loss)  # Distancia de riesgo en dólares
+            signal['r_value'] = stop_distance
 
             # Actualizar señal final
             signal.update({
-                "position_size": round(qty, 6),
+                "position_size": round(qty_btc, 6),  # EN BTC
                 "stop_loss": round(stop_loss, 2),
                 "take_profit": round(take_profit, 2),
             })
 
+            # Log detallado para debugging
             self.logger.debug(
-                f"🧮 Sizing calculado | {signal['symbol']} | Qty={qty:.4f} | "
-                f"SL={stop_loss:.2f} | TP={take_profit:.2f} | R:R=1:1"
+                f"🧮 Sizing | {signal['symbol']} | Qty_BTC={qty_btc:.6f} | "
+                f"Price={price:.2f} | Notional_USDT={notional_usdt:.2f} | "
+                f"Equity={self.state.equity:.2f} | SL={stop_loss:.2f} | TP={take_profit:.2f} | "
+                f"Stop_Distance={stop_distance:.2f} | Risk={risk_amount:.2f}"
             )
             return signal
 
