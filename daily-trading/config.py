@@ -30,10 +30,10 @@ class Config:
     INITIAL_CAPITAL = float(os.getenv("INITIAL_CAPITAL", "10000"))
     MAX_POSITIONS = int(os.getenv("MAX_POSITIONS", "2"))
 
-    # Gestión de riesgo porcentual
-    # 2% del capital por trade
-    RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", "0.02"))
-    MAX_DAILY_LOSS = float(os.getenv("MAX_DAILY_LOSS", "0.03"))   # 3%
+    # Gestión de riesgo porcentual - CONSERVADOR
+    # 1% del capital por trade (reducido para seguridad)
+    RISK_PER_TRADE = float(os.getenv("RISK_PER_TRADE", "0.01"))
+    MAX_DAILY_LOSS = float(os.getenv("MAX_DAILY_LOSS", "200.0"))   # $200 máximo
     MAX_DAILY_GAIN = float(os.getenv("MAX_DAILY_GAIN", "0.05"))   # 5%
 
     # 👉 NUEVO: límite de trades por día (DIARIO, no simultáneos)
@@ -42,9 +42,9 @@ class Config:
     MAX_DAILY_LOSS_PCT = float(os.getenv("MAX_DAILY_LOSS_PCT", "3"))
     MAX_POSITION_RISK_PCT = float(os.getenv("MAX_POSITION_RISK_PCT", "0.5"))
 
-    STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", "0.03"))      # 1%
-    # 2.5:1 ratio (ajustado para mejor riesgo/beneficio)
-    TAKE_PROFIT_RATIO = float(os.getenv("TAKE_PROFIT_RATIO", "1.0"))
+    STOP_LOSS_PCT = float(os.getenv("STOP_LOSS_PCT", "0.005"))      # 0.5% (mucho más ajustado)
+    # 3:1 ratio (mejor riesgo/beneficio)
+    TAKE_PROFIT_RATIO = float(os.getenv("TAKE_PROFIT_RATIO", "3.0"))
 
     # ==============================
     # 📈 ESTRATEGIA TÉCNICA
@@ -52,10 +52,12 @@ class Config:
     FAST_MA_PERIOD = int(os.getenv("FAST_MA_PERIOD", "5"))
     SLOW_MA_PERIOD = int(os.getenv("SLOW_MA_PERIOD", "13"))
     RSI_PERIOD = int(os.getenv("RSI_PERIOD", "14"))
-    # Ajustado para más oportunidades
-    RSI_OVERBOUGHT = float(os.getenv("RSI_OVERBOUGHT", "55"))
-    # Ajustado para más oportunidades
-    RSI_OVERSOLD = float(os.getenv("RSI_OVERSOLD", "45"))
+    # Más conservador: evitar sobrecompra
+    RSI_OVERBOUGHT = float(os.getenv("RSI_OVERBOUGHT", "60"))
+    # Más conservador: evitar sobreventa
+    RSI_OVERSOLD = float(os.getenv("RSI_OVERSOLD", "40"))
+    # Diferencia mínima entre EMAs para validar tendencia (en %)
+    EMA_DIFF_PCT_MIN = float(os.getenv("EMA_DIFF_PCT_MIN", "0.02"))
 
     # ==============================
     # 🕓 HORARIOS (acciones)
@@ -117,7 +119,7 @@ class Config:
     # 🐛 DEBUG MODE
     # ==============================
     ENABLE_DEBUG_STRATEGY = os.getenv(
-        "ENABLE_DEBUG_STRATEGY", "true").lower() == "true"
+        "ENABLE_DEBUG_STRATEGY", "false").lower() == "true"
 
     # ==============================
     # 🚀 MVP MODE (Minimum Viable Product)

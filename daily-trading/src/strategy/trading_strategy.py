@@ -254,30 +254,46 @@ class TradingStrategy:
             stop_loss_pct = self.config.STOP_LOSS_PCT
             take_profit_ratio = self.config.TAKE_PROFIT_RATIO
 
-            # BUY
-            if fast > slow and rsi < 70:
+            rsi_overbought = self.config.RSI_OVERBOUGHT
+            rsi_oversold = self.config.RSI_OVERSOLD
+            ema_diff_min = self.config.EMA_DIFF_PCT_MIN
+
+            # BUY - FILTROS ANTI-PÉRDIDAS
+            # Operar solo en zona segura definida por configuración
+            if fast > slow and rsi_oversold <= rsi <= rsi_overbought:
                 stop_loss = round(price * (1 - stop_loss_pct), 2)
                 take_profit = round(price * (1 + stop_loss_pct * take_profit_ratio), 2)
+
+                # Verificar que la diferencia entre EMAs sea significativa
+                ema_diff_pct = ((fast - slow) / slow * 100) if slow > 0 else 0
+                if ema_diff_pct < ema_diff_min:
+                    return None
 
                 return {
                     "action": "BUY",
                     "price": price,
                     "strength": 0.9,
-                    "reason": f"ALTA PROBABILIDAD BUY | RSI: {rsi:.2f}",
+                    "reason": f"BUY SEGURO | RSI: {rsi:.2f} | EMA diff: {ema_diff_pct:.2f}%",
                     "stop_loss": stop_loss,
                     "take_profit": take_profit,
                 }
 
-            # SELL
-            if fast < slow and rsi > 30:
+            # SELL - FILTROS ANTI-PÉRDIDAS
+            # Operar solo en zona segura definida por configuración
+            if fast < slow and rsi_oversold <= rsi <= rsi_overbought:
                 stop_loss = round(price * (1 + stop_loss_pct), 2)
                 take_profit = round(price * (1 - stop_loss_pct * take_profit_ratio), 2)
+
+                # Verificar que la diferencia entre EMAs sea significativa
+                ema_diff_pct = ((slow - fast) / slow * 100) if slow > 0 else 0
+                if ema_diff_pct < ema_diff_min:
+                    return None
 
                 return {
                     "action": "SELL",
                     "price": price,
                     "strength": 0.9,
-                    "reason": f"ALTA PROBABILIDAD SELL | RSI: {rsi:.2f}",
+                    "reason": f"SELL SEGURO | RSI: {rsi:.2f} | EMA diff: {ema_diff_pct:.2f}%",
                     "stop_loss": stop_loss,
                     "take_profit": take_profit,
                 }
@@ -405,15 +421,15 @@ class TradingStrategy:
             # ============================================
             volume = market_data.get("volume", 0)
 
-            # Calcular umbral de volumen basado en promedio reciente
+            # Calcular umbral de volumen basado en promedio reciente - MÁS ESTRICTO
             if len(self.recent_volumes) >= 20:
-                # Usar percentil 50 (mediana) como umbral mínimo
+                # Usar percentil 60 (más estricto) como umbral mínimo
                 sorted_volumes = sorted(self.recent_volumes)
-                volume_median = sorted_volumes[len(sorted_volumes) // 2]
-                min_volume = volume_median * 0.3  # Al menos 70% de la mediana
+                volume_p60 = sorted_volumes[int(len(sorted_volumes) * 0.6)]
+                min_volume = volume_p60 * 0.8  # Al menos 80% del percentil 60
             else:
-                # Si no hay suficiente historial, usar un umbral fijo conservador
-                min_volume = volume * 0.5 if volume > 0 else 100
+                # Si no hay suficiente historial, usar un umbral conservador
+                min_volume = volume * 0.8 if volume > 0 else 100
 
             if volume < min_volume:
                 if is_debug:

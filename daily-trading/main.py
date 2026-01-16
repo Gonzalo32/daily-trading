@@ -410,9 +410,9 @@ class TradingBot:
                     max_daily_trades = self.config.MAX_DAILY_TRADES
 
                     max_loss = self.config.INITIAL_CAPITAL * self.config.MAX_DAILY_LOSS
-                    if self.daily_pnl < -max_loss:
+                    if self.risk_manager.state.daily_pnl < -max_loss:
                         self.logger.warning(
-                            f"⚠️ Límite de pérdida diaria alcanzado (MVP): {self.daily_pnl:.2f}")
+                            f"⚠️ Límite de pérdida diaria alcanzado (MVP): {self.risk_manager.state.daily_pnl:.2f}")
                         await asyncio.sleep(300)
                         continue
                 else:
@@ -428,20 +428,20 @@ class TradingBot:
                         max_daily_trades = self.config.MAX_DAILY_TRADES
 
                     limits_ok = self.risk_manager.check_daily_limits(
-                        daily_pnl=self.daily_pnl, 
-                        daily_trades=self.daily_trades
+                        daily_pnl=self.risk_manager.state.daily_pnl, 
+                        daily_trades=self.risk_manager.state.trades_today
                     )
                     if not limits_ok:
                         msg = (f"⚠️ Límites diarios alcanzados "
-                               f"(PnL: {self.daily_pnl:.2f} o trades: {self.daily_trades})")
+                               f"(PnL: {self.risk_manager.state.daily_pnl:.2f} o trades: {self.risk_manager.state.trades_today})")
                         self.logger.warning(msg)
                         await asyncio.sleep(300)
                         continue
 
-                if self.daily_trades >= max_daily_trades:
+                if self.risk_manager.state.trades_today >= max_daily_trades:
                     if not self.mvp_mode:
                         self.logger.warning(
-                            f"⚠️ Máximo de trades diarios alcanzado ({self.daily_trades}/{max_daily_trades})")
+                            f"⚠️ Máximo de trades diarios alcanzado ({self.risk_manager.state.trades_today}/{max_daily_trades})")
                     await asyncio.sleep(300)
                     continue
 
@@ -494,10 +494,10 @@ class TradingBot:
 
                     if use_ml_filter:
                         bot_state = {
-                            'daily_pnl': self.daily_pnl,
-                            'daily_trades': self.daily_trades,
+                            'daily_pnl': self.risk_manager.state.daily_pnl,
+                            'daily_trades': self.risk_manager.state.trades_today,
                             'consecutive_signals': self.strategy.consecutive_signals,
-                            'daily_pnl_normalized': self.daily_pnl / self.config.INITIAL_CAPITAL
+                            'daily_pnl_normalized': self.risk_manager.state.daily_pnl / self.config.INITIAL_CAPITAL
                         }
 
                         ml_decision = await self.ml_filter.filter_signal(
@@ -515,10 +515,10 @@ class TradingBot:
                     elif is_debug and self.ml_filter is not None and self.ml_filter.is_model_available():
                         # En modo debug, evaluar ML pero no rechazar
                         bot_state = {
-                            'daily_pnl': self.daily_pnl,
-                            'daily_trades': self.daily_trades,
+                            'daily_pnl': self.risk_manager.state.daily_pnl,
+                            'daily_trades': self.risk_manager.state.trades_today,
                             'consecutive_signals': self.strategy.consecutive_signals,
-                            'daily_pnl_normalized': self.daily_pnl / self.config.INITIAL_CAPITAL
+                            'daily_pnl_normalized': self.risk_manager.state.daily_pnl / self.config.INITIAL_CAPITAL
                         }
 
                         ml_decision = await self.ml_filter.filter_signal(
@@ -591,10 +591,10 @@ class TradingBot:
                             if order_result['success']:
                                 position = order_result['position']
                                 self.current_positions.append(position)
-                                self.daily_trades += 1
+                                self.risk_manager.state.trades_today += 1
 
                                 if self.mvp_mode:
-                                    trade_num = self.total_trades_count + self.daily_trades
+                                    trade_num = self.total_trades_count + self.risk_manager.state.trades_today
                                     action = signal['action']
                                     symbol = signal['symbol']
                                     price = signal['price']
@@ -636,8 +636,8 @@ class TradingBot:
                                             'regime_info': self.current_regime_info.copy() if self.current_regime_info else {},
                                             'ml_decision': ml_decision,
                                             'bot_state': {
-                                                'daily_pnl': self.daily_pnl,
-                                                'daily_trades': self.daily_trades,
+                                                'daily_pnl': self.risk_manager.state.daily_pnl,
+                                                'daily_trades': self.risk_manager.state.trades_today,
                                                 'consecutive_signals': self.strategy.consecutive_signals,
                                             }
                                         }
@@ -762,9 +762,26 @@ class TradingBot:
                 # Si AdvancedPositionManager cerró realmente la posición, actualizar PnL y continuar
                 if management_decision.get('closed', False):
                     pnl = management_decision.get('pnl', 0.0)
-                    # También remover de executor.positions si está ahí
+                    
+                    # ✅ CRÍTICO: Remover de TODAS las listas
+                    if position in self.current_positions:
+                        self.current_positions.remove(position)
                     if position in self.order_executor.positions:
                         self.order_executor.positions.remove(position)
+                    
+                    # Guardar estado
+                    self.state_manager.save({
+                        "equity": self.risk_manager.state.equity,
+                        "daily_pnl": self.risk_manager.state.daily_pnl,
+                        "trades_today": self.risk_manager.state.trades_today,
+                        "peak_equity": self.risk_manager.state.peak_equity,
+                        "max_drawdown": self.risk_manager.state.max_drawdown,
+                    })
+                    
+                    self.logger.info(
+                        f"✅ Posición cerrada por AdvancedPositionManager | "
+                        f"PnL: {pnl:.2f} | Posiciones restantes: {len(self.current_positions)}"
+                    )
                     continue
 
                 # 2. Actualizar stops si es necesario (solo si NO es MVP)
@@ -892,7 +909,7 @@ class TradingBot:
             close_result = await self.order_executor.close_position(position)
             if close_result['success']:
                 self.current_positions.remove(position)
-                self.daily_pnl += close_result['pnl']
+                self.risk_manager.state.daily_pnl += close_result['pnl']
 
     def _build_dashboard_payload(
             self, market_data: Optional[Dict[str, Any]]
@@ -914,16 +931,23 @@ class TradingBot:
                 'pnl': self._safe_float(position.get('pnl', 0.0)) or 0.0,
             })
 
+        # Calcular win rate si hay trades
+        win_rate = None
+        if len(self.risk_manager.trade_history) > 0:
+            winning_trades = sum(1 for trade in self.risk_manager.trade_history if trade.get('pnl', 0) > 0)
+            total_trades = len(self.risk_manager.trade_history)
+            win_rate = winning_trades / total_trades if total_trades > 0 else None
+        
         metrics = {
-            'daily_pnl': self.daily_pnl,
-            'daily_trades': self.daily_trades,
-            'win_rate': None,
-            'max_drawdown': None,
+            'daily_pnl': self.risk_manager.state.daily_pnl,
+            'daily_trades': self.risk_manager.state.trades_today,
+            'win_rate': win_rate,
+            'max_drawdown': self.risk_manager.state.max_drawdown,
         }
 
         balance = {
-            'current': float(self.config.INITIAL_CAPITAL + self.daily_pnl),
-            'peak': float(max(self.config.INITIAL_CAPITAL, self.config.INITIAL_CAPITAL + self.daily_pnl)),
+            'current': float(self.config.INITIAL_CAPITAL + self.risk_manager.state.daily_pnl),
+            'peak': float(max(self.config.INITIAL_CAPITAL, self.config.INITIAL_CAPITAL + self.risk_manager.state.daily_pnl)),
             'exposure': sum(
                 (self._safe_float(p.get('size')) or 0.0) *
                 (self._safe_float(p.get('entry_price')) or 0.0)
@@ -1054,7 +1078,7 @@ class TradingBot:
         try:
             # 1) Límite de pérdida diaria (mantenerlo)
             max_loss = self.config.INITIAL_CAPITAL * self.config.MAX_DAILY_LOSS
-            if self.daily_pnl < -max_loss:
+            if self.risk_manager.state.daily_pnl < -max_loss:
                 self.logger.warning(
                     "⚠️ [MVP] Límite de pérdida diaria alcanzado")
                 return False

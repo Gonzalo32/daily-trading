@@ -80,6 +80,11 @@ class AdvancedPositionManager:
 
             # TIME STOP OBLIGATORIO: Verificar edad de la posición PRIMERO
             open_time = position.get('open_time') or position.get('entry_time')
+            
+            self.logger.info(
+                f"🔍 DEBUG: position_id={position_id}, open_time={open_time}, type={type(open_time)}"
+            )
+            
             if open_time:
                 if isinstance(open_time, str):
                     try:
@@ -89,9 +94,13 @@ class AdvancedPositionManager:
                         try:
                             open_time = datetime.fromisoformat(open_time)
                         except:
-                            open_time = datetime.now()
+                            open_time = datetime.utcnow()
 
-                position_age = (datetime.now() - open_time).total_seconds()
+                position_age = (datetime.utcnow() - open_time).total_seconds()
+                
+                self.logger.info(
+                    f"🔍 DEBUG: position_age={position_age:.1f}s, mvp_mode={mvp_mode}, threshold=30s"
+                )
 
                 # ✅ FORCE CIERRE SOLO SI MVP = TRUE Y PASARON 30s
                 # FORCE CLOSE: Cerrar cualquier posición abierta >= 30 segundos
@@ -223,7 +232,7 @@ class AdvancedPositionManager:
         position_id = position.get('id', 'unknown')
 
         self.position_tracking[position_id] = {
-            'entry_time': position.get('entry_time', datetime.now()),
+            'entry_time': position.get('entry_time', datetime.utcnow()),
             'entry_price': position.get('entry_price'),
             # Para trailing stop LONG
             'highest_price': position.get('entry_price'),
@@ -233,7 +242,7 @@ class AdvancedPositionManager:
             'max_adverse_excursion': 0.0,    # MAE: peor drawdown
             'breakeven_applied': False,
             'trailing_active': False,
-            'last_price_update': datetime.now(),
+            'last_price_update': datetime.utcnow(),
             'periods_without_movement': 0,
         }
 
@@ -263,10 +272,17 @@ class AdvancedPositionManager:
             r_multiple = (pnl / risk) if risk > 0 else 0
 
         # Duración
-        entry_time = position.get('entry_time', datetime.now())
+        entry_time = position.get('entry_time', datetime.utcnow())
         if isinstance(entry_time, str):
             entry_time = datetime.fromisoformat(entry_time)
-        duration = datetime.now() - entry_time
+        # Si entry_time es string, convertirlo
+        if isinstance(entry_time, str):
+            try:
+                entry_time = datetime.fromisoformat(entry_time.replace('Z', '+00:00'))
+            except:
+                entry_time = datetime.utcnow()
+        
+        duration = datetime.utcnow() - entry_time
 
         return {
             'current_price': current_price,
@@ -309,13 +325,13 @@ class AdvancedPositionManager:
 
         # Detectar movimiento
         time_since_update = (
-            datetime.now() - tracking['last_price_update']).total_seconds() / 60
+            datetime.utcnow() - tracking['last_price_update']).total_seconds() / 60
         if time_since_update > 5:  # 5 minutos sin actualización significativa
             tracking['periods_without_movement'] += 1
         else:
             tracking['periods_without_movement'] = 0
 
-        tracking['last_price_update'] = datetime.now()
+        tracking['last_price_update'] = datetime.utcnow()
 
     def _check_original_stops(self, position: Dict[str, Any], current_price: float) -> bool:
         """Verifica si se alcanzó el SL o TP original"""
@@ -493,7 +509,7 @@ class AdvancedPositionManager:
             'max_adverse_excursion': tracking['max_adverse_excursion'],
             'breakeven_applied': tracking['breakeven_applied'],
             'trailing_active': tracking['trailing_active'],
-            'duration_minutes': (datetime.now() - tracking['entry_time']).total_seconds() / 60
+            'duration_minutes': (datetime.utcnow() - tracking['entry_time']).total_seconds() / 60
         }
 
     def configure(
