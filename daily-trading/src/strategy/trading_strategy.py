@@ -141,13 +141,13 @@ class TradingStrategy:
                     fast = indicators.get('fast_ma', price)
                     slow = indicators.get('slow_ma', price)
                     rsi = indicators.get('rsi', 50)
-                    ema_diff_pct = ((fast - slow) / slow * 100) if slow > 0 else 0
+                    ema_diff_pct = ((fast - slow) / slow *
+                                    100) if slow > 0 else 0
                     self.logger.debug(
                         f"🐛 [DEBUG] No se cumplen condiciones estrictas - "
                         f"EMA diff: {ema_diff_pct:.4f}%, RSI: {rsi:.2f}"
                     )
                 return None
-
 
             # ✅ 2) Control de frecuencia (cooldown) – SOLO si hay señal
 
@@ -173,7 +173,6 @@ class TradingStrategy:
                             f"(mínimo: {self.min_seconds_between_same_signal}s)"
                         )
                     return None
-
 
             if is_debug:
                 self.logger.info(
@@ -258,52 +257,66 @@ class TradingStrategy:
             rsi_oversold = self.config.RSI_OVERSOLD
             ema_diff_min = self.config.EMA_DIFF_PCT_MIN
 
-            # BUY - FILTROS ANTI-PÉRDIDAS
-            # Operar solo en zona segura definida por configuración
-            if fast > slow and rsi_oversold <= rsi <= rsi_overbought:
-                stop_loss = round(price * (1 - stop_loss_pct), 2)
-                take_profit = round(price * (1 + stop_loss_pct * take_profit_ratio), 2)
+            # ============================================
+            # PRODUCTION STRATEGY: Condiciones ESTRICTAS
+            # 100% determinística - idéntica en PAPER y LIVE
+            # ============================================
 
-                # Verificar que la diferencia entre EMAs sea significativa
-                ema_diff_pct = ((fast - slow) / slow * 100) if slow > 0 else 0
-                if ema_diff_pct < ema_diff_min:
-                    return None
+            # Calcular diferencia entre EMAs
+            ema_diff_pct = ((fast - slow) / slow * 100) if slow > 0 else 0
+            ema_diff_abs = abs(ema_diff_pct)
 
-                return {
-                    "action": "BUY",
-                    "price": price,
-                    "strength": 0.9,
-                    "reason": f"BUY SEGURO | RSI: {rsi:.2f} | EMA diff: {ema_diff_pct:.2f}%",
-                    "stop_loss": stop_loss,
-                    "take_profit": take_profit,
-                }
+            # BUY - Condiciones ESTRICTAS (alta probabilidad)
+            # EMA rápida > EMA lenta + RSI < 35 + diferencia mínima
+            if fast > slow:  # Estricto: debe ser mayor, no igual
+                rsi_condition = rsi < 35  # Estricto: RSI muy bajo
 
-            # SELL - FILTROS ANTI-PÉRDIDAS
-            # Operar solo en zona segura definida por configuración
-            if fast < slow and rsi_oversold <= rsi <= rsi_overbought:
-                stop_loss = round(price * (1 + stop_loss_pct), 2)
-                take_profit = round(price * (1 - stop_loss_pct * take_profit_ratio), 2)
+                if rsi_condition:
+                    # Verificar diferencia mínima de EMA
+                    if ema_diff_pct < ema_diff_min:
+                        return None
 
-                # Verificar que la diferencia entre EMAs sea significativa
-                ema_diff_pct = ((slow - fast) / slow * 100) if slow > 0 else 0
-                if ema_diff_pct < ema_diff_min:
-                    return None
+                    stop_loss = round(price * (1 - stop_loss_pct), 2)
+                    take_profit = round(
+                        price * (1 + stop_loss_pct * take_profit_ratio), 2)
 
-                return {
-                    "action": "SELL",
-                    "price": price,
-                    "strength": 0.9,
-                    "reason": f"SELL SEGURO | RSI: {rsi:.2f} | EMA diff: {ema_diff_pct:.2f}%",
-                    "stop_loss": stop_loss,
-                    "take_profit": take_profit,
-                }
+                    return {
+                        "action": "BUY",
+                        "price": price,
+                        "strength": 0.9,  # Alta fuerza (producción)
+                        "reason": f"BUY PRODUCTION | RSI: {rsi:.2f} | EMA diff: {ema_diff_pct:.4f}%",
+                        "stop_loss": stop_loss,
+                        "take_profit": take_profit,
+                    }
+
+            # SELL - Condiciones ESTRICTAS (alta probabilidad)
+            # EMA rápida < EMA lenta + RSI > 65 + diferencia mínima
+            if fast < slow:  # Estricto: debe ser menor, no igual
+                rsi_condition = rsi > 65  # Estricto: RSI muy alto
+
+                if rsi_condition:
+                    # Verificar diferencia mínima de EMA
+                    if abs(ema_diff_pct) < ema_diff_min:
+                        return None
+
+                    stop_loss = round(price * (1 + stop_loss_pct), 2)
+                    take_profit = round(
+                        price * (1 - stop_loss_pct * take_profit_ratio), 2)
+
+                    return {
+                        "action": "SELL",
+                        "price": price,
+                        "strength": 0.9,  # Alta fuerza (producción)
+                        "reason": f"SELL PRODUCTION | RSI: {rsi:.2f} | EMA diff: {ema_diff_pct:.4f}%",
+                        "stop_loss": stop_loss,
+                        "take_profit": take_profit,
+                    }
 
             return None
 
         except Exception as e:
             self.logger.exception(f"❌ Error analizando indicadores: {e}")
             return None
-
 
     def _is_lateral_market(self, market_data: Dict[str, Any]) -> bool:
         """
@@ -408,7 +421,7 @@ class TradingStrategy:
         Filtra señales con condiciones ESTRICTAS
 
         Filtros:
-        1. Volumen mínimo (rechazar velas de bajo volumen)
+        1. Volumen mínimo (rechazar velas de bajo volumen) - DESHABILITADO en PAPER mode
         2. Zonas laterales (NO operar en rangos)
         3. Horario (solo para acciones)
         4. Repeticiones excesivas
@@ -431,7 +444,10 @@ class TradingStrategy:
                 # Si no hay suficiente historial, usar un umbral conservador
                 min_volume = volume * 0.8 if volume > 0 else 100
 
-            if volume < min_volume:
+            # En modo PAPER (Learning Mode): desactivar filtro de volumen
+            # (los datos reales de precio ticker no incluyen volumen confiable)
+            # En modo LIVE: mantener filtro de volumen activo para calidad
+            if self.config.TRADING_MODE == "LIVE" and volume < min_volume:
                 if is_debug:
                     self.logger.debug(
                         f"🐛 [DEBUG] Filtro VOLUMEN: Volumen insuficiente "
@@ -561,4 +577,61 @@ class TradingStrategy:
         self.consecutive_signals = 0
         self.last_signal_time = None  # NUEVO
         self.logger.info("🔄 Estrategia reiniciada")
+    
+    def get_decision_space(self, market_data: Dict[str, Any]) -> Dict[str, bool]:
+        """
+        Retorna el espacio de decisiones posibles según la estrategia.
+        
+        ProductionStrategy es selectiva, así que solo marca como posibles
+        las acciones que cumplen condiciones estrictas.
+        
+        Args:
+            market_data: Datos de mercado con indicadores
+            
+        Returns:
+            Dict con {"buy": bool, "sell": bool, "hold": True}
+        """
+        try:
+            indicators = market_data.get("indicators", {})
+            price = market_data.get("price", 0)
+            
+            if price <= 0:
+                return {"buy": False, "sell": False, "hold": True}
+            
+            fast_ma = indicators.get("fast_ma", price)
+            slow_ma = indicators.get("slow_ma", price)
+            rsi = indicators.get("rsi", 50)
+            ema_diff_min = self.config.EMA_DIFF_PCT_MIN
+            
+            # Calcular diferencia EMA
+            if slow_ma > 0:
+                ema_diff_pct = ((fast_ma - slow_ma) / slow_ma) * 100
+            else:
+                ema_diff_pct = 0
+            
+            decision_space = {
+                "buy": False,
+                "sell": False,
+                "hold": True  # HOLD siempre disponible
+            }
+            
+            # BUY posible solo si cumple condiciones ESTRICTAS
+            # EMA rápida > EMA lenta + RSI < 35 + diferencia mínima
+            if fast_ma > slow_ma and rsi < 35 and ema_diff_pct >= ema_diff_min:
+                decision_space["buy"] = True
+            
+            # SELL posible solo si cumple condiciones ESTRICTAS
+            # EMA rápida < EMA lenta + RSI > 65 + diferencia mínima
+            if fast_ma < slow_ma and rsi > 65 and abs(ema_diff_pct) >= ema_diff_min:
+                decision_space["sell"] = True
+            
+            return decision_space
+            
+        except Exception as e:
+            self.logger.exception(f"❌ Error obteniendo decision_space: {e}")
+            return {"buy": False, "sell": False, "hold": True}
 
+
+# Alias para claridad: ProductionStrategy = TradingStrategy
+# La estrategia selectiva de alta probabilidad es la estrategia de producción
+ProductionStrategy = TradingStrategy

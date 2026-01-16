@@ -504,8 +504,8 @@ class Dashboard:
                     background: #1a1a1a;
                     border-top: 1px solid #2a2a2a;
                     display: grid;
-                    grid-template-columns: repeat(4, 1fr);
-                    gap: 20px;
+                    grid-template-columns: repeat(5, 1fr);
+                    gap: 15px;
                     padding: 15px;
                     overflow-y: auto;
                 }
@@ -785,20 +785,94 @@ class Dashboard:
                 <!-- BOTTOM PANEL -->
                 <div class="bottom-panel">
                     <div class="panel-card">
-                        <h4>📋 Órdenes Ejecutadas</h4>
+                        <h4>📋 Órdenes Ejecutadas <span style="font-size: 10px; color: #888;" id="orders-count">(0)</span></h4>
                         <div class="orders-table" id="orders-table">
                             <div style="color: #888; font-size: 11px;">Sin órdenes</div>
                         </div>
                     </div>
                     <div class="panel-card">
-                        <h4>📈 Métricas</h4>
+                        <h4>📈 Métricas Diarias</h4>
                         <div class="info-item">
-                            <span class="info-label">Win Rate</span>
-                            <span class="info-value" id="metric-winrate">-</span>
+                            <span class="info-label">Aciertos</span>
+                            <span class="info-value" id="metric-wins-daily" style="color: #26a69a;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Errores</span>
+                            <span class="info-value" id="metric-losses-daily" style="color: #ef5350;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Win Rate Diario</span>
+                            <span class="info-value" id="metric-winrate-daily">-</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Max Drawdown</span>
                             <span class="info-value" id="metric-drawdown">-</span>
+                        </div>
+                    </div>
+                    <div class="panel-card">
+                        <h4>📊 Métricas Históricas (ML)</h4>
+                        <div class="info-item">
+                            <span class="info-label">Total Trades</span>
+                            <span class="info-value" id="metric-total-historical">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Aciertos Históricos</span>
+                            <span class="info-value" id="metric-wins-historical" style="color: #26a69a;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Errores Históricos</span>
+                            <span class="info-value" id="metric-losses-historical" style="color: #ef5350;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Win Rate Histórico</span>
+                            <span class="info-value" id="metric-winrate-historical">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Profit Factor Hist</span>
+                            <span class="info-value" id="metric-profit-factor-hist">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Expectativa Hist</span>
+                            <span class="info-value" id="metric-expectancy-hist">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Avg Win Hist</span>
+                            <span class="info-value" id="metric-avg-win-hist" style="color: #26a69a;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Avg Loss Hist</span>
+                            <span class="info-value" id="metric-avg-loss-hist" style="color: #ef5350;">-</span>
+                        </div>
+                    </div>
+                    <div class="panel-card">
+                        <h4>📈 Métricas Avanzadas (Día)</h4>
+                        <div class="info-item">
+                            <span class="info-label">Profit Factor</span>
+                            <span class="info-value" id="metric-profit-factor-daily">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Expectativa/Trade</span>
+                            <span class="info-value" id="metric-expectancy-daily">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Avg Win</span>
+                            <span class="info-value" id="metric-avg-win-daily" style="color: #26a69a;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Avg Loss</span>
+                            <span class="info-value" id="metric-avg-loss-daily" style="color: #ef5350;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Mayor Ganancia</span>
+                            <span class="info-value" id="metric-largest-win" style="color: #26a69a;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Mayor Pérdida</span>
+                            <span class="info-value" id="metric-largest-loss" style="color: #ef5350;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Risk Multiplier</span>
+                            <span class="info-value" id="metric-risk-multiplier">-</span>
                         </div>
                     </div>
                     <div class="panel-card">
@@ -811,8 +885,20 @@ class Dashboard:
                     <div class="panel-card">
                         <h4>ℹ️ Info del Sistema</h4>
                         <div class="info-item">
-                            <span class="info-label">Latencia</span>
-                            <span class="info-value" id="system-latency">< 100ms</span>
+                            <span class="info-label">Modo Trading</span>
+                            <span class="info-value" id="system-trading-mode">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Datos</span>
+                            <span class="info-value" id="system-data-source" style="color: #4CAF50;">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">ML Habilitado</span>
+                            <span class="info-value" id="system-ml-enabled">-</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Progreso ML</span>
+                            <span class="info-value" id="system-ml-progress">-</span>
                         </div>
                         <div class="info-item">
                             <span class="info-label">Uptime</span>
@@ -1273,10 +1359,98 @@ class Dashboard:
                         document.getElementById('balance-trades').textContent = data.metrics?.daily_trades || '0';
                     }
                     
-                    // Métricas
+                    // Métricas Diarias
                     if (data.metrics) {
-                        document.getElementById('metric-winrate').textContent = data.metrics.win_rate ? (data.metrics.win_rate * 100).toFixed(1) + '%' : '-';
-                        document.getElementById('metric-drawdown').textContent = data.metrics.max_drawdown ? (data.metrics.max_drawdown * 100).toFixed(1) + '%' : '-';
+                        const m = data.metrics;
+                        
+                        // Métricas diarias básicas
+                        document.getElementById('metric-wins-daily').textContent = m.winning_trades_daily !== undefined ? m.winning_trades_daily : '-';
+                        document.getElementById('metric-losses-daily').textContent = m.losing_trades_daily !== undefined ? m.losing_trades_daily : '-';
+                        document.getElementById('metric-winrate-daily').textContent = m.win_rate_daily_percent !== undefined && m.win_rate_daily_percent !== null 
+                            ? m.win_rate_daily_percent.toFixed(1) + '%' : '-';
+                        document.getElementById('metric-drawdown').textContent = m.max_drawdown ? (m.max_drawdown * 100).toFixed(1) + '%' : '-';
+                        
+                        // Métricas avanzadas del día
+                        document.getElementById('metric-profit-factor-daily').textContent = m.profit_factor_daily !== undefined && m.profit_factor_daily !== null 
+                            ? m.profit_factor_daily.toFixed(2) : '-';
+                        document.getElementById('metric-expectancy-daily').textContent = m.expectancy_daily !== undefined && m.expectancy_daily !== null 
+                            ? (m.expectancy_daily >= 0 ? '+' : '') + '$' + m.expectancy_daily.toFixed(2) : '-';
+                        document.getElementById('metric-avg-win-daily').textContent = m.avg_win_daily !== undefined && m.avg_win_daily !== null 
+                            ? '$' + m.avg_win_daily.toFixed(2) : '-';
+                        document.getElementById('metric-avg-loss-daily').textContent = m.avg_loss_daily !== undefined && m.avg_loss_daily !== null 
+                            ? '$' + m.avg_loss_daily.toFixed(2) : '-';
+                        document.getElementById('metric-largest-win').textContent = m.largest_win_daily !== undefined && m.largest_win_daily !== null 
+                            ? '$' + m.largest_win_daily.toFixed(2) : '-';
+                        document.getElementById('metric-largest-loss').textContent = m.largest_loss_daily !== undefined && m.largest_loss_daily !== null 
+                            ? '$' + m.largest_loss_daily.toFixed(2) : '-';
+                        
+                        // Risk Multiplier (learning-aware)
+                        const riskMult = m.risk_multiplier !== undefined ? m.risk_multiplier : 1.0;
+                        const riskMultEl = document.getElementById('metric-risk-multiplier');
+                        riskMultEl.textContent = riskMult.toFixed(2);
+                        riskMultEl.style.color = riskMult < 1.0 ? '#ef5350' : '#4CAF50';
+                        
+                        // Métricas históricas (para ML)
+                        if (m.historical) {
+                            const h = m.historical;
+                            document.getElementById('metric-total-historical').textContent = h.total_trades !== undefined ? h.total_trades : '0';
+                            document.getElementById('metric-wins-historical').textContent = h.winning_trades !== undefined ? h.winning_trades : '0';
+                            document.getElementById('metric-losses-historical').textContent = h.losing_trades !== undefined ? h.losing_trades : '0';
+                            document.getElementById('metric-winrate-historical').textContent = h.win_rate_percent !== undefined && h.win_rate_percent !== null 
+                                ? h.win_rate_percent.toFixed(1) + '%' : '-';
+                            document.getElementById('metric-profit-factor-hist').textContent = h.profit_factor !== undefined && h.profit_factor !== null 
+                                ? h.profit_factor.toFixed(2) : '-';
+                            document.getElementById('metric-expectancy-hist').textContent = h.expectancy !== undefined && h.expectancy !== null 
+                                ? (h.expectancy >= 0 ? '+' : '') + '$' + h.expectancy.toFixed(2) : '-';
+                            document.getElementById('metric-avg-win-hist').textContent = h.avg_win !== undefined && h.avg_win !== null 
+                                ? '$' + h.avg_win.toFixed(2) : '-';
+                            document.getElementById('metric-avg-loss-hist').textContent = h.avg_loss !== undefined && h.avg_loss !== null 
+                                ? '$' + h.avg_loss.toFixed(2) : '-';
+                        }
+                    }
+                    
+                    // Información del sistema
+                    if (data.operation_mode) {
+                        const om = data.operation_mode;
+                        document.getElementById('system-trading-mode').textContent = om.trading_mode || '-';
+                        const mlProgress = om.current_trades_count && om.target_trades_for_ml 
+                            ? `${om.current_trades_count}/${om.target_trades_for_ml}` 
+                            : '-';
+                        document.getElementById('system-ml-progress').textContent = mlProgress;
+                        document.getElementById('system-ml-enabled').textContent = om.ml_enabled ? '✅ Sí' : '❌ No';
+                    }
+                    
+                    // Origen de datos
+                    if (data.market) {
+                        const isReal = data.market.is_real_data || data.market.data_source === 'BINANCE_REAL';
+                        const dataSourceEl = document.getElementById('system-data-source');
+                        dataSourceEl.textContent = isReal ? '✅ REALES (Binance)' : '⚠️ SIMULADOS';
+                        dataSourceEl.style.color = isReal ? '#4CAF50' : '#ef5350';
+                    }
+                    
+                    // Órdenes ejecutadas
+                    if (data.orders && Array.isArray(data.orders)) {
+                        const ordersHtml = data.orders.length > 0 
+                            ? data.orders.slice(-10).reverse().map(order => `
+                                <div class="order-row">
+                                    <div class="order-marker ${order.side === 'BUY' ? 'marker-buy' : 'marker-sell'}"></div>
+                                    <div style="font-size: 10px;">
+                                        <div>${order.symbol || '-'} ${order.side || '-'}</div>
+                                        <div style="color: #888;">${order.timestamp ? new Date(order.timestamp).toLocaleTimeString('es-ES') : '-'}</div>
+                                    </div>
+                                    <div style="text-align: right;">
+                                        <div style="font-weight: 600;">$${order.price?.toFixed(2) || '-'}</div>
+                                        <div style="color: #888; font-size: 9px;">${order.size?.toFixed(4) || '-'}</div>
+                                    </div>
+                                    <div style="text-align: right; ${order.pnl >= 0 ? 'color: #26a69a;' : 'color: #ef5350;'}">
+                                        ${order.pnl !== undefined && order.pnl !== null ? (order.pnl >= 0 ? '+' : '') + order.pnl.toFixed(2) : '-'}
+                                    </div>
+                                </div>
+                            `).join('')
+                            : '<div style="color: #888; font-size: 11px;">Sin órdenes</div>';
+                        
+                        document.getElementById('orders-table').innerHTML = ordersHtml;
+                        document.getElementById('orders-count').textContent = `(${data.orders.length})`;
                     }
                     
                     // Uptime
@@ -1302,14 +1476,51 @@ class Dashboard:
                     }
                 });
                 
+                // Polling fallback (por si WebSocket falla)
+                let pollInterval = null;
+                function startPolling() {
+                    if (pollInterval) clearInterval(pollInterval);
+                    pollInterval = setInterval(async () => {
+                        try {
+                            const response = await fetch('/api/status');
+                            if (response.ok) {
+                                const result = await response.json();
+                                if (result.data) {
+                                    updateDashboard(result.data);
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error polling:', e);
+                        }
+                    }, 2000); // Cada 2 segundos
+                }
+                
+                // Cargar datos iniciales
+                async function loadInitialData() {
+                    try {
+                        const response = await fetch('/api/status');
+                        if (response.ok) {
+                            const result = await response.json();
+                            if (result.data) {
+                                updateDashboard(result.data);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error cargando datos iniciales:', e);
+                    }
+                }
+                
                 // Inicializar
                 window.onload = () => {
                     initChart();
+                    loadInitialData(); // Cargar datos al inicio
                     connectWebSocket();
+                    startPolling(); // Iniciar polling como fallback
                 };
                 
                 window.onbeforeunload = () => {
                     if (ws) ws.close();
+                    if (pollInterval) clearInterval(pollInterval);
                 };
             </script>
         </body>

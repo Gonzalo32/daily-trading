@@ -1,14 +1,16 @@
 @echo off
 REM ===============================
-REM Bot de Trading - ENTRYPOINT OFICIAL
+REM Bot de Trading - INICIO RAPIDO
 REM ===============================
-REM Ejecuta: daily-trading/main.py
+REM Desde: C:\Users\Administrador\Desktop\daily-trading
+REM Ejecutar: start
+REM ===============================
 
 cd /d "%~dp0"
 
 echo.
 echo ╔════════════════════════════════════════════╗
-echo ║   🚀 Bot de Trading - Modo PAPER          ║
+echo ║   🚀 Bot de Trading - Iniciando...        ║
 echo ╚════════════════════════════════════════════╝
 echo.
 
@@ -18,47 +20,51 @@ if not exist "daily-trading\main.py" (
     echo.
     echo Estructura esperada:
     echo   daily-trading\
-    echo   ├── main.py          ^<-- ENTRYPOINT
-    echo   ├── config.py
-    echo   └── src\
+    echo   ├── main.py
+    echo   └── venv\
     echo.
     pause
     exit /b 1
 )
 
-REM Activar entorno virtual si existe
-if exist "venv\Scripts\activate.bat" (
-    call venv\Scripts\activate.bat
-    echo ✅ Virtualenv activado
-) else if exist "daily-trading\venv\Scripts\activate.bat" (
-    call daily-trading\venv\Scripts\activate.bat
-    echo ✅ Virtualenv activado
-) else (
-    echo ⚠️  No se encontró virtualenv, usando Python del sistema
+REM Verificar que existe el entorno virtual
+if not exist "daily-trading\venv\Scripts\python.exe" (
+    echo ❌ Error: No se encontró el entorno virtual
+    echo.
+    echo Por favor ejecuta primero: setup_windows.bat
+    echo.
+    pause
+    exit /b 1
 )
 
-echo.
-echo ═══════════════════════════════════════════
-echo 📡 Ejecutando bot...
-echo ═══════════════════════════════════════════
+echo ✅ Directorio verificado
+echo ✅ Entorno virtual encontrado
 echo.
 
-REM Cambiar a directorio daily-trading y ejecutar
+REM Cambiar al directorio del bot
 cd daily-trading
-python main.py
 
-REM Volver a raíz
-cd ..
+echo ═══════════════════════════════════════════
+echo 📡 Iniciando bot de trading...
+echo ═══════════════════════════════════════════
+echo.
 
-REM Desactivar virtualenv si estaba activo
-if defined VIRTUAL_ENV (
-    deactivate
+REM Ejecutar usando Python del venv directamente (más confiable)
+.\venv\Scripts\python.exe main.py
+
+REM Si el bot termina, mostrar mensaje
+if errorlevel 1 (
+    echo.
+    echo ═══════════════════════════════════════════
+    echo ❌ El bot terminó con un error
+    echo ═══════════════════════════════════════════
+) else (
+    echo.
+    echo ═══════════════════════════════════════════
+    echo ✅ Bot finalizado correctamente
+    echo ═══════════════════════════════════════════
 )
 
-echo.
-echo ═══════════════════════════════════════════
-echo ✅ Bot finalizado
-echo ═══════════════════════════════════════════
 echo.
 pause
 

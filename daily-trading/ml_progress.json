@@ -1,0 +1,13 @@
+{
+  "last_updated": "2026-01-16T13:09:28.549704",
+  "stats": {
+    "total_rows": 200,
+    "executed_trades": 0,
+    "rejected_signals": 0,
+    "no_signal_contexts": 0,
+    "ready_for_training": false,
+    "ready_for_live": false,
+    "ready_for_production": false
+  },
+  "progress_percentage": 0.0
+}

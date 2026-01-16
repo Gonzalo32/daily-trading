@@ -10,8 +10,9 @@ from src.ml.ml_model import TradingMLModel
 DATA_FILE = "src/ml/training_data.csv"
 METADATA_FILE = "models/training_metadata.json"
 
-MIN_ROWS = 5_000         # mínimo absoluto para entrenar
-MIN_DELTA_ROWS = 2_000   # entrenar solo si hay 2000 filas nuevas
+MIN_ROWS = 500           # mínimo para entrenar modelo básico (reducido para aprendizaje progresivo)
+MIN_DELTA_ROWS = 500     # re-entrenar cada 500 nuevas filas (más frecuente para aprendizaje continuo)
+MIN_ROWS_PRODUCTION = 5000  # mínimo recomendado para producción
 
 
 logger = setup_logging(__name__)

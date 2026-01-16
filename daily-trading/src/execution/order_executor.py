@@ -155,6 +155,7 @@ class OrderExecutor:
             "stop_loss": signal["stop_loss"],
             "take_profit": signal["take_profit"],
             "timestamp": signal["timestamp"],
+            "risk_multiplier": signal.get("risk_multiplier", 1.0),  # Guardar para análisis ML
         }
 
     async def _execute_crypto_order(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
@@ -242,6 +243,7 @@ class OrderExecutor:
             "take_profit": order_data["take_profit"],
             "entry_time": datetime.utcnow(),
             "status": "open",
+            "risk_multiplier": order_data.get("risk_multiplier", 1.0),  # Guardar para análisis ML
         }
 
     async def _place_stop_orders(self, position: Dict[str, Any]):

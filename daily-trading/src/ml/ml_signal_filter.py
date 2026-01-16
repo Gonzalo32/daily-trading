@@ -127,7 +127,7 @@ class MLSignalFilter:
         return self._make_decision(p_win)
 
     # ======================================================
-    # 🧩 FEATURES (MVP)
+    # 🧩 FEATURES NORMALIZADAS/RELATIVAS (Learning-Aware)
     # ======================================================
     def _build_features(
         self,
@@ -136,19 +136,90 @@ class MLSignalFilter:
         regime_info: Dict[str, Any],
         bot_state: Dict[str, Any]
     ) -> Optional[pd.DataFrame]:
-
+        """
+        Construye features RELATIVAS y NORMALIZADAS para ML.
+        
+        OBJETIVO: El modelo debe aprender ESTRATEGIAS, no valores absolutos.
+        Features relativas permiten generalizar a otros activos y precios futuros.
+        """
         try:
             price = market_data.get("price", 0)
             indicators = market_data.get("indicators", {})
-
+            
+            fast_ma = indicators.get("fast_ma", price)
+            slow_ma = indicators.get("slow_ma", price)
+            rsi = indicators.get("rsi", 50)
+            atr = indicators.get("atr", 0)
+            macd = indicators.get("macd", 0)
+            
+            # FEATURES RELATIVAS (no valores absolutos)
+            # 1. Retornos porcentuales (normalizados)
+            # 2. Distancias relativas a medias móviles
+            # 3. RSI normalizado (ya está en 0-100, pero podemos centrarlo)
+            # 4. Volatilidad relativa (ATR como % del precio)
+            # 5. Pendientes de EMAs (cambio relativo)
+            
+            # Calcular features relativas
+            ema_fast_diff_pct = ((fast_ma - price) / price * 100) if price > 0 else 0
+            ema_slow_diff_pct = ((slow_ma - price) / price * 100) if price > 0 else 0
+            ema_cross_diff_pct = ((fast_ma - slow_ma) / slow_ma * 100) if slow_ma > 0 else 0
+            atr_pct = (atr / price * 100) if price > 0 else 0
+            
+            # RSI normalizado (centrado en 50, rango -1 a 1)
+            rsi_normalized = (rsi - 50) / 50  # -1 (oversold) a +1 (overbought)
+            
+            # MACD relativo al precio
+            macd_pct = (macd / price * 100) if price > 0 and price != 0 else 0
+            
+            # Contexto de mercado (tendencia/rango)
+            # Si fast_ma > slow_ma -> tendencia alcista (1), si no -> lateral/bajista (-1)
+            trend_direction = 1.0 if fast_ma > slow_ma else -1.0
+            
+            # Fuerza de la tendencia (distancia relativa entre EMAs)
+            trend_strength = abs(ema_cross_diff_pct) / 100.0  # Normalizado a 0-1
+            
+            # Señal de acción (one-hot)
+            signal_buy = 1 if signal.get("action") == "BUY" else 0
+            signal_sell = 1 if signal.get("action") == "SELL" else 0
+            
+            # Contexto del bot (normalizado)
+            daily_pnl_normalized = bot_state.get("daily_pnl_normalized", 0.0)
+            consecutive_signals = bot_state.get("consecutive_signals", 0)
+            daily_trades_normalized = bot_state.get("daily_trades", 0) / 200.0  # Normalizar a 0-1 (asumiendo max ~200)
+            
+            # Construir DataFrame con features relativas
             data = {
-                "price": price,
-                "rsi": indicators.get("rsi", 50),
-                "atr": indicators.get("atr", 0),
-                "signal_buy": 1 if signal.get("action") == "BUY" else 0,
-                "signal_sell": 1 if signal.get("action") == "SELL" else 0,
-                "hour": datetime.utcnow().hour,
+                # Features relativas (CRÍTICAS para generalización)
+                "ema_fast_diff_pct": ema_fast_diff_pct,
+                "ema_slow_diff_pct": ema_slow_diff_pct,
+                "ema_cross_diff_pct": ema_cross_diff_pct,
+                "atr_pct": atr_pct,
+                "rsi_normalized": rsi_normalized,
+                "macd_pct": macd_pct,
+                "trend_direction": trend_direction,
+                "trend_strength": trend_strength,
+                
+                # Señal (discreta)
+                "signal_buy": signal_buy,
+                "signal_sell": signal_sell,
+                
+                # Contexto del bot (normalizado)
+                "daily_pnl_normalized": daily_pnl_normalized,
+                "consecutive_signals": consecutive_signals,
+                "daily_trades_normalized": daily_trades_normalized,
+                
+                # Características temporales
+                "hour": datetime.utcnow().hour / 24.0,  # Normalizado 0-1
             }
+            
+            # Mantener compatibilidad con modelos antiguos (features absolutas)
+            # Si el modelo espera features absolutas, incluirlas también
+            if "price" in self.expected_features or len(self.expected_features) == 0:
+                data.update({
+                    "price": price,
+                    "rsi": rsi,
+                    "atr": atr,
+                })
 
             df = pd.DataFrame([data])
 

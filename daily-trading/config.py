@@ -129,6 +129,14 @@ class Config:
         os.getenv("MVP_MIN_TRADES_FOR_ADVANCED_FEATURES", "500"))
 
     # ==============================
+    # 📚 LEARNING MODE (PAPER Trading)
+    # ==============================
+    # Cooldown mínimo entre trades (segundos) - Para alta frecuencia controlada
+    MIN_COOLDOWN_BETWEEN_TRADES = float(os.getenv("MIN_COOLDOWN_BETWEEN_TRADES", "5.0"))  # 5 segundos por defecto
+    # En PAPER: permitir acumular cientos de trades diarios
+    # En LIVE: respetar límites estrictos
+
+    # ==============================
     # 📆 BACKTESTING
     # ==============================
     BACKTEST_START_DATE = os.getenv("BACKTEST_START_DATE", "2023-01-01")
