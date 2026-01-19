@@ -6,6 +6,13 @@ from dataclasses import dataclass
 
 from config import Config
 from src.utils.logging_setup import setup_logging
+from src.utils.decision_constants import (
+    DecisionOutcome,
+    ExecutedAction,
+    validate_decision_outcome,
+    validate_executed_action,
+    validate_decision_consistency
+)
 
 
 @dataclass
@@ -64,20 +71,26 @@ class DecisionSampler:
                     indicators, price, strategy_signal
                 )
 
+            # ⚠️ HARDENING A: Normalizar strategy_signal a {"BUY","SELL","NONE"}
             strategy_action = None
             if strategy_signal:
-                strategy_action = strategy_signal.get("action")
-
-            if executed_action is None:
-                executed_action = strategy_action or "HOLD"
-
-            if decision_outcome is None:
-                if executed_action in ["BUY", "SELL"]:
-                    decision_outcome = "accepted"
-                elif strategy_action is None:
-                    decision_outcome = "no_signal"
+                strategy_action_raw = strategy_signal.get("action")
+                if strategy_action_raw and isinstance(strategy_action_raw, str):
+                    strategy_action_upper = strategy_action_raw.upper()
+                    if strategy_action_upper in ["BUY", "SELL"]:
+                        strategy_action = strategy_action_upper
+                    else:
+                        strategy_action = "NONE"
                 else:
-                    decision_outcome = "hold"
+                    strategy_action = "NONE"
+            else:
+                strategy_action = "NONE"
+            
+            # Actualizar strategy_signal dict para consistencia
+            if strategy_signal and strategy_action != "NONE":
+                strategy_signal = {"action": strategy_action}
+            else:
+                strategy_signal = None
 
             reason = self._build_reason(
                 strategy_signal,
@@ -86,11 +99,28 @@ class DecisionSampler:
                 decision_outcome,
                 reject_reason
             )
+            # Unificar: usar volatility_level (string) en lugar de volatility
+            volatility_level = "medium"
+            if regime_info:
+                metrics = regime_info.get("metrics", {})
+                volatility_level = metrics.get("volatility_level", "medium")
+                # Si viene como "volatility" en el nivel superior, mapearlo
+                if "volatility" in regime_info:
+                    vol_val = regime_info["volatility"]
+                    if isinstance(vol_val, str):
+                        volatility_level = vol_val
+                    elif isinstance(vol_val, (int, float)):
+                        # Mapear numérico a string
+                        if vol_val > 0.7:
+                            volatility_level = "high"
+                        elif vol_val < 0.3:
+                            volatility_level = "low"
+                        else:
+                            volatility_level = "normal"
+
             market_context = {
                 "regime": regime_info.get("regime", "unknown") if regime_info else "unknown",
-                "volatility": regime_info.get("metrics", {}).get("volatility_level", "medium") if regime_info else "medium",
-                "volume": market_data.get("volume", 0),
-                "price": price,
+                "volatility_level": volatility_level,  # Unificado: siempre volatility_level
             }
 
             if decision_outcome and decision_outcome.startswith("rejected"):
@@ -102,12 +132,15 @@ class DecisionSampler:
                     f"🧪 DecisionSample | outcome={decision_outcome} | action={executed_action}"
                 )
 
+            # ⚠️ HARDENING A: strategy_signal debe ser siempre {"BUY","SELL","NONE"}
+            strategy_signal_final = strategy_action if strategy_action in ["BUY", "SELL"] else "NONE"
+            
             return DecisionSample(
                 timestamp=timestamp,
                 symbol=symbol,
                 features=features,
                 decision_space=decision_space,
-                strategy_signal=strategy_action,
+                strategy_signal=strategy_signal_final,  # ⚠️ HARDENING A: siempre normalizado
                 executed_action=executed_action,
                 decision_outcome=decision_outcome,
                 reject_reason=reject_reason,
@@ -117,18 +150,19 @@ class DecisionSampler:
 
         except Exception as e:
             self.logger.exception(f"❌ Error creando DecisionSample: {e}")
-                                                     
+
             return DecisionSample(
                 timestamp=datetime.now(),
                 symbol=market_data.get("symbol", "UNKNOWN"),
                 features={},
                 decision_space={"buy": False, "sell": False, "hold": True},
                 strategy_signal=None,
-                executed_action="HOLD",
-                decision_outcome="error",
-                reject_reason=str(e),
+                executed_action=ExecutedAction.HOLD.value,
+                decision_outcome=DecisionOutcome.REJECTED_BY_EXECUTION.value,
+                reject_reason=f"Error creating DecisionSample: {str(e)}",
                 reason=f"Error: {str(e)}",
-                market_context={}
+                market_context={"regime": "unknown",
+                                "volatility_level": "medium"}
             )
 
     def _extract_relative_features(
@@ -190,7 +224,7 @@ class DecisionSampler:
         decision_space = {
             "buy": False,
             "sell": False,
-            "hold": True                           
+            "hold": True
         }
 
         try:
@@ -216,48 +250,198 @@ class DecisionSampler:
         decision_outcome: Optional[str],
         reject_reason: Optional[str]
     ) -> str:
-        """Construye una razón legible para la decisión"""
-        if decision_outcome and decision_outcome.startswith("rejected"):
-            reason = reject_reason or "motivo no especificado"
-            return f"HOLD: Rechazado ({decision_outcome}) - {reason}"
-        if executed_action == "HOLD":
-            if strategy_signal is None:
-                return "HOLD: No signal from strategy"
+        """
+        Construye una razón legible para la decisión con trazabilidad completa.
+        SOLO maneja valores del DecisionOutcome Enum (sin mapeo de valores antiguos).
+        """
+        strategy_action = strategy_signal.get(
+            "action") if strategy_signal else None
+
+        # Validar que decision_outcome sea válido (debe venir normalizado del pipeline)
+        if decision_outcome and not validate_decision_outcome(decision_outcome):
+            self.logger.warning(
+                f"⚠️ decision_outcome inválido recibido: {decision_outcome}. "
+                "Usando NO_SIGNAL como fallback seguro."
+            )
+            decision_outcome = DecisionOutcome.NO_SIGNAL.value
+
+        if not decision_outcome:
+            decision_outcome = DecisionOutcome.NO_SIGNAL.value
+
+        # Validar executed_action
+        if executed_action and not validate_executed_action(executed_action):
+            self.logger.warning(
+                f"⚠️ executed_action inválido recibido: {executed_action}. "
+                "Usando HOLD como fallback seguro."
+            )
+            executed_action = ExecutedAction.HOLD.value
+
+        if not executed_action:
+            executed_action = ExecutedAction.HOLD.value
+
+        # Construir razón según outcome (SOLO valores del Enum)
+        if decision_outcome == DecisionOutcome.NO_SIGNAL.value:
+            return "HOLD: No signal from strategy (market conditions not met)"
+
+        elif decision_outcome == DecisionOutcome.EXECUTED.value:
+            if executed_action in [ExecutedAction.BUY.value, ExecutedAction.SELL.value]:
+                if strategy_signal:
+                    base_reason = strategy_signal.get(
+                        "reason", f"{executed_action} executed")
+                    return f"{base_reason} | Outcome: EXECUTED"
+                else:
+                    return f"{executed_action} executed | Outcome: EXECUTED"
             else:
-                return f"HOLD: Signal {strategy_signal.get('action')} rejected or not executed"
-        elif executed_action in ["BUY", "SELL"]:
-            if strategy_signal:
-                return strategy_signal.get("reason", f"{executed_action} executed")
+                # Inconsistencia detectada
+                self.logger.error(
+                    f"❌ INCONSISTENCIA: outcome=EXECUTED pero action={executed_action}"
+                )
+                return f"INCONSISTENT: outcome=executed but action={executed_action}"
+
+        elif decision_outcome == DecisionOutcome.REJECTED_BY_FILTERS.value:
+            if strategy_action:
+                base = f"HOLD: Signal {strategy_action} rejected by ML Filters"
             else:
-                return f"{executed_action} executed (no strategy signal)"
+                base = "HOLD: Signal rejected by ML Filters"
+            if reject_reason:
+                return f"{base} - {reject_reason}"
+            return base
+
+        elif decision_outcome == DecisionOutcome.REJECTED_BY_RISK.value:
+            if strategy_action:
+                base = f"HOLD: Signal {strategy_action} rejected by Risk Manager"
+            else:
+                base = "HOLD: Signal rejected by Risk Manager"
+            if reject_reason:
+                return f"{base} - {reject_reason}"
+            return base
+
+        elif decision_outcome == DecisionOutcome.REJECTED_BY_LIMITS.value:
+            if strategy_action:
+                base = f"HOLD: Signal {strategy_action} rejected by Daily Limits"
+            else:
+                base = "HOLD: Signal rejected by Daily Limits"
+            if reject_reason:
+                return f"{base} - {reject_reason}"
+            return base
+
+        elif decision_outcome == DecisionOutcome.REJECTED_BY_EXECUTION.value:
+            if strategy_action:
+                base = f"HOLD: Signal {strategy_action} rejected by Execution Error"
+            else:
+                base = "HOLD: Signal rejected by Execution Error"
+            if reject_reason:
+                return f"{base} - {reject_reason}"
+            return base
+
         else:
-            return "Unknown action"
+            # Fallback seguro (no debería llegar aquí)
+            self.logger.error(
+                f"❌ decision_outcome desconocido: {decision_outcome}. "
+                "Usando formato genérico."
+            )
+            return f"Action: {executed_action} | Outcome: {decision_outcome}"
 
     def to_dict(self, sample: DecisionSample) -> Dict[str, Any]:
-        """Convierte DecisionSample a dict para guardar en CSV"""
+        """
+        Convierte DecisionSample a dict para guardar en CSV.
+        ÚNICA FUENTE DE VERDAD para el formato del CSV.
+        """
+        # Normalizar decision_outcome
+        # ⚠️ NOTA: Este mapeo es SOLO para compatibilidad con datos antiguos.
+        # En el pipeline normal, decision_outcome SIEMPRE debe venir del Enum.
+        decision_outcome = sample.decision_outcome
+        if decision_outcome and not validate_decision_outcome(decision_outcome):
+            # Mapear valores antiguos (fallback de seguridad, no debería usarse en producción)
+            self.logger.warning(
+                f"⚠️ decision_outcome inválido recibido: {decision_outcome}. "
+                "Mapeando a valor válido (esto no debería pasar en producción)."
+            )
+            outcome_map = {
+                "accepted": DecisionOutcome.EXECUTED.value,
+                "pending": DecisionOutcome.NO_SIGNAL.value,
+                "rejected": DecisionOutcome.REJECTED_BY_RISK.value,
+                "unknown": DecisionOutcome.NO_SIGNAL.value,
+            }
+            decision_outcome = outcome_map.get(
+                decision_outcome, DecisionOutcome.NO_SIGNAL.value)
+        elif not decision_outcome:
+            decision_outcome = DecisionOutcome.NO_SIGNAL.value
+
+        # Normalizar executed_action
+        executed_action = sample.executed_action
+        if executed_action and not validate_executed_action(executed_action):
+            executed_action = ExecutedAction.HOLD.value
+        elif not executed_action:
+            executed_action = ExecutedAction.HOLD.value
+
+        # ⚠️ HARDENING D: Validar consistencia usando decision_constants.py como fuente única
+        is_valid, error = validate_decision_consistency(
+            executed_action,
+            decision_outcome,
+            sample.strategy_signal
+        )
+        if not is_valid:
+            self.logger.warning(
+                f"⚠️ Inconsistencia en DecisionSample: {error}. Corrigiendo automáticamente...")
+            # Corregir automáticamente según reglas de decision_constants.py
+            if executed_action == ExecutedAction.HOLD.value and decision_outcome == DecisionOutcome.EXECUTED.value:
+                # HOLD nunca con EXECUTED
+                decision_outcome = DecisionOutcome.NO_SIGNAL.value
+            elif executed_action in [ExecutedAction.BUY.value, ExecutedAction.SELL.value]:
+                # BUY/SELL siempre con EXECUTED
+                if decision_outcome != DecisionOutcome.EXECUTED.value:
+                    decision_outcome = DecisionOutcome.EXECUTED.value
+            # Validar strategy_signal NONE con HOLD + NO_SIGNAL
+            if (sample.strategy_signal is None or sample.strategy_signal == "NONE"):
+                if executed_action != ExecutedAction.HOLD.value:
+                    executed_action = ExecutedAction.HOLD.value
+                if decision_outcome != DecisionOutcome.NO_SIGNAL.value:
+                    decision_outcome = DecisionOutcome.NO_SIGNAL.value
+
+        # was_executed: True solo si decision_outcome == "executed"
+        was_executed = (decision_outcome == DecisionOutcome.EXECUTED.value)
+
+        # Validar strategy_signal ∈ {"BUY","SELL","NONE"}
+        strategy_signal_normalized = sample.strategy_signal
+        if strategy_signal_normalized and strategy_signal_normalized.upper() in ["BUY", "SELL"]:
+            strategy_signal_normalized = strategy_signal_normalized.upper()
+        elif strategy_signal_normalized is None or strategy_signal_normalized == "NONE":
+            strategy_signal_normalized = "NONE"
+        else:
+            self.logger.warning(
+                f"⚠️ strategy_signal inválido: {strategy_signal_normalized}. Usando NONE.")
+            strategy_signal_normalized = "NONE"
+
         return {
             "timestamp": sample.timestamp.isoformat() if isinstance(sample.timestamp, datetime) else str(sample.timestamp),
             "symbol": sample.symbol,
-                                
-            "ema_diff_pct": sample.features.get("ema_diff_pct", 0),
+
+            # Features (usar ema_cross_diff_pct para alinear con CSV)
+            "ema_cross_diff_pct": sample.features.get("ema_diff_pct", 0),
             "rsi_normalized": sample.features.get("rsi_normalized", 0),
             "atr_pct": sample.features.get("atr_pct", 0),
             "price_to_fast_pct": sample.features.get("price_to_fast_pct", 0),
             "price_to_slow_pct": sample.features.get("price_to_slow_pct", 0),
             "trend_direction": sample.features.get("trend_direction", 0),
             "trend_strength": sample.features.get("trend_strength", 0),
-                            
+
+            # Decision space
             "decision_buy_possible": sample.decision_space.get("buy", False),
             "decision_sell_possible": sample.decision_space.get("sell", False),
             "decision_hold_possible": sample.decision_space.get("hold", True),
-                             
-            "strategy_signal": sample.strategy_signal or "NONE",
-                             
-            "executed_action": sample.executed_action or "HOLD",
-            "decision_outcome": sample.decision_outcome or "unknown",
-            "reject_reason": sample.reject_reason or "",
-                     
+
+            # Signal y acción (validado)
+            "strategy_signal": strategy_signal_normalized,
+            "executed_action": executed_action,
+            "was_executed": was_executed,
+
+            # Contexto de mercado (unificado: volatility_level)
             "regime": sample.market_context.get("regime", "unknown"),
-            "volatility": sample.market_context.get("volatility", "medium"),
+            "volatility_level": sample.market_context.get("volatility_level", "medium"),
+
+            # Outcome y razones
+            "decision_outcome": decision_outcome,
+            "reject_reason": sample.reject_reason or "",
             "reason": sample.reason,
         }

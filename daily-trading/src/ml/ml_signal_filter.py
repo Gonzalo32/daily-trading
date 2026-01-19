@@ -2,7 +2,7 @@
 Filtro ML de Señales
 Usa Machine Learning para filtrar señales y predecir probabilidad de éxito
 """
-                                                                                         
+
 
 import os
 import pandas as pd
@@ -11,7 +11,7 @@ from datetime import datetime
 
 from src.utils.logging_setup import setup_logging
 
-                                                    
+
 try:
     import joblib
     JOBLIB_AVAILABLE = True
@@ -29,7 +29,6 @@ class MLSignalFilter:
         self.model_path = model_path
         self.min_probability = min_probability
 
-                                     
         self.high_probability = 0.70
         self.expected_features: list[str] = []
 
@@ -50,12 +49,9 @@ class MLSignalFilter:
             "model_loaded": self.model is not None,
         }
 
-                                                            
-              
-                                                            
     def load_model(self) -> bool:
         try:
-                                                 
+
             if not JOBLIB_AVAILABLE:
                 self.logger.warning(
                     "⚠️ joblib no está instalado. ML deshabilitado. "
@@ -75,7 +71,6 @@ class MLSignalFilter:
             self.model = joblib.load(self.model_path)
             self.model_loaded = True
 
-                                                              
             if hasattr(self.model, "feature_names_in_"):
                 self.expected_features = list(
                     self.model.feature_names_in_
@@ -89,15 +84,9 @@ class MLSignalFilter:
             self.model_loaded = False
             return False
 
-                                                            
-                                    
-                                                            
     def is_model_available(self) -> bool:
         return self.model_loaded and self.model is not None
 
-                                                            
-                        
-                                                            
     async def filter_signal(
         self,
         signal: Dict[str, Any],
@@ -106,7 +95,6 @@ class MLSignalFilter:
         bot_state: Dict[str, Any]
     ) -> Dict[str, Any]:
 
-                                          
         if not self.is_model_available():
             return self._default_approval(signal)
 
@@ -126,9 +114,6 @@ class MLSignalFilter:
 
         return self._make_decision(p_win)
 
-                                                            
-                                                        
-                                                            
     def _build_features(
         self,
         signal: Dict[str, Any],
@@ -138,58 +123,63 @@ class MLSignalFilter:
     ) -> Optional[pd.DataFrame]:
         """
         Construye features RELATIVAS y NORMALIZADAS para ML.
-        
+
         OBJETIVO: El modelo debe aprender ESTRATEGIAS, no valores absolutos.
         Features relativas permiten generalizar a otros activos y precios futuros.
         """
         try:
             price = market_data.get("price", 0)
             indicators = market_data.get("indicators", {})
-            
+
             fast_ma = indicators.get("fast_ma", price)
             slow_ma = indicators.get("slow_ma", price)
             rsi = indicators.get("rsi", 50)
             atr = indicators.get("atr", 0)
             macd = indicators.get("macd", 0)
-            
-                                                       
-                                                     
-                                                      
-                                                                           
-                                                             
-                                                     
-            
-                                         
-            ema_fast_diff_pct = ((fast_ma - price) / price * 100) if price > 0 else 0
-            ema_slow_diff_pct = ((slow_ma - price) / price * 100) if price > 0 else 0
-            ema_cross_diff_pct = ((fast_ma - slow_ma) / slow_ma * 100) if slow_ma > 0 else 0
+
+            ema_fast_diff_pct = ((fast_ma - price) /
+                                 price * 100) if price > 0 else 0
+            ema_slow_diff_pct = ((slow_ma - price) /
+                                 price * 100) if price > 0 else 0
+            ema_cross_diff_pct = ((fast_ma - slow_ma) /
+                                  slow_ma * 100) if slow_ma > 0 else 0
             atr_pct = (atr / price * 100) if price > 0 else 0
-            
-                                                            
-            rsi_normalized = (rsi - 50) / 50                                   
-            
-                                     
+
+            rsi_normalized = (rsi - 50) / 50
+
             macd_pct = (macd / price * 100) if price > 0 and price != 0 else 0
-            
-                                                   
-                                                                                          
+
             trend_direction = 1.0 if fast_ma > slow_ma else -1.0
-            
-                                                                    
-            trend_strength = abs(ema_cross_diff_pct) / 100.0                     
-            
-                                       
+
+            trend_strength = abs(ema_cross_diff_pct) / 100.0
+
             signal_buy = 1 if signal.get("action") == "BUY" else 0
             signal_sell = 1 if signal.get("action") == "SELL" else 0
-            
-                                            
+
+            # ⚠️ CRÍTICO: Features de estado del bot (PRE-ejecución)
+            # Estas features deben venir del bot_state snapshot ANTES de ejecutar trades
+            # para evitar ML leakage (usar datos post-trade para predecir)
+            #
+            # GARANTÍA: main.py snapshot bot_state al inicio del tick (línea ~592)
+            # Si bot_state no viene del snapshot → usar 0 para evitar leakage
             daily_pnl_normalized = bot_state.get("daily_pnl_normalized", 0.0)
             consecutive_signals = bot_state.get("consecutive_signals", 0)
-            daily_trades_normalized = bot_state.get("daily_trades", 0) / 200.0                                         
-            
-                                                        
+
+            # Validación: Preferir daily_trades_normalized del snapshot
+            if "daily_trades_normalized" in bot_state:
+                daily_trades_normalized = bot_state.get(
+                    "daily_trades_normalized", 0.0)
+            else:
+                # Fallback: calcular pero documentar que puede haber leakage
+                daily_trades_normalized = bot_state.get(
+                    "daily_trades", 0) / 200.0
+                self.logger.warning(
+                    "⚠️ ML LEAKAGE RISK: daily_trades_normalized calculado en runtime. "
+                    "Debería venir del bot_state snapshot pre-ejecución."
+                )
+
             data = {
-                                                                   
+
                 "ema_fast_diff_pct": ema_fast_diff_pct,
                 "ema_slow_diff_pct": ema_slow_diff_pct,
                 "ema_cross_diff_pct": ema_cross_diff_pct,
@@ -198,22 +188,20 @@ class MLSignalFilter:
                 "macd_pct": macd_pct,
                 "trend_direction": trend_direction,
                 "trend_strength": trend_strength,
-                
-                                  
+
+
                 "signal_buy": signal_buy,
                 "signal_sell": signal_sell,
-                
-                                                
+
+
                 "daily_pnl_normalized": daily_pnl_normalized,
                 "consecutive_signals": consecutive_signals,
                 "daily_trades_normalized": daily_trades_normalized,
-                
-                                            
-                "hour": datetime.utcnow().hour / 24.0,                   
+
+
+                "hour": datetime.utcnow().hour / 24.0,
             }
-            
-                                                                               
-                                                                        
+
             forbidden = {"price", "rsi", "atr"}
             if self.expected_features and any(f in forbidden for f in self.expected_features):
                 self.logger.warning(
@@ -223,7 +211,6 @@ class MLSignalFilter:
 
             df = pd.DataFrame([data])
 
-                                                      
             for col in self.expected_features:
                 if col not in df.columns:
                     df[col] = 0
@@ -237,9 +224,6 @@ class MLSignalFilter:
             self.logger.error(f"❌ Error armando features: {e}")
             return None
 
-                                                            
-                
-                                                            
     def _make_decision(self, p_win: float) -> Dict[str, Any]:
 
         approved = p_win >= self.min_probability
@@ -258,9 +242,6 @@ class MLSignalFilter:
             ),
         }
 
-                                                            
-                
-                                                            
     def _default_approval(self, signal: Dict[str, Any]) -> Dict[str, Any]:
         return {
             "approved": True,

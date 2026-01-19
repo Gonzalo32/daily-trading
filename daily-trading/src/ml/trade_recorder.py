@@ -1,4 +1,4 @@
-                                                                         
+
 
 import pandas as pd
 import os
@@ -49,7 +49,7 @@ class TradeRecorder:
             "decision_buy_possible", "decision_sell_possible", "decision_hold_possible",
             "strategy_signal", "executed_action", "was_executed",
             "regime", "volatility_level",
-            "decision_type", "reason"
+            "decision_outcome", "reject_reason", "reason"
         ])
         os.makedirs(os.path.dirname(self.decisions_file), exist_ok=True)
         df.to_csv(self.decisions_file, index=False)
@@ -72,7 +72,6 @@ class TradeRecorder:
                 duration = (position["exit_time"] -
                             position["entry_time"]).total_seconds()
 
-                                                       
             r_value = position.get("r_value")
             if r_value is None:
                 r_value = 1.0
@@ -84,7 +83,6 @@ class TradeRecorder:
 
             entry_price = position.get("entry_price", 0)
 
-                                                                                   
             market_data = market_data_context or {}
             indicators = market_data.get("indicators", {})
 
@@ -105,10 +103,15 @@ class TradeRecorder:
                 -1.0 if fast_ma < slow_ma else 0.0)
             trend_strength = abs(ema_cross_diff_pct) / 100.0
 
-                                
             regime_info = market_data.get("regime_info", {})
             regime = regime_info.get("regime", "unknown")
             volatility = regime_info.get("volatility", "normal")
+
+            # ⚠️ CRÍTICO: was_executed derivado de executed_action (no de flags externos)
+            # Validar strategy_signal ∈ {"BUY","SELL","NONE"}
+            executed_action = position.get("side", "").upper()
+            was_executed = (executed_action in ["BUY", "SELL"])
+            strategy_signal_normalized = executed_action if was_executed else "NONE"
 
             record = {
                 "timestamp": position.get("entry_time"),
@@ -121,7 +124,7 @@ class TradeRecorder:
                 "stop_loss": position.get("stop_loss"),
                 "take_profit": position.get("take_profit"),
                 "duration_seconds": duration,
-                                  
+
                 "risk_amount": position.get("risk_amount"),
                 "atr_value": position.get("atr_value"),
                 "r_value": r_value,
@@ -133,21 +136,21 @@ class TradeRecorder:
                 "price_to_slow_pct": price_to_slow_pct,
                 "trend_direction": trend_direction,
                 "trend_strength": trend_strength,
-                                     
+
                 "regime": regime,
                 "volatility_level": volatility,
-                                                                                  
+
                 "decision_buy_possible": position.get("side") == "BUY",
                 "decision_sell_possible": position.get("side") == "SELL",
-                "decision_hold_possible": True,                      
-                                                   
-                "strategy_signal": position.get("side"),
-                "executed_action": position.get("side"),
-                "was_executed": True,
-                         
+                "decision_hold_possible": True,
+
+                "strategy_signal": strategy_signal_normalized,
+                "executed_action": executed_action,
+                "was_executed": was_executed,
+
                 "target": 1 if pnl >= r_value else 0,
                 "trade_type": "executed",
-                                
+
                 "exit_type": position.get("exit_type", "unknown"),
                 "r_multiple": pnl / r_value if r_value > 0 else 0,
                 "time_in_trade": duration
@@ -160,7 +163,6 @@ class TradeRecorder:
                 f"💾 Trade ejecutado guardado ML | {record['symbol']} | PnL={pnl:.2f} | Target={record['target']}"
             )
 
-                                                              
             from src.ml.auto_trainer import auto_train_if_needed
             auto_train_if_needed()
 
@@ -186,15 +188,16 @@ class TradeRecorder:
             rsi = indicators.get("rsi", 50)
             atr = indicators.get("atr", 0)
 
-                                         
-            ema_fast_diff_pct = ((fast_ma - price) /
-                                 price * 100) if price > 0 else 0
-            ema_slow_diff_pct = ((slow_ma - price) /
-                                 price * 100) if price > 0 else 0
+            # ⚠️ CRÍTICO: Solo usar columnas que existen en el header inicial
+            # NO usar ema_fast_diff_pct ni ema_slow_diff_pct (no existen en header)
             ema_cross_diff_pct = ((fast_ma - slow_ma) /
                                   slow_ma * 100) if slow_ma > 0 else 0
             atr_pct = (atr / price * 100) if price > 0 else 0
             rsi_normalized = (rsi - 50) / 50
+            price_to_fast_pct = ((price - fast_ma) /
+                                 fast_ma * 100) if fast_ma > 0 else 0
+            price_to_slow_pct = ((price - slow_ma) /
+                                 slow_ma * 100) if slow_ma > 0 else 0
             trend_direction = 1.0 if fast_ma > slow_ma else -1.0
             trend_strength = abs(ema_cross_diff_pct) / 100.0
 
@@ -214,31 +217,31 @@ class TradeRecorder:
                 "stop_loss": signal.get("stop_loss"),
                 "take_profit": signal.get("take_profit"),
                 "duration_seconds": None,
-                                  
+
                 "risk_amount": None,
                 "atr_value": atr,
                 "r_value": None,
                 "risk_multiplier": None,
-                                    
-                "ema_fast_diff_pct": ema_fast_diff_pct,
-                "ema_slow_diff_pct": ema_slow_diff_pct,
+
+                # ⚠️ Solo columnas que existen en header inicial
                 "ema_cross_diff_pct": ema_cross_diff_pct,
                 "atr_pct": atr_pct,
                 "rsi_normalized": rsi_normalized,
+                "price_to_fast_pct": price_to_fast_pct,
+                "price_to_slow_pct": price_to_slow_pct,
                 "trend_direction": trend_direction,
                 "trend_strength": trend_strength,
-                          
+
                 "regime": regime,
                 "volatility_level": volatility,
-                         
-                "target": 0,                                      
+
+                "target": 0,
                 "trade_type": f"rejected_{reason}"
             }
 
             df = pd.DataFrame([record])
             df.to_csv(self.data_file, mode="a", index=False, header=False)
 
-                                                                          
             if not hasattr(self, '_rejected_count'):
                 self._rejected_count = 0
             self._rejected_count += 1
@@ -259,12 +262,11 @@ class TradeRecorder:
             regime_info: Información del régimen de mercado
         """
         try:
-                                                                          
+
             if not hasattr(self, '_no_signal_count'):
                 self._no_signal_count = 0
             self._no_signal_count += 1
 
-                                                                                           
             if self._no_signal_count % 20 != 0:
                 return
 
@@ -276,15 +278,16 @@ class TradeRecorder:
             rsi = indicators.get("rsi", 50)
             atr = indicators.get("atr", 0)
 
-                                         
-            ema_fast_diff_pct = ((fast_ma - price) /
-                                 price * 100) if price > 0 else 0
-            ema_slow_diff_pct = ((slow_ma - price) /
-                                 price * 100) if price > 0 else 0
+            # ⚠️ CRÍTICO: Solo usar columnas que existen en el header inicial
+            # NO usar ema_fast_diff_pct ni ema_slow_diff_pct (no existen en header)
             ema_cross_diff_pct = ((fast_ma - slow_ma) /
                                   slow_ma * 100) if slow_ma > 0 else 0
             atr_pct = (atr / price * 100) if price > 0 else 0
             rsi_normalized = (rsi - 50) / 50
+            price_to_fast_pct = ((price - fast_ma) /
+                                 fast_ma * 100) if fast_ma > 0 else 0
+            price_to_slow_pct = ((price - slow_ma) /
+                                 slow_ma * 100) if slow_ma > 0 else 0
             trend_direction = 1.0 if fast_ma > slow_ma else -1.0
             trend_strength = abs(ema_cross_diff_pct) / 100.0
 
@@ -304,31 +307,32 @@ class TradeRecorder:
                 "stop_loss": None,
                 "take_profit": None,
                 "duration_seconds": None,
-                                  
+
                 "risk_amount": None,
                 "atr_value": atr,
                 "r_value": None,
                 "risk_multiplier": None,
-                                    
-                "ema_fast_diff_pct": ema_fast_diff_pct,
-                "ema_slow_diff_pct": ema_slow_diff_pct,
+
+                # ⚠️ Solo columnas que existen en header inicial
                 "ema_cross_diff_pct": ema_cross_diff_pct,
                 "atr_pct": atr_pct,
                 "rsi_normalized": rsi_normalized,
+                "price_to_fast_pct": price_to_fast_pct,
+                "price_to_slow_pct": price_to_slow_pct,
                 "trend_direction": trend_direction,
                 "trend_strength": trend_strength,
-                          
+
                 "regime": regime,
                 "volatility_level": volatility,
-                         
-                "target": 0,                           
+
+                "target": 0,
                 "trade_type": "no_signal"
             }
 
             df = pd.DataFrame([record])
             df.to_csv(self.data_file, mode="a", index=False, header=False)
 
-            if self._no_signal_count % 200 == 0:                          
+            if self._no_signal_count % 200 == 0:
                 self.logger.debug(
                     f"📚 Contexto sin señal guardado ML (#{self._no_signal_count})"
                 )
@@ -336,7 +340,7 @@ class TradeRecorder:
         except Exception as e:
             self.logger.exception(f"❌ Error guardando contexto sin señal: {e}")
 
-    def record_decision_sample(self, decision_sample, decision_type: str = "hold"):
+    def record_decision_sample(self, decision_sample, decision_sampler=None):
         """
         Registra un DecisionSample completo en decisions.csv (incluye HOLD explícito).
 
@@ -345,58 +349,83 @@ class TradeRecorder:
 
         Args:
             decision_sample: DecisionSample de decision_sampler
-            decision_type: "executed", "rejected_ml", "rejected_risk", "hold", "no_signal"
+            decision_sampler: Instancia de DecisionSampler para usar to_dict() como fuente única
         """
         try:
-            from datetime import datetime
-
-            if isinstance(decision_sample, dict):
-                features = decision_sample.get("features", {})
-                decision_space = decision_sample.get("decision_space", {})
-                market_context = decision_sample.get("market_context", {})
-                timestamp = decision_sample.get("timestamp")
-                symbol = decision_sample.get("symbol")
-                strategy_signal = decision_sample.get("strategy_signal")
-                executed_action = decision_sample.get(
-                    "executed_action", "HOLD")
-                decision_outcome = decision_sample.get("decision_outcome")
-                reject_reason = decision_sample.get("reject_reason")
-                reason = decision_sample.get("reason", "")
+            # ⚠️ CRÍTICO: Usar DecisionSampler.to_dict() como ÚNICA FUENTE DE VERDAD
+            # Esto garantiza consistencia y alineación con el formato del CSV
+            if decision_sampler and hasattr(decision_sampler, 'to_dict'):
+                record = decision_sampler.to_dict(decision_sample)
             else:
-                features = decision_sample.features
-                decision_space = decision_sample.decision_space
-                market_context = decision_sample.market_context
-                timestamp = decision_sample.timestamp
-                symbol = decision_sample.symbol
-                strategy_signal = decision_sample.strategy_signal
-                executed_action = decision_sample.executed_action or "HOLD"
-                decision_outcome = decision_sample.decision_outcome
-                reject_reason = decision_sample.reject_reason
-                reason = decision_sample.reason or ""
+                # Fallback si no hay DecisionSampler (no debería pasar en producción)
+                self.logger.warning(
+                    "⚠️ DecisionSampler no disponible, usando fallback para record_decision_sample")
+                from datetime import datetime
+                from src.utils.decision_constants import DecisionOutcome, ExecutedAction
 
-            record = {
-                "timestamp": timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp),
-                "symbol": symbol,
-                "ema_cross_diff_pct": features.get("ema_diff_pct", 0),
-                "atr_pct": features.get("atr_pct", 0),
-                "rsi_normalized": features.get("rsi_normalized", 0),
-                "price_to_fast_pct": features.get("price_to_fast_pct", 0),
-                "price_to_slow_pct": features.get("price_to_slow_pct", 0),
-                "trend_direction": features.get("trend_direction", 0),
-                "trend_strength": features.get("trend_strength", 0),
-                "decision_buy_possible": decision_space.get("buy", False),
-                "decision_sell_possible": decision_space.get("sell", False),
-                "decision_hold_possible": decision_space.get("hold", True),
-                "strategy_signal": strategy_signal or "NONE",
-                "executed_action": executed_action or "HOLD",
-                "was_executed": executed_action in ["BUY", "SELL"],
-                "regime": market_context.get("regime", "unknown"),
-                "volatility_level": market_context.get("volatility", "medium"),
-                "decision_type": decision_type,
-                "decision_outcome": decision_outcome or decision_type,
-                "reject_reason": reject_reason or "",
-                "reason": reason
-            }
+                if isinstance(decision_sample, dict):
+                    features = decision_sample.get("features", {})
+                    decision_space = decision_sample.get("decision_space", {})
+                    market_context = decision_sample.get("market_context", {})
+                    timestamp = decision_sample.get("timestamp")
+                    symbol = decision_sample.get("symbol")
+                    strategy_signal = decision_sample.get("strategy_signal")
+                    executed_action = decision_sample.get(
+                        "executed_action", ExecutedAction.HOLD.value)
+                    decision_outcome = decision_sample.get(
+                        "decision_outcome", DecisionOutcome.NO_SIGNAL.value)
+                    reject_reason = decision_sample.get("reject_reason")
+                    reason = decision_sample.get("reason", "")
+                else:
+                    features = decision_sample.features
+                    decision_space = decision_sample.decision_space
+                    market_context = decision_sample.market_context
+                    timestamp = decision_sample.timestamp
+                    symbol = decision_sample.symbol
+                    strategy_signal = decision_sample.strategy_signal
+                    executed_action = decision_sample.executed_action or ExecutedAction.HOLD.value
+                    decision_outcome = decision_sample.decision_outcome or DecisionOutcome.NO_SIGNAL.value
+                    reject_reason = decision_sample.reject_reason
+                    reason = decision_sample.reason or ""
+
+                # Validar strategy_signal ∈ {"BUY","SELL","NONE"}
+                strategy_signal_normalized = strategy_signal
+                if strategy_signal and strategy_signal.upper() in ["BUY", "SELL"]:
+                    strategy_signal_normalized = strategy_signal.upper()
+                elif strategy_signal is None or strategy_signal == "NONE":
+                    strategy_signal_normalized = "NONE"
+                else:
+                    self.logger.warning(
+                        f"⚠️ strategy_signal inválido: {strategy_signal}. Usando NONE.")
+                    strategy_signal_normalized = "NONE"
+
+                # was_executed derivado de executed_action (no de flags externos)
+                was_executed = (executed_action in [
+                                ExecutedAction.BUY.value, ExecutedAction.SELL.value])
+
+                record = {
+                    "timestamp": timestamp.isoformat() if isinstance(timestamp, datetime) else str(timestamp),
+                    "symbol": symbol,
+                    "ema_cross_diff_pct": features.get("ema_diff_pct", 0),
+                    "atr_pct": features.get("atr_pct", 0),
+                    "rsi_normalized": features.get("rsi_normalized", 0),
+                    "price_to_fast_pct": features.get("price_to_fast_pct", 0),
+                    "price_to_slow_pct": features.get("price_to_slow_pct", 0),
+                    "trend_direction": features.get("trend_direction", 0),
+                    "trend_strength": features.get("trend_strength", 0),
+                    "decision_buy_possible": decision_space.get("buy", False),
+                    "decision_sell_possible": decision_space.get("sell", False),
+                    "decision_hold_possible": decision_space.get("hold", True),
+                    "strategy_signal": strategy_signal_normalized,
+                    "executed_action": executed_action,
+                    "was_executed": was_executed,
+                    "regime": market_context.get("regime", "unknown"),
+                    # Unificado: volatility_level
+                    "volatility_level": market_context.get("volatility_level", market_context.get("volatility", "medium")),
+                    "decision_outcome": decision_outcome,
+                    "reject_reason": reject_reason or "",
+                    "reason": reason
+                }
 
             df = pd.DataFrame([record])
             df.to_csv(self.decisions_file, mode="a", index=False, header=False)
@@ -408,7 +437,7 @@ class TradeRecorder:
             if self._decision_sample_count % 100 == 0:
                 self.logger.debug(
                     f"📚 DecisionSample guardado (#{self._decision_sample_count}) | "
-                    f"Action: {record['executed_action']} | Type: {decision_type}"
+                    f"Action: {record['executed_action']} | Outcome: {record['decision_outcome']}"
                 )
 
         except Exception as e:
@@ -424,19 +453,18 @@ class TradeRecorder:
                     "⚠️ No hay archivo de training_data todavía.")
                 return pd.DataFrame()
 
-                                                            
             try:
                 df = pd.read_csv(
                     self.data_file, on_bad_lines='skip', encoding='utf-8')
             except Exception as parse_error:
                 self.logger.warning(
                     f"⚠️ Error parseando CSV: {parse_error}. Intentando corregir...")
-                                                                
+
                 try:
                     df = pd.read_csv(
                         self.data_file, sep=',', error_bad_lines=False, warn_bad_lines=False, encoding='utf-8')
                 except:
-                                                             
+
                     self.logger.warning(
                         "⚠️ No se pudo leer training_data.csv. Usando DataFrame vacío.")
                     return pd.DataFrame()

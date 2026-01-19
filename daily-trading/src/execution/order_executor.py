@@ -328,11 +328,13 @@ class OrderExecutor:
 
         except Exception as e:
             self.logger.exception(f"❌ Error cerrando posición: {e}")
+            # ⚠️ FIX 3: Contrato consistente - siempre devolver los mismos campos
             return {
                 "success": False,
-                "error": str(e),
                 "exit_price": position.get("entry_price", 0),
-                "pnl": 0.0
+                "pnl": 0.0,
+                "position": None,
+                "error": str(e)
             }
 
     def get_order_history(self) -> List[Dict[str, Any]]:

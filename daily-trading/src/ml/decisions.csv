@@ -1,0 +1,20 @@
+timestamp,symbol,ema_cross_diff_pct,atr_pct,rsi_normalized,price_to_fast_pct,price_to_slow_pct,trend_direction,trend_strength,decision_buy_possible,decision_sell_possible,decision_hold_possible,strategy_signal,executed_action,was_executed,regime,volatility_level,decision_outcome,reject_reason,reason
+2026-01-19T11:53:56.442875,BTC/USDT,0.15,0.45,-0.12,0.08,0.23,1.0,0.65,True,False,True,BUY,BUY,True,trending,normal,executed,,EMA cross bullish + RSI oversold recovery
+2026-01-19T11:54:28.649554,BTC/USDT,-0.08,0.42,0.18,-0.05,0.15,-1.0,0.45,False,True,True,SELL,SELL,True,trending,normal,executed,,Price rejection at resistance + RSI overbought
+2026-01-19T11:55:08.130778,BTC/USDT,0.22,0.48,-0.15,0.12,0.28,1.0,0.72,True,False,True,BUY,BUY,True,trending,high,executed,,Strong uptrend + volume confirmation
+2026-01-19T11:55:20.010372,BTC/USDT,0.21,0.47,-0.14,0.11,0.27,1.0,0.70,True,False,True,BUY,HOLD,False,trending,high,rejected,risk_limit,Max daily trades reached
+2026-01-19T11:55:58.316520,BTC/USDT,-0.12,0.44,0.22,-0.08,0.18,-1.0,0.55,False,True,True,SELL,SELL,True,ranging,normal,executed,,Range top rejection + bearish divergence
+2026-01-19T11:56:10.649868,BTC/USDT,-0.10,0.43,0.20,-0.06,0.16,-1.0,0.50,False,True,True,SELL,HOLD,False,ranging,normal,rejected,volatility_filter,ATR too low for entry
+2026-01-19T11:56:40.120384,BTC/USDT,0.05,0.41,0.05,0.02,0.10,0.0,0.25,True,True,True,NONE,HOLD,False,ranging,normal,no_signal,,No clear signal - waiting for confirmation
+2026-01-19T11:57:17.638618,BTC/USDT,0.18,0.46,-0.10,0.09,0.25,1.0,0.60,True,False,True,BUY,BUY,True,trending,normal,executed,,EMA alignment + momentum shift
+2026-01-19T11:57:45.867562,BTC/USDT,-0.15,0.49,0.25,-0.10,0.20,-1.0,0.65,False,True,True,SELL,SELL,True,trending,high,executed,,Strong downtrend + volume spike
+2026-01-19T11:57:57.607400,BTC/USDT,-0.14,0.48,0.24,-0.09,0.19,-1.0,0.63,False,True,True,SELL,HOLD,False,trending,high,rejected,position_limit,Max positions already open
+2026-01-19T11:58:09.441574,BTC/USDT,0.03,0.40,0.02,0.01,0.08,0.0,0.20,True,True,True,NONE,HOLD,False,ranging,low,no_signal,,Market choppy - no edge
+2026-01-19T11:58:31.091053,BTC/USDT,0.12,0.43,-0.08,0.06,0.18,1.0,0.48,True,False,True,BUY,BUY,True,ranging,normal,executed,,Support bounce + RSI recovery
+2026-01-19T11:58:35.032669,BTC/USDT,-0.09,0.42,0.16,-0.05,0.14,-1.0,0.42,False,True,True,SELL,HOLD,False,ranging,normal,rejected,risk_filter,Stop loss too wide for current volatility
+2026-01-19T11:58:58.663562,BTC/USDT,-0.11,0.45,0.19,-0.07,0.17,-1.0,0.52,False,True,True,SELL,SELL,True,ranging,normal,executed,,Resistance test + bearish pattern
+2026-01-19T11:59:08.816560,BTC/USDT,-0.13,0.47,0.21,-0.08,0.18,-1.0,0.58,False,True,True,SELL,SELL,True,trending,high,executed,,Breakdown confirmation + volume
+2026-01-19T12:00:04.316133,BTC/USDT,0.08,0.41,-0.05,0.04,0.12,1.0,0.35,True,False,True,BUY,HOLD,False,ranging,normal,rejected,ml_filter,ML probability below threshold (0.52 < 0.55)
+2026-01-19T12:00:16.111638,BTC/USDT,0.09,0.42,-0.06,0.05,0.13,1.0,0.38,True,False,True,BUY,BUY,True,ranging,normal,executed,,ML approved + technical confirmation
+2026-01-19T12:00:26.137641,BTC/USDT,0.14,0.44,-0.11,0.07,0.20,1.0,0.55,True,False,True,BUY,BUY,True,trending,normal,executed,,Trend continuation + momentum
+2026-01-19T12:00:38.091158,BTC/USDT,0.13,0.43,-0.10,0.06,0.19,1.0,0.52,True,False,True,BUY,HOLD,False,trending,normal,rejected,daily_loss_limit,Daily loss limit reached
