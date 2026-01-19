@@ -23,9 +23,9 @@ class OrderExecutor:
         self.executed_orders: List[Dict[str, Any]] = []
         self.positions: List[Dict[str, Any]] = []
 
-    # ======================================================
-    # 🔧 INICIALIZACIÓN
-    # ======================================================
+                                                            
+                      
+                                                            
     async def initialize(self):
         try:
             if self.config.MARKET == "CRYPTO":
@@ -50,8 +50,8 @@ class OrderExecutor:
         En LIVE mode, requiere credenciales válidas.
         """
         try:
-            # En PAPER mode, podemos usar el exchange sin credenciales para obtener precios
-            # En LIVE mode, las credenciales son obligatorias
+                                                                                           
+                                                             
             api_key = self.config.BINANCE_API_KEY if self.config.TRADING_MODE == "LIVE" else None
             secret = self.config.BINANCE_SECRET_KEY if self.config.TRADING_MODE == "LIVE" else None
 
@@ -75,7 +75,7 @@ class OrderExecutor:
                 f"✅ Conexión con Binance establecida | Modo: {mode_info} | Testnet: {self.config.BINANCE_TESTNET}")
 
         except Exception as e:
-            # En PAPER mode, si falla la inicialización, solo advertimos (no bloqueamos)
+                                                                                        
             if self.config.TRADING_MODE == "PAPER":
                 self.logger.warning(
                     f"⚠️ No se pudo inicializar exchange de Binance en PAPER mode: {e}. "
@@ -89,9 +89,9 @@ class OrderExecutor:
     async def _initialize_stock_api(self):
         self.logger.info("ℹ️ API de acciones inicializada (modo simulado)")
 
-    # ======================================================
-    # 🚀 EJECUCIÓN
-    # ======================================================
+                                                            
+                 
+                                                            
     async def execute_order(self, signal: Dict[str, Any]) -> Dict[str, Any]:
         try:
             if not self.is_initialized:
@@ -99,7 +99,7 @@ class OrderExecutor:
                 self.logger.error(f"❌ {error_msg}")
                 raise RuntimeError(error_msg)
 
-            # Log completo de la señal antes de ejecutar
+                                                        
             self.logger.info(
                 f"📤 Ejecutando orden: {signal.get('action', 'UNKNOWN')} {signal.get('symbol', 'UNKNOWN')} "
                 f"@ {signal.get('price', 0):.2f} | "
@@ -155,14 +155,14 @@ class OrderExecutor:
             "stop_loss": signal["stop_loss"],
             "take_profit": signal["take_profit"],
             "timestamp": signal["timestamp"],
-            "risk_multiplier": signal.get("risk_multiplier", 1.0),  # Guardar para análisis ML
+            "risk_multiplier": signal.get("risk_multiplier", 1.0),                            
         }
 
     async def _execute_crypto_order(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
         try:
-            # ========================
-            # ✅ MODO PAPER REAL
-            # ========================
+                                      
+                               
+                                      
             if self.config.TRADING_MODE == "PAPER":
                 position = self._create_position(order_data, fake=True)
                 return {
@@ -172,9 +172,9 @@ class OrderExecutor:
                     "error": None
                 }
 
-            # ========================
-            # ⚠️ MODO REAL
-            # ========================
+                                      
+                          
+                                      
             order = await self.exchange.create_order(
                 symbol=order_data["symbol"],
                 type=order_data["type"],
@@ -243,15 +243,15 @@ class OrderExecutor:
             "take_profit": order_data["take_profit"],
             "entry_time": datetime.utcnow(),
             "status": "open",
-            "risk_multiplier": order_data.get("risk_multiplier", 1.0),  # Guardar para análisis ML
+            "risk_multiplier": order_data.get("risk_multiplier", 1.0),                            
         }
 
     async def _place_stop_orders(self, position: Dict[str, Any]):
         return None
 
-    # ======================================================
-    # 🔁 CIERRE DE POSICIONES
-    # ======================================================
+                                                            
+                            
+                                                            
     async def close_position(self, position: dict, current_price: Optional[float] = None) -> dict:
         """
         Cierra una posición y calcula PnL.
@@ -266,9 +266,9 @@ class OrderExecutor:
             if not size:
                 raise ValueError("size/quantity no definido en posición")
 
-            # =====================================================
-            # PRECIO DE CIERRE
-            # =====================================================
+                                                                   
+                              
+                                                                   
             if current_price is not None:
                 exit_price = float(current_price)
                 self.logger.debug(f"💰 Usando precio pasado: {exit_price:.2f}")
@@ -282,31 +282,31 @@ class OrderExecutor:
             else:
                 exit_price = entry
 
-            # =====================================================
-            # PnL
-            # =====================================================
+                                                                   
+                 
+                                                                   
             pnl = (exit_price - entry) * size if side == "BUY" else (entry - exit_price) * size
 
-            # =====================================================
-            # CERRAR POSICIÓN
-            # =====================================================
+                                                                   
+                             
+                                                                   
             position["status"] = "closed"
             position["exit_price"] = exit_price
             position["exit_time"] = datetime.utcnow()
             position["pnl"] = pnl
 
-            # 🔥 DATA EXTRA PARA ML
+                                  
             position["risk_amount"] = position.get("risk_amount")
             position["atr_value"] = position.get("atr_value")
             position["r_value"] = position.get("r_value")
 
-            # Quitar de posiciones activas
+                                          
             if position in self.positions:
                 self.positions.remove(position)
 
-            # =====================================================
-            # 📌 REGISTRAR TRADE PARA ML
-            # =====================================================
+                                                                   
+                                       
+                                                                   
             from src.ml.trade_recorder import TradeRecorder
             recorder = TradeRecorder()
             recorder.record_trade(    position=position,

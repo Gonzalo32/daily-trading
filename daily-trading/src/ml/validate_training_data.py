@@ -12,19 +12,19 @@ def main():
     df = pd.read_csv(DATA_FILE)
     print(f"📦 Filas totales: {len(df)}")
 
-    # Duplicados
+                
     dups = df.duplicated().sum()
     print(f"🔁 Filas duplicadas: {dups}")
     if dups > 0:
         df = df.drop_duplicates()
         print(f"✅ Duplicados eliminados. Nuevas filas: {len(df)}")
 
-    # Filtrar filas sin PnL o target
+                                    
     before = len(df)
     df = df.dropna(subset=["pnl", "target"])
     print(f"🧹 Filas sin pnl/target eliminadas: {before - len(df)}")
 
-    # Coherencia básica de target
+                                 
     if "r_value" in df.columns:
         bad_target = ((df["pnl"] >= df["r_value"]) & (df["target"] == 0)) | \
                      ((df["pnl"] < df["r_value"]) & (df["target"] == 1))

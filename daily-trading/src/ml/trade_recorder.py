@@ -1,4 +1,4 @@
-# pylint: disable=import-error,logging-fstring-interpolation,broad-except
+                                                                         
 
 import pandas as pd
 import os
@@ -72,7 +72,7 @@ class TradeRecorder:
                 duration = (position["exit_time"] -
                             position["entry_time"]).total_seconds()
 
-            # Manejo seguro de r_value (puede ser None)
+                                                       
             r_value = position.get("r_value")
             if r_value is None:
                 r_value = 1.0
@@ -84,7 +84,7 @@ class TradeRecorder:
 
             entry_price = position.get("entry_price", 0)
 
-            # Extraer features relativas del contexto de mercado si está disponible
+                                                                                   
             market_data = market_data_context or {}
             indicators = market_data.get("indicators", {})
 
@@ -105,7 +105,7 @@ class TradeRecorder:
                 -1.0 if fast_ma < slow_ma else 0.0)
             trend_strength = abs(ema_cross_diff_pct) / 100.0
 
-            # Régimen de mercado
+                                
             regime_info = market_data.get("regime_info", {})
             regime = regime_info.get("regime", "unknown")
             volatility = regime_info.get("volatility", "normal")
@@ -121,7 +121,7 @@ class TradeRecorder:
                 "stop_loss": position.get("stop_loss"),
                 "take_profit": position.get("take_profit"),
                 "duration_seconds": duration,
-                # Features básicas
+                                  
                 "risk_amount": position.get("risk_amount"),
                 "atr_value": position.get("atr_value"),
                 "r_value": r_value,
@@ -133,21 +133,21 @@ class TradeRecorder:
                 "price_to_slow_pct": price_to_slow_pct,
                 "trend_direction": trend_direction,
                 "trend_strength": trend_strength,
-                # Contexto de mercado
+                                     
                 "regime": regime,
                 "volatility_level": volatility,
-                # Decision space (para trades ejecutados, sabemos que fue posible)
+                                                                                  
                 "decision_buy_possible": position.get("side") == "BUY",
                 "decision_sell_possible": position.get("side") == "SELL",
-                "decision_hold_possible": True,  # Siempre disponible
-                # Strategy signal y executed action
+                "decision_hold_possible": True,                      
+                                                   
                 "strategy_signal": position.get("side"),
                 "executed_action": position.get("side"),
                 "was_executed": True,
-                # TARGETS
+                         
                 "target": 1 if pnl >= r_value else 0,
                 "trade_type": "executed",
-                # Trade outcomes
+                                
                 "exit_type": position.get("exit_type", "unknown"),
                 "r_multiple": pnl / r_value if r_value > 0 else 0,
                 "time_in_trade": duration
@@ -160,7 +160,7 @@ class TradeRecorder:
                 f"💾 Trade ejecutado guardado ML | {record['symbol']} | PnL={pnl:.2f} | Target={record['target']}"
             )
 
-            # ENTRENAMIENTO AUTOMÁTICO (llamado correctamente)
+                                                              
             from src.ml.auto_trainer import auto_train_if_needed
             auto_train_if_needed()
 
@@ -186,7 +186,7 @@ class TradeRecorder:
             rsi = indicators.get("rsi", 50)
             atr = indicators.get("atr", 0)
 
-            # Calcular features relativas
+                                         
             ema_fast_diff_pct = ((fast_ma - price) /
                                  price * 100) if price > 0 else 0
             ema_slow_diff_pct = ((slow_ma - price) /
@@ -214,12 +214,12 @@ class TradeRecorder:
                 "stop_loss": signal.get("stop_loss"),
                 "take_profit": signal.get("take_profit"),
                 "duration_seconds": None,
-                # Features básicas
+                                  
                 "risk_amount": None,
                 "atr_value": atr,
                 "r_value": None,
                 "risk_multiplier": None,
-                # Features relativas
+                                    
                 "ema_fast_diff_pct": ema_fast_diff_pct,
                 "ema_slow_diff_pct": ema_slow_diff_pct,
                 "ema_cross_diff_pct": ema_cross_diff_pct,
@@ -227,18 +227,18 @@ class TradeRecorder:
                 "rsi_normalized": rsi_normalized,
                 "trend_direction": trend_direction,
                 "trend_strength": trend_strength,
-                # Contexto
+                          
                 "regime": regime,
                 "volatility_level": volatility,
-                # TARGETS
-                "target": 0,  # Señal rechazada = no ejecutada = 0
+                         
+                "target": 0,                                      
                 "trade_type": f"rejected_{reason}"
             }
 
             df = pd.DataFrame([record])
             df.to_csv(self.data_file, mode="a", index=False, header=False)
 
-            # Solo loggear cada 10 señales rechazadas para no saturar logs
+                                                                          
             if not hasattr(self, '_rejected_count'):
                 self._rejected_count = 0
             self._rejected_count += 1
@@ -259,12 +259,12 @@ class TradeRecorder:
             regime_info: Información del régimen de mercado
         """
         try:
-            # Solo registrar ocasionalmente para evitar saturar el dataset
+                                                                          
             if not hasattr(self, '_no_signal_count'):
                 self._no_signal_count = 0
             self._no_signal_count += 1
 
-            # Registrar solo 1 de cada 20 casos sin señal (muestreo para balancear dataset)
+                                                                                           
             if self._no_signal_count % 20 != 0:
                 return
 
@@ -276,7 +276,7 @@ class TradeRecorder:
             rsi = indicators.get("rsi", 50)
             atr = indicators.get("atr", 0)
 
-            # Calcular features relativas
+                                         
             ema_fast_diff_pct = ((fast_ma - price) /
                                  price * 100) if price > 0 else 0
             ema_slow_diff_pct = ((slow_ma - price) /
@@ -304,12 +304,12 @@ class TradeRecorder:
                 "stop_loss": None,
                 "take_profit": None,
                 "duration_seconds": None,
-                # Features básicas
+                                  
                 "risk_amount": None,
                 "atr_value": atr,
                 "r_value": None,
                 "risk_multiplier": None,
-                # Features relativas
+                                    
                 "ema_fast_diff_pct": ema_fast_diff_pct,
                 "ema_slow_diff_pct": ema_slow_diff_pct,
                 "ema_cross_diff_pct": ema_cross_diff_pct,
@@ -317,18 +317,18 @@ class TradeRecorder:
                 "rsi_normalized": rsi_normalized,
                 "trend_direction": trend_direction,
                 "trend_strength": trend_strength,
-                # Contexto
+                          
                 "regime": regime,
                 "volatility_level": volatility,
-                # TARGETS
-                "target": 0,  # No señal = no trade = 0
+                         
+                "target": 0,                           
                 "trade_type": "no_signal"
             }
 
             df = pd.DataFrame([record])
             df.to_csv(self.data_file, mode="a", index=False, header=False)
 
-            if self._no_signal_count % 200 == 0:  # Log cada 200 registros
+            if self._no_signal_count % 200 == 0:                          
                 self.logger.debug(
                     f"📚 Contexto sin señal guardado ML (#{self._no_signal_count})"
                 )
@@ -359,6 +359,8 @@ class TradeRecorder:
                 strategy_signal = decision_sample.get("strategy_signal")
                 executed_action = decision_sample.get(
                     "executed_action", "HOLD")
+                decision_outcome = decision_sample.get("decision_outcome")
+                reject_reason = decision_sample.get("reject_reason")
                 reason = decision_sample.get("reason", "")
             else:
                 features = decision_sample.features
@@ -368,6 +370,8 @@ class TradeRecorder:
                 symbol = decision_sample.symbol
                 strategy_signal = decision_sample.strategy_signal
                 executed_action = decision_sample.executed_action or "HOLD"
+                decision_outcome = decision_sample.decision_outcome
+                reject_reason = decision_sample.reject_reason
                 reason = decision_sample.reason or ""
 
             record = {
@@ -389,6 +393,8 @@ class TradeRecorder:
                 "regime": market_context.get("regime", "unknown"),
                 "volatility_level": market_context.get("volatility", "medium"),
                 "decision_type": decision_type,
+                "decision_outcome": decision_outcome or decision_type,
+                "reject_reason": reject_reason or "",
                 "reason": reason
             }
 
@@ -418,19 +424,19 @@ class TradeRecorder:
                     "⚠️ No hay archivo de training_data todavía.")
                 return pd.DataFrame()
 
-            # Intentar leer con manejo de errores de formato
+                                                            
             try:
                 df = pd.read_csv(
                     self.data_file, on_bad_lines='skip', encoding='utf-8')
             except Exception as parse_error:
                 self.logger.warning(
                     f"⚠️ Error parseando CSV: {parse_error}. Intentando corregir...")
-                # Si falla, intentar con opciones más permisivas
+                                                                
                 try:
                     df = pd.read_csv(
                         self.data_file, sep=',', error_bad_lines=False, warn_bad_lines=False, encoding='utf-8')
                 except:
-                    # Si todo falla, retornar DataFrame vacío
+                                                             
                     self.logger.warning(
                         "⚠️ No se pudo leer training_data.csv. Usando DataFrame vacío.")
                     return pd.DataFrame()

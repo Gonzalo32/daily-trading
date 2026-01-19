@@ -4,7 +4,7 @@ Implementa controles de riesgo adaptativos según el modo (PAPER/LIVE).
 En modo PAPER: prioriza sample size para ML, reduce riesgo progresivamente.
 En modo LIVE: mantiene límites estrictos de protección.
 """
-# pylint: disable=import-error,logging-fstring-interpolation,broad-except,bare-except
+                                                                                     
 
 from dataclasses import dataclass
 from datetime import datetime, date
@@ -15,9 +15,9 @@ from config import Config
 from src.utils.logging_setup import setup_logging
 
 
-# ======================================================
-# 📊 ESTRUCTURA DE ESTADO
-# ======================================================
+                                                        
+                        
+                                                        
 @dataclass
 class RiskState:
     """Estado de riesgo persistente."""
@@ -30,9 +30,9 @@ class RiskState:
     peak_equity: float = 10_000.0
 
 
-# ======================================================
-# 💼 GESTOR DE RIESGO LEARNING-AWARE
-# ======================================================
+                                                        
+                                   
+                                                        
 class RiskManager:
     """
     Gestor de riesgo integral para trading automático.
@@ -49,13 +49,13 @@ class RiskManager:
             __name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
         self.trade_history: List[Dict[str, Any]] = []
         
-        # Estado de degradación adaptativa (solo PAPER)
-        self._adaptive_risk_level: float = 1.0  # 1.0 = normal, < 1.0 = reducido
+                                                       
+        self._adaptive_risk_level: float = 1.0                                  
         self._last_adaptive_update: datetime = datetime.now()
 
-    # ======================================================
-    # 🔒 VALIDACIONES DE RIESGO
-    # ======================================================
+                                                            
+                              
+                                                            
     def validate_trade(self, signal: Dict[str, Any], current_positions: List[Dict[str, Any]]) -> bool:
         """
         Verifica si la operación cumple los criterios de riesgo.
@@ -64,23 +64,23 @@ class RiskManager:
         En modo LIVE: bloquea si se alcanzan límites.
         """
         try:
-            # Actualizar nivel de riesgo adaptativo (solo PAPER)
+                                                                
             if self.config.TRADING_MODE == "PAPER":
                 self._update_adaptive_risk_level()
             
-            # Verificar límites diarios (comportamiento diferente según modo)
+                                                                             
             if not self.check_daily_limits():
                 if self.config.TRADING_MODE == "LIVE":
-                    # LIVE: Bloqueo estricto
+                                            
                     self.logger.warning(
                         "⚠️ [LIVE] Límite diario alcanzado - Trading bloqueado por seguridad.")
                     return False
                 else:
-                    # PAPER: Solo advertencia, permitir trading con riesgo reducido
+                                                                                   
                     self.logger.warning(
                         f"⚠️ [PAPER] Límite diario alcanzado - Continuando con riesgo reducido "
                         f"(multiplier: {self._adaptive_risk_level:.2f})")
-                    # NO retornar False - permitir trading con riesgo reducido
+                                                                              
 
             if len(current_positions) >= self.config.MAX_POSITIONS:
                 self.logger.warning(
@@ -118,7 +118,7 @@ class RiskManager:
         self.state.trades_today += 1
         self.state.total_pnl += pnl
 
-        # Actualizar peak equity y max drawdown
+                                               
         if self.state.equity > self.state.peak_equity:
             self.state.peak_equity = self.state.equity
 
@@ -141,17 +141,17 @@ class RiskManager:
         
         Método público para uso externo.
         """
-        # Usar valores actualizados si se proporcionan, sino usar del estado
+                                                                            
         pnl = daily_pnl if daily_pnl is not None else self.state.daily_pnl
         trades = daily_trades if daily_trades is not None else self.state.trades_today
 
-        # Calcular límite de pérdida
-        # Intentar usar MAX_DAILY_LOSS_PCT si está disponible, sino interpretar MAX_DAILY_LOSS
+                                    
+                                                                                              
         max_loss_pct = getattr(self.config, "MAX_DAILY_LOSS_PCT", None)
         if max_loss_pct is not None:
             max_loss = self.state.equity * (max_loss_pct / 100.0)
         else:
-            # Interpretar MAX_DAILY_LOSS: si < 1, es porcentaje; si >= 1, es valor absoluto
+                                                                                           
             if self.config.MAX_DAILY_LOSS < 1.0:
                 max_loss = self.state.equity * self.config.MAX_DAILY_LOSS
             else:
@@ -160,30 +160,30 @@ class RiskManager:
         max_gain = self.state.equity * self.config.MAX_DAILY_GAIN
         max_trades = getattr(self.config, "MAX_DAILY_TRADES", None)
 
-        # Verificar si se alcanzó el límite de pérdida
+                                                      
         if pnl < -max_loss:
             if self.config.TRADING_MODE == "LIVE":
-                # LIVE: Bloqueo estricto
+                                        
                 self.logger.warning(
                     f"🚨 [LIVE] Límite de pérdida diaria alcanzado: {pnl:.2f} / {-max_loss:.2f} - "
                     f"Trading bloqueado por seguridad.")
                 return False
             else:
-                # PAPER: Solo advertencia, permitir continuar
+                                                             
                 self.logger.warning(
                     f"⚠️ [PAPER] Límite de pérdida diaria alcanzado: {pnl:.2f} / {-max_loss:.2f} - "
                     f"Continuando con riesgo reducido para aprendizaje.")
-                # Retornar True para permitir trading con riesgo reducido
+                                                                         
                 return True
 
-        # Verificar si se alcanzó el límite de ganancia (opcional)
+                                                                  
         if pnl > max_gain:
             self.logger.info(
                 f"✅ Límite de ganancia diaria alcanzado: {pnl:.2f} / {max_gain:.2f}")
-            # En ambos modos, detener si se alcanza ganancia máxima (protección de ganancias)
+                                                                                             
             return False
 
-        # Verificar límite de trades
+                                    
         if max_trades is not None and trades >= max_trades:
             if self.config.TRADING_MODE == "LIVE":
                 self.logger.warning(
@@ -191,9 +191,9 @@ class RiskManager:
                     f"Trading bloqueado.")
                 return False
             else:
-                # PAPER (Learning Mode): Permitir continuar indefinidamente
-                # Solo advertir para logging, pero nunca bloquear
-                if trades % 50 == 0:  # Log cada 50 trades para no saturar
+                                                                           
+                                                                 
+                if trades % 50 == 0:                                      
                     self.logger.info(
                         f"📚 [PAPER Learning Mode] Trades acumulados: {trades} (límite soft: {max_trades}) - "
                         f"Continuando para acumular más datos para ML.")
@@ -215,14 +215,14 @@ class RiskManager:
         if self.config.TRADING_MODE != "PAPER":
             return
         
-        # Actualizar solo cada 30 segundos para evitar cambios bruscos
+                                                                      
         now = datetime.now()
         if (now - self._last_adaptive_update).total_seconds() < 30:
             return
         
         self._last_adaptive_update = now
         
-        # Si el PnL es positivo o cero, resetear a nivel normal
+                                                               
         if self.state.daily_pnl >= 0:
             if self._adaptive_risk_level < 1.0:
                 self.logger.info(
@@ -231,16 +231,16 @@ class RiskManager:
             self._adaptive_risk_level = 1.0
             return
         
-        # Calcular reducción basada en pérdida relativa al equity
-        # Si perdemos 5% del equity, reducimos riesgo a 50%
-        # Si perdemos 10% del equity, reducimos riesgo a 20% (mínimo)
+                                                                 
+                                                           
+                                                                     
         loss_pct = abs(self.state.daily_pnl) / max(self.state.equity, self.config.INITIAL_CAPITAL)
         
-        # Reducción progresiva: máximo 80% de reducción (mínimo 20% del riesgo normal)
-        reduction = min(0.8, loss_pct * 8.0)  # 5% pérdida = 40% reducción, 10% = 80% reducción
-        new_level = max(0.2, 1.0 - reduction)  # Mínimo 20% del riesgo normal
+                                                                                      
+        reduction = min(0.8, loss_pct * 8.0)                                                   
+        new_level = max(0.2, 1.0 - reduction)                                
         
-        if abs(new_level - self._adaptive_risk_level) > 0.05:  # Solo loggear si cambia significativamente
+        if abs(new_level - self._adaptive_risk_level) > 0.05:                                             
             self.logger.info(
                 f"📉 [PAPER] Reducción adaptativa de riesgo | "
                 f"PnL: {self.state.daily_pnl:.2f} ({loss_pct*100:.1f}% del equity) | "
@@ -267,8 +267,8 @@ class RiskManager:
             new_exposure = signal.get(
                 "position_size", 0) * signal.get("price", 0)
             
-            # En PAPER con riesgo reducido, permitir más exposición (hasta 90%)
-            # En LIVE, mantener límite conservador (50%)
+                                                                               
+                                                        
             if self.config.TRADING_MODE == "PAPER" and self._adaptive_risk_level < 1.0:
                 max_exposure = self.state.equity * 0.9
             else:
@@ -286,7 +286,7 @@ class RiskManager:
             return False
 
     def _check_correlation(self, signal, current_positions):
-        # Durante entrenamiento, NO restringir correlación
+                                                          
         if getattr(self.config, "TRAINING_MODE", False):
             return True
 
@@ -294,9 +294,9 @@ class RiskManager:
                     if p.get("symbol") == signal.get("symbol")]
         return len(same_symbol) == 0
 
-    # ======================================================
-    # 💰 SIZING Y PROTECCIÓN
-    # ======================================================
+                                                            
+                           
+                                                            
     def size_and_protect(self, signal: Dict[str, Any], atr: Optional[float] = None) -> Dict[str, Any]:
         """
         Valida y ajusta el tamaño de posición con riesgo adaptativo.
@@ -313,12 +313,12 @@ class RiskManager:
             price = signal["price"]
             atr_value = atr if atr and atr > 0 else price * 0.005
             
-            # Si la señal ya tiene stop_loss, usarlo (la estrategia ya lo calculó)
+                                                                                  
             if "stop_loss" in signal and signal["stop_loss"] > 0:
                 stop_loss = signal["stop_loss"]
                 stop_distance = abs(price - stop_loss)
             else:
-                # Calcular stop_loss basado en ATR
+                                                  
                 if signal["action"].lower() == "buy":
                     stop_loss = price - atr_value
                     stop_distance = atr_value
@@ -326,57 +326,57 @@ class RiskManager:
                     stop_loss = price + atr_value
                     stop_distance = atr_value
             
-            # Obtener multiplicador de riesgo adaptativo
+                                                        
             risk_multiplier = self.get_adaptive_risk_multiplier()
             
-            # Calcular tamaño de posición basado en DISTANCIA REAL de stop
-            # Aplicar multiplicador adaptativo al riesgo por trade
+                                                                          
+                                                                  
             base_risk_pct = self.config.RISK_PER_TRADE
             adjusted_risk_pct = base_risk_pct * risk_multiplier
             risk_amount = self.state.equity * adjusted_risk_pct
             
-            # FÓRMULA CORRECTA: qty (BTC) = risk_amount (USD) / stop_distance (USD)
+                                                                                   
             qty_btc = risk_amount / stop_distance
             
-            # Calcular notional (valor en USDT) para límites de exposición
+                                                                          
             notional_usdt = qty_btc * price
             
-            # Límite de exposición (ajustado según modo y riesgo adaptativo)
+                                                                            
             if self.config.TRADING_MODE == "PAPER" and risk_multiplier < 1.0:
-                max_exposure = self.state.equity * 0.9  # Más permisivo en PAPER con riesgo reducido
+                max_exposure = self.state.equity * 0.9                                              
             else:
-                max_exposure = self.state.equity * 0.5  # Conservador en LIVE o PAPER normal
+                max_exposure = self.state.equity * 0.5                                      
             
-            # Ajustar qty si excede límite de exposición
+                                                        
             if notional_usdt > max_exposure:
                 qty_btc = max_exposure / price
                 self.logger.warning(
                     f"⚠️ Position ajustada por exposición: {notional_usdt:.2f} -> {max_exposure:.2f} USDT"
                 )
             
-            # Mínimo técnico
+                            
             qty_btc = max(qty_btc, 0.0001)
 
-            # Take profit (mantener ratio normal, independiente del riesgo adaptativo)
+                                                                                      
             if signal["action"].lower() == "buy":
                 take_profit = price + stop_distance * 1
             else:
                 take_profit = price - stop_distance * 1
 
-            # 🔥 FEATURES EXTRA PARA ML / TradeRecorder
+                                                      
             signal['risk_amount'] = risk_amount
             signal['atr_value'] = atr_value
             signal['r_value'] = stop_distance
-            signal['risk_multiplier'] = risk_multiplier  # Registrar para análisis ML
+            signal['risk_multiplier'] = risk_multiplier                              
 
-            # Actualizar señal final
+                                    
             signal.update({
-                "position_size": round(qty_btc, 6),  # EN BTC
+                "position_size": round(qty_btc, 6),          
                 "stop_loss": round(stop_loss, 2),
                 "take_profit": round(take_profit, 2),
             })
 
-            # Log detallado para debugging
+                                          
             mode_str = "[PAPER]" if self.config.TRADING_MODE == "PAPER" else "[LIVE]"
             self.logger.debug(
                 f"🧮 Sizing {mode_str} | {signal['symbol']} | Qty_BTC={qty_btc:.6f} | "
@@ -400,7 +400,7 @@ class RiskManager:
             sl = position.get("stop_loss")
             tp = position.get("take_profit")
 
-            # Verificar Stop Loss y Take Profit
+                                               
             if side == "BUY" and sl and tp:
                 if price <= sl:
                     self.logger.info(
@@ -421,10 +421,10 @@ class RiskManager:
                         f"🛑 [{symbol}] Take Profit alcanzado: {price:.2f} <= {tp:.2f}")
                     return True
 
-            # TIME STOP OBLIGATORIO: Cerrar cualquier posición abierta más de 30 segundos
+                                                                                         
             entry_time = position.get("entry_time")
             if entry_time:
-                # Convertir string a datetime si es necesario
+                                                             
                 if isinstance(entry_time, str):
                     try:
                         entry_time = datetime.fromisoformat(
@@ -435,7 +435,7 @@ class RiskManager:
                 time_diff = datetime.now() - entry_time
                 time_seconds = time_diff.total_seconds()
 
-                # TIME STOP OBLIGATORIO: 30 segundos
+                                                    
                 if time_seconds > 30:
                     self.logger.info(
                         f"⏰ [{symbol}] TIME STOP OBLIGATORIO: {time_seconds:.1f} segundos (>30s)")
@@ -446,9 +446,9 @@ class RiskManager:
             self.logger.exception(f"❌ Error evaluando cierre de posición: {e}")
             return False
 
-    # ======================================================
-    # 📈 MÉTRICAS Y REGISTRO
-    # ======================================================
+                                                            
+                           
+                                                            
     def register_trade(self, trade_data: Dict[str, Any]):
         """
         Registra un trade en el historial y actualiza métricas.
@@ -469,7 +469,7 @@ class RiskManager:
                           self.state.equity) / self.state.peak_equity
             self.state.max_drawdown = max(self.state.max_drawdown, current_dd)
             
-            # Incluir risk_multiplier en el registro para análisis ML
+                                                                     
             trade_record = {
                 "timestamp": datetime.now(),
                 "symbol": trade_data.get("symbol"),
@@ -478,7 +478,7 @@ class RiskManager:
                 "size": trade_data.get("position_size"),
                 "pnl": pnl,
                 "reason": trade_data.get("reason", ""),
-                "risk_multiplier": trade_data.get("risk_multiplier", 1.0),  # Nuevo campo para ML
+                "risk_multiplier": trade_data.get("risk_multiplier", 1.0),                       
             }
             self.trade_history.append(trade_record)
 
@@ -510,7 +510,7 @@ class RiskManager:
                 "drawdown": drawdown,
                 "equity": self.state.equity,
                 "trades_today": self.state.trades_today,
-                "adaptive_risk_multiplier": self.get_adaptive_risk_multiplier(),  # Nuevo campo
+                "adaptive_risk_multiplier": self.get_adaptive_risk_multiplier(),               
             }
 
             self.logger.debug(f"📊 Métricas de riesgo: {metrics}")
@@ -520,9 +520,9 @@ class RiskManager:
                 f"❌ Error calculando métricas de riesgo: {e}")
             return {}
 
-    # ======================================================
-    # 🔁 MANTENIMIENTO Y EMERGENCIA
-    # ======================================================
+                                                            
+                                  
+                                                            
     def update_equity(self, new_equity: float):
         """Actualiza el balance actual y calcula drawdown."""
         self.state.equity = new_equity
@@ -538,7 +538,7 @@ class RiskManager:
         """Reinicia métricas diarias."""
         self.state.daily_pnl = 0.0
         self.state.trades_today = 0
-        # Resetear nivel de riesgo adaptativo en PAPER
+                                                      
         if self.config.TRADING_MODE == "PAPER":
             self._adaptive_risk_level = 1.0
             self.logger.info(

@@ -2,7 +2,7 @@
 import pandas as pd
 from src.ml.ml_model import TradingMLModel
 
-# Simulación de backtest con un modelo entrenado
+                                                
 model = TradingMLModel()
 model.load_model()
 

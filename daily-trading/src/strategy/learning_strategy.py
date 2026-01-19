@@ -16,7 +16,7 @@ class LearningStrategy:
         self.logger = setup_logging(
             __name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
 
-        # Verificar que estamos en modo PAPER
+                                             
         if config.TRADING_MODE != "PAPER":
             self.logger.warning(
                 "⚠️ LearningStrategy solo debe usarse en modo PAPER. "
@@ -26,9 +26,9 @@ class LearningStrategy:
         self.last_signal: Optional[Dict[str, Any]] = None
         self.consecutive_signals: int = 0
         self.last_signal_time: Optional[datetime] = None
-        self.min_seconds_between_same_signal: int = 2  # Muy corto para alta frecuencia
+        self.min_seconds_between_same_signal: int = 2                                  
 
-        self.recent_signals: list = []  # Para evitar repeticiones excesivas
+        self.recent_signals: list = []                                      
         self.max_recent_signals = 50
 
     async def generate_signal(
@@ -47,7 +47,7 @@ class LearningStrategy:
             if price <= 0:
                 return None
 
-            # Si faltan indicadores, usar valores por defecto
+                                                             
             required = ["fast_ma", "slow_ma", "rsi"]
             missing = [k for k in required if k not in indicators]
             if missing:
@@ -130,29 +130,29 @@ class LearningStrategy:
                 return None
 
 
-            # 1. Diferencia EMA relativa (%)
+                                            
             if slow_ma > 0:
                 ema_diff_pct = ((fast_ma - slow_ma) / slow_ma) * 100
             else:
                 ema_diff_pct = 0
 
-            # 2. RSI normalizado (-1 a 1, donde 0 = 50)
-            # -1 (sobreventa) a 1 (sobrecompra)
+                                                       
+                                               
             rsi_normalized = (rsi - 50) / 50
 
-            # 3. ATR relativo (% del precio)
+                                            
             atr_pct = (atr / price * 100) if price > 0 else 0
 
-            # 4. Distancia del precio a EMAs (%)
+                                                
             price_to_fast_pct = ((price - fast_ma) /
                                  fast_ma * 100) if fast_ma > 0 else 0
             price_to_slow_pct = ((price - slow_ma) /
                                  slow_ma * 100) if slow_ma > 0 else 0
 
 
-            buy_condition_1 = fast_ma >= slow_ma * 0.999  # Permite hasta 0.1% de diferencia
-            buy_condition_2 = rsi < 60  # Permisivo
-            buy_condition_3 = rsi < 30  # Sobreventa extrema
+            buy_condition_1 = fast_ma >= slow_ma * 0.999                                    
+            buy_condition_2 = rsi < 60             
+            buy_condition_3 = rsi < 30                      
 
             if (buy_condition_1 and buy_condition_2) or buy_condition_3:
                 stop_loss_pct = self.config.STOP_LOSS_PCT
@@ -165,7 +165,7 @@ class LearningStrategy:
                 return {
                     "action": "BUY",
                     "price": price,
-                    # Baja fuerza (0.3-0.6)
+                                           
                     "strength": 0.3 + abs(rsi_normalized) * 0.3,
                     "reason": (
                         f"LEARNING BUY | RSI: {rsi:.1f} ({rsi_normalized:.3f} norm) | "
@@ -173,7 +173,7 @@ class LearningStrategy:
                     ),
                     "stop_loss": stop_loss,
                     "take_profit": take_profit,
-                    # Features relativas para ML
+                                                
                     "ema_diff_pct": ema_diff_pct,
                     "rsi_normalized": rsi_normalized,
                     "atr_pct": atr_pct,
@@ -183,9 +183,9 @@ class LearningStrategy:
 
 
             sell_condition_1 = fast_ma <= slow_ma * \
-                1.001  # Permite hasta 0.1% de diferencia
-            sell_condition_2 = rsi > 40  # Permisivo
-            sell_condition_3 = rsi > 70  # Sobrecompra extrema
+                1.001                                    
+            sell_condition_2 = rsi > 40             
+            sell_condition_3 = rsi > 70                       
 
             if (sell_condition_1 and sell_condition_2) or sell_condition_3:
                 stop_loss_pct = self.config.STOP_LOSS_PCT
@@ -198,7 +198,7 @@ class LearningStrategy:
                 return {
                     "action": "SELL",
                     "price": price,
-                    # Baja fuerza (0.3-0.6)
+                                           
                     "strength": 0.3 + abs(rsi_normalized) * 0.3,
                     "reason": (
                         f"LEARNING SELL | RSI: {rsi:.1f} ({rsi_normalized:.3f} norm) | "
@@ -206,7 +206,7 @@ class LearningStrategy:
                     ),
                     "stop_loss": stop_loss,
                     "take_profit": take_profit,
-                    # Features relativas para ML
+                                                
                     "ema_diff_pct": ema_diff_pct,
                     "rsi_normalized": rsi_normalized,
                     "atr_pct": atr_pct,
@@ -242,19 +242,19 @@ class LearningStrategy:
             if signal["action"] == "BUY":
                 if stop_loss >= price or take_profit <= price:
                     return False
-            else:  # SELL
+            else:        
                 if stop_loss <= price or take_profit >= price:
                     return False
 
-            # Evitar repeticiones excesivas (diversidad)
+                                                        
             if len(self.recent_signals) >= 10:
-                # Contar señales similares recientes
+                                                    
                 similar_count = sum(
                     1 for s in self.recent_signals[-10:]
                     if (s["action"] == signal["action"] and
                         abs(s.get("rsi", 50) - market_data.get("indicators", {}).get("rsi", 50)) < 5)
                 )
-                # Si hay más de 8 señales similares en las últimas 10, rechazar
+                                                                               
                 if similar_count >= 8:
                     return False
 
@@ -281,7 +281,7 @@ class LearningStrategy:
 
             qty = risk_amount / risk_per_unit
 
-            # Límite de exposición (10% capital)
+                                                
             max_position_value = base_capital * 0.10
             max_qty = max_position_value / signal["price"]
 
@@ -320,7 +320,7 @@ class LearningStrategy:
 
     def update_parameters_for_regime(self, regime_info: Dict[str, Any]):
   
-        pass  # No-op: LearningStrategy no adapta parámetros
+        pass                                                
 
     def get_current_parameters(self) -> Dict[str, Any]:
         """Retorna parámetros actuales (fijos en LearningStrategy)"""
@@ -346,23 +346,14 @@ class LearningStrategy:
             slow_ma = indicators.get("slow_ma", price)
             rsi = indicators.get("rsi", 50)
 
-         
-            decision_space = {
-                "buy": True,   # Siempre posible en learning
-                "sell": True,  # Siempre posible en learning
-                "hold": True   # Siempre disponible
-            }
+            buy_possible = (fast_ma >= slow_ma * 0.999 and rsi < 60) or (rsi < 30)
+            sell_possible = (fast_ma <= slow_ma * 1.001 and rsi > 40) or (rsi > 70)
 
-      
-            if fast_ma >= slow_ma * 0.999 and rsi < 60:
-                # Condiciones favorables para BUY
-                pass
-            elif fast_ma <= slow_ma * 1.001 and rsi > 40:
-                # Condiciones favorables para SELL
-                pass
-            else:
-                # Condiciones neutrales, HOLD más probable
-                pass
+            decision_space = {
+                "buy": buy_possible,
+                "sell": sell_possible,
+                "hold": True
+            }
 
             return decision_space
 

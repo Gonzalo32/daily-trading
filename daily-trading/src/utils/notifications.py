@@ -20,12 +20,12 @@ class NotificationManager:
         self.config = config
         self.logger = logging.getLogger(__name__)
         
-        # Estado de notificaciones
+                                  
         self.telegram_enabled = bool(self.config.TELEGRAM_BOT_TOKEN and self.config.TELEGRAM_CHAT_ID)
-        self.email_enabled = False  # Configurar si se necesita
+        self.email_enabled = False                             
         self.console_enabled = True
         
-        # Configuración de Telegram
+                                   
         self.telegram_url = f"https://api.telegram.org/bot{self.config.TELEGRAM_BOT_TOKEN}/sendMessage"
         
     async def initialize(self):
@@ -98,15 +98,15 @@ class NotificationManager:
     async def _send_notification(self, message: str, notification_type: str):
         """Enviar notificación por todos los canales habilitados"""
         try:
-            # Enviar por consola
+                                
             if self.console_enabled:
                 self._send_console_notification(message, notification_type)
                 
-            # Enviar por Telegram
+                                 
             if self.telegram_enabled:
                 await self._send_telegram_message(message)
                 
-            # Enviar por email (si está habilitado)
+                                                   
             if self.email_enabled:
                 await self._send_email_notification(message, notification_type)
                 
@@ -144,8 +144,8 @@ class NotificationManager:
     async def _send_email_notification(self, message: str, notification_type: str):
         """Enviar notificación por email"""
         try:
-            # Implementar envío de email si es necesario
-            # Por ahora, solo log
+                                                        
+                                 
             self.logger.info(f"Email notification: {message}")
             
         except Exception as e:

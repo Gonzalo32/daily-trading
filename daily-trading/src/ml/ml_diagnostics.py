@@ -17,7 +17,7 @@ def main():
 
     print(f"📦 Filas en dataset: {len(df)}")
 
-    # Separar train/test simple (hold-out)
+                                          
     df = df.sample(frac=1.0, random_state=42).reset_index(drop=True)
     split = int(len(df) * 0.8)
     train_df = df.iloc[:split].copy()
@@ -25,11 +25,11 @@ def main():
 
     print(f"🧪 Train: {len(train_df)} | Test: {len(test_df)}")
 
-    # Entrenar modelo temporalmente para diagnóstico
+                                                    
     model = TradingMLModel(min_probability=0.55)
     model.train(train_df, target_col="target")
 
-    # Evaluar
+             
     metrics = model.evaluate(test_df, target_col="target")
 
     print("📊 Métricas del modelo:")

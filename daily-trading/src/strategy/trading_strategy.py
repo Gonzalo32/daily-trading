@@ -36,30 +36,30 @@ class TradingStrategy:
         self.logger = setup_logging(
             __name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
 
-        # Gestor de parámetros dinámicos
+                                        
         self.param_manager = DynamicParameterManager(config)
 
-        # Estado de la estrategia
+                                 
         self.last_signal: Optional[Dict[str, Any]] = None
         self.consecutive_signals: int = 0
 
-        # NUEVO: control de frecuencia de señales
+                                                 
         self.last_signal_time: Optional[datetime] = None
         self.min_seconds_between_same_signal: int = 10
 
-        # Parámetros actuales (adaptados según régimen)
+                                                       
         self.current_params: Dict[str, Any] = {}
 
-        # Historial para detección de zonas laterales y filtros de volumen
+                                                                          
         self.recent_volumes = []
         self.recent_prices = []
-        self.recent_ma_diffs = []  # Diferencias entre fast_ma y slow_ma para detectar laterales
-        # ATR para detectar volatilidad baja (laterales)
+        self.recent_ma_diffs = []                                                               
+                                                        
         self.recent_atr_values = []
 
-    # ======================================================
-    # 🔧 ADAPTACIÓN DE PARÁMETROS
-    # ======================================================
+                                                            
+                                
+                                                            
     def update_parameters_for_regime(self, regime_info: Dict[str, Any]):
         """
         Actualiza los parámetros de la estrategia según el régimen de mercado
@@ -81,9 +81,9 @@ class TradingStrategy:
         """Retorna los parámetros actuales adaptados"""
         return self.current_params if self.current_params else self.param_manager.get_current_parameters()
 
-    # ======================================================
-    # 🎯 GENERACIÓN DE SEÑALES
-    # ======================================================
+                                                            
+                             
+                                                            
 
     async def generate_signal(self, market_data: Dict[str, Any], regime_info: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
         """
@@ -111,17 +111,17 @@ class TradingStrategy:
             indicators = market_data["indicators"]
             price = market_data["price"]
 
-            # Si faltan indicadores, usar valores por defecto o fallback
+                                                                        
             required = ["fast_ma", "slow_ma", "rsi"]
             missing = [k for k in required if k not in indicators]
             if missing:
                 if is_debug:
                     self.logger.warning(
                         f"🐛 [DEBUG] Indicadores faltantes: {missing}, usando fallback")
-                # Usar precio como fallback para MAs y RSI neutral
+                                                                  
                 indicators.setdefault("fast_ma", price)
                 indicators.setdefault("slow_ma", price)
-                indicators.setdefault("rsi", 50)  # RSI neutral
+                indicators.setdefault("rsi", 50)               
                 self.logger.warning(
                     f"⚠️ Indicadores faltantes ({missing}), usando valores por defecto")
 
@@ -135,7 +135,7 @@ class TradingStrategy:
 
             signal = self._analyze_indicators(indicators, price)
 
-            # ✅ 1) Si NO hay señal → salir
+                                          
             if not signal:
                 if is_debug:
                     fast = indicators.get('fast_ma', price)
@@ -149,7 +149,7 @@ class TradingStrategy:
                     )
                 return None
 
-            # ✅ 2) Control de frecuencia (cooldown) – SOLO si hay señal
+                                                                       
 
             current_ts = market_data.get("timestamp")
 
@@ -180,13 +180,13 @@ class TradingStrategy:
                     f"Razón: {signal.get('reason', 'N/A')}"
                 )
 
-            # Actualizar historial para detección de zonas laterales
+                                                                    
             self._update_market_history(market_data)
 
-            # Aplicar filtros estrictos (volumen, zonas laterales, horario)
+                                                                           
             filter_result = self._apply_filters(signal, market_data)
             if not filter_result:
-                # Señal rechazada por filtros estrictos
+                                                       
                 if is_debug:
                     self.logger.debug(
                         "🐛 [DEBUG] Señal rechazada por filtros estrictos")
@@ -196,7 +196,7 @@ class TradingStrategy:
                     self.logger.info(
                         "🐛 [DEBUG] ✅ Todos los filtros estrictos pasados")
 
-            # Calcular tamaño de posición simple (solo por riesgo)
+                                                                  
             position_size = self._calculate_position_size(signal)
             if position_size <= 0:
                 if is_debug:
@@ -208,7 +208,7 @@ class TradingStrategy:
                 self.logger.info(
                     f"🐛 [DEBUG] Tamaño de posición calculado: {position_size:.4f}")
 
-            # Completar datos de la señal
+                                         
             signal.update({
                 "position_size": position_size,
                 "timestamp": market_data["timestamp"],
@@ -237,9 +237,9 @@ class TradingStrategy:
             self.logger.exception(f"❌ Error generando señal: {e}")
             return None
 
-    # ======================================================
-    # ⚙️ ANÁLISIS DE INDICADORES (SELECTIVO - ALTA PROBABILIDAD)
-    # ======================================================
+                                                            
+                                                                
+                                                            
     def _analyze_indicators(self, indicators: Dict[str, float], price: float) -> Optional[Dict[str, Any]]:
         try:
             fast = indicators.get("fast_ma", price)
@@ -257,22 +257,22 @@ class TradingStrategy:
             rsi_oversold = self.config.RSI_OVERSOLD
             ema_diff_min = self.config.EMA_DIFF_PCT_MIN
 
-            # ============================================
-            # PRODUCTION STRATEGY: Condiciones ESTRICTAS
-            # 100% determinística - idéntica en PAPER y LIVE
-            # ============================================
+                                                          
+                                                        
+                                                            
+                                                          
 
-            # Calcular diferencia entre EMAs
+                                            
             ema_diff_pct = ((fast - slow) / slow * 100) if slow > 0 else 0
             ema_diff_abs = abs(ema_diff_pct)
 
-            # BUY - Condiciones ESTRICTAS (alta probabilidad)
-            # EMA rápida > EMA lenta + RSI < 35 + diferencia mínima
-            if fast > slow:  # Estricto: debe ser mayor, no igual
-                rsi_condition = rsi < 35  # Estricto: RSI muy bajo
+                                                             
+                                                                   
+            if fast > slow:                                      
+                rsi_condition = rsi < 35                          
 
                 if rsi_condition:
-                    # Verificar diferencia mínima de EMA
+                                                        
                     if ema_diff_pct < ema_diff_min:
                         return None
 
@@ -283,19 +283,19 @@ class TradingStrategy:
                     return {
                         "action": "BUY",
                         "price": price,
-                        "strength": 0.9,  # Alta fuerza (producción)
+                        "strength": 0.9,                            
                         "reason": f"BUY PRODUCTION | RSI: {rsi:.2f} | EMA diff: {ema_diff_pct:.4f}%",
                         "stop_loss": stop_loss,
                         "take_profit": take_profit,
                     }
 
-            # SELL - Condiciones ESTRICTAS (alta probabilidad)
-            # EMA rápida < EMA lenta + RSI > 65 + diferencia mínima
-            if fast < slow:  # Estricto: debe ser menor, no igual
-                rsi_condition = rsi > 65  # Estricto: RSI muy alto
+                                                              
+                                                                   
+            if fast < slow:                                      
+                rsi_condition = rsi > 65                          
 
                 if rsi_condition:
-                    # Verificar diferencia mínima de EMA
+                                                        
                     if abs(ema_diff_pct) < ema_diff_min:
                         return None
 
@@ -306,7 +306,7 @@ class TradingStrategy:
                     return {
                         "action": "SELL",
                         "price": price,
-                        "strength": 0.9,  # Alta fuerza (producción)
+                        "strength": 0.9,                            
                         "reason": f"SELL PRODUCTION | RSI: {rsi:.2f} | EMA diff: {ema_diff_pct:.4f}%",
                         "stop_loss": stop_loss,
                         "take_profit": take_profit,
@@ -335,25 +335,25 @@ class TradingStrategy:
             slow_ma = indicators.get("slow_ma", price)
             atr = indicators.get("atr", 0)
 
-            # Calcular diferencia porcentual entre EMAs
+                                                       
             if slow_ma > 0:
                 ma_diff_pct = abs(fast_ma - slow_ma) / slow_ma * 100
             else:
                 ma_diff_pct = 0
 
-            # Criterio 1: EMAs muy cerca (zona lateral)
-            # Si la diferencia es menor al 0.3%, probablemente es lateral
+                                                       
+                                                                         
             if ma_diff_pct < 0.15:
                 self.logger.debug(
                     f"🔍 Zona lateral detectada: EMAs muy cerca (diff: {ma_diff_pct:.4f}%)")
                 return True
 
-            # Criterio 2: ATR bajo relativo al precio (baja volatilidad = lateral)
+                                                                                  
             if price > 0:
                 atr_pct = (atr / price) * 100
-                # Si ATR es menor al 0.5% del precio, es baja volatilidad
+                                                                         
                 if atr_pct < 0.5:
-                    # Verificar si el ATR está en el percentil bajo del historial
+                                                                                 
                     if len(self.recent_atr_values) >= 10:
                         sorted_atr = sorted(self.recent_atr_values)
                         atr_percentile_25 = sorted_atr[int(
@@ -363,14 +363,14 @@ class TradingStrategy:
                                 f"🔍 Zona lateral detectada: ATR bajo ({atr_pct:.4f}%)")
                             return True
 
-            # Criterio 3: Precios recientes en rango estrecho
+                                                             
             if len(self.recent_prices) >= 20:
                 recent_prices = self.recent_prices[-20:]
                 price_range = max(recent_prices) - min(recent_prices)
                 avg_price = sum(recent_prices) / len(recent_prices)
                 if avg_price > 0:
                     range_pct = (price_range / avg_price) * 100
-                    # Si el rango de precios es menor al 1%, es lateral
+                                                                       
                     if range_pct < 1.0:
                         self.logger.debug(
                             f"🔍 Zona lateral detectada: Rango de precios estrecho ({range_pct:.4f}%)")
@@ -380,12 +380,12 @@ class TradingStrategy:
 
         except Exception as e:
             self.logger.exception(f"❌ Error detectando zona lateral: {e}")
-            # En caso de error, asumir que NO es lateral (más conservador)
+                                                                          
             return False
 
-    # ======================================================
-    # 🧮 CÁLCULOS AUXILIARES
-    # ======================================================
+                                                            
+                           
+                                                            
 
     def _update_market_history(self, market_data: Dict[str, Any]):
         """Actualiza el historial de mercado para detección de zonas laterales"""
@@ -397,7 +397,7 @@ class TradingStrategy:
             fast_ma = indicators.get("fast_ma", price)
             slow_ma = indicators.get("slow_ma", price)
 
-            # Actualizar historiales
+                                    
             self.recent_prices.append(price)
             self.recent_volumes.append(volume)
             self.recent_atr_values.append(atr)
@@ -406,7 +406,7 @@ class TradingStrategy:
                 ma_diff_pct = abs(fast_ma - slow_ma) / slow_ma * 100
                 self.recent_ma_diffs.append(ma_diff_pct)
 
-            # Limitar historial a 100 valores
+                                             
             max_history = 100
             for history_list in [self.recent_prices, self.recent_volumes,
                                  self.recent_atr_values, self.recent_ma_diffs]:
@@ -421,7 +421,7 @@ class TradingStrategy:
         Filtra señales con condiciones ESTRICTAS
 
         Filtros:
-        1. Volumen mínimo (rechazar velas de bajo volumen) - DESHABILITADO en PAPER mode
+        1. Volumen mínimo (rechazar velas de bajo volumen)
         2. Zonas laterales (NO operar en rangos)
         3. Horario (solo para acciones)
         4. Repeticiones excesivas
@@ -429,25 +429,25 @@ class TradingStrategy:
         try:
             is_debug = self.config.ENABLE_DEBUG_STRATEGY
 
-            # ============================================
-            # FILTRO 1: Volumen mínimo (ESTRICTO)
-            # ============================================
+                                                          
+                                                 
+                                                          
             volume = market_data.get("volume", 0)
 
-            # Calcular umbral de volumen basado en promedio reciente - MÁS ESTRICTO
+                                                                                   
             if len(self.recent_volumes) >= 20:
-                # Usar percentil 60 (más estricto) como umbral mínimo
+                                                                     
                 sorted_volumes = sorted(self.recent_volumes)
                 volume_p60 = sorted_volumes[int(len(sorted_volumes) * 0.6)]
-                min_volume = volume_p60 * 0.8  # Al menos 80% del percentil 60
+                min_volume = volume_p60 * 0.8                                 
             else:
-                # Si no hay suficiente historial, usar un umbral conservador
+                                                                            
                 min_volume = volume * 0.8 if volume > 0 else 100
 
-            # En modo PAPER (Learning Mode): desactivar filtro de volumen
-            # (los datos reales de precio ticker no incluyen volumen confiable)
-            # En modo LIVE: mantener filtro de volumen activo para calidad
-            if self.config.TRADING_MODE == "LIVE" and volume < min_volume:
+                                                                         
+                                                                               
+                                                                          
+            if volume < min_volume:
                 if is_debug:
                     self.logger.debug(
                         f"🐛 [DEBUG] Filtro VOLUMEN: Volumen insuficiente "
@@ -457,20 +457,20 @@ class TradingStrategy:
                     f"❌ Señal rechazada: Volumen bajo ({volume:.2f} < {min_volume:.2f})")
                 return False
 
-            # ============================================
-            # FILTRO 2: Zonas laterales (NO operar)
-            # ============================================
-            # if self._is_lateral_market(market_data):
-            #     if is_debug:
-            #         self.logger.debug(
-            #             "🐛 [DEBUG] Filtro LATERAL: Mercado en zona lateral")
-            #     self.logger.info(
-            #         "❌ Señal rechazada: Mercado en zona lateral (no operar)")
-            #     return False
+                                                          
+                                                   
+                                                          
+                                                      
+                              
+                                        
+                                                                              
+                                   
+                                                                               
+                              
 
-            # ============================================
-            # FILTRO 3: Horario (solo para acciones)
-            # ============================================
+                                                          
+                                                    
+                                                          
             if self.config.MARKET == "STOCK":
                 hour = market_data.get("timestamp", datetime.now()).hour
                 if not (self.config.TRADING_START_HOUR <= hour < self.config.TRADING_END_HOUR):
@@ -481,24 +481,24 @@ class TradingStrategy:
                         )
                     return False
 
-            # ============================================
-            # FILTRO 4: Evitar repeticiones excesivas
-            # ============================================
-            # max_consecutive = 3  # Máximo 3 señales consecutivas del mismo tipo
+                                                          
+                                                     
+                                                          
+                                                                                 
 
-            # if (
-            #     self.last_signal
-            #     and self.last_signal["action"] == signal["action"]
-            #     and self.consecutive_signals >= max_consecutive
-            # ):
-            #     if is_debug:
-            #         self.logger.debug(
-            #             f"🐛 [DEBUG] Filtro REPETICIÓN: Señales consecutivas "
-            #             f"({self.consecutive_signals} >= {max_consecutive}) del mismo tipo ({signal['action']})"
-            #         )
-            #     self.logger.info(
-            #         f"❌ Señal rechazada: Demasiadas señales consecutivas ({self.consecutive_signals})")
-            #     return False
+                  
+                                  
+                                                                    
+                                                                 
+                
+                              
+                                        
+                                                                               
+                                                                                                                  
+                       
+                                   
+                                                                                                         
+                              
 
             if is_debug:
                 self.logger.info(
@@ -508,13 +508,13 @@ class TradingStrategy:
 
         except Exception as e:
             self.logger.exception(f"❌ Error aplicando filtros: {e}")
-            # En caso de error, rechazar (más conservador)
+                                                          
             return False
 
     def _calculate_position_size(self, signal: Dict[str, Any]) -> float:
         """Calcula el tamaño de posición basado en riesgo"""
         try:
-            # ---------- Seguridad ----------
+                                             
             if "price" not in signal or "stop_loss" not in signal:
                 self.logger.error(
                     f"❌ Señal inválida - falta price o stop_loss: {signal}"
@@ -531,10 +531,10 @@ class TradingStrategy:
                 self.logger.warning("❌ risk_per_unit inválido")
                 return 0.0
 
-            # ---------- Calcular qty ----------
+                                                
             qty = risk_amount / risk_per_unit
 
-            # ---------- Límite de exposición (10% capital) ----------
+                                                                      
             max_position_value = base_capital * 0.10
             max_qty = max_position_value / signal["price"]
 
@@ -546,9 +546,9 @@ class TradingStrategy:
             self.logger.exception(f"❌ Error calculando posición: {e}")
             return 0.0
 
-    # ======================================================
-    # 📊 UTILIDADES
-    # ======================================================
+                                                            
+                  
+                                                            
     def get_strategy_info(self) -> Dict[str, Any]:
         """Retorna configuración y último estado"""
         return {
@@ -575,7 +575,7 @@ class TradingStrategy:
     def reset_strategy(self):
         self.last_signal = None
         self.consecutive_signals = 0
-        self.last_signal_time = None  # NUEVO
+        self.last_signal_time = None         
         self.logger.info("🔄 Estrategia reiniciada")
     
     def get_decision_space(self, market_data: Dict[str, Any]) -> Dict[str, bool]:
@@ -603,7 +603,7 @@ class TradingStrategy:
             rsi = indicators.get("rsi", 50)
             ema_diff_min = self.config.EMA_DIFF_PCT_MIN
             
-            # Calcular diferencia EMA
+                                     
             if slow_ma > 0:
                 ema_diff_pct = ((fast_ma - slow_ma) / slow_ma) * 100
             else:
@@ -612,16 +612,16 @@ class TradingStrategy:
             decision_space = {
                 "buy": False,
                 "sell": False,
-                "hold": True  # HOLD siempre disponible
+                "hold": True                           
             }
             
-            # BUY posible solo si cumple condiciones ESTRICTAS
-            # EMA rápida > EMA lenta + RSI < 35 + diferencia mínima
+                                                              
+                                                                   
             if fast_ma > slow_ma and rsi < 35 and ema_diff_pct >= ema_diff_min:
                 decision_space["buy"] = True
             
-            # SELL posible solo si cumple condiciones ESTRICTAS
-            # EMA rápida < EMA lenta + RSI > 65 + diferencia mínima
+                                                               
+                                                                   
             if fast_ma < slow_ma and rsi > 65 and abs(ema_diff_pct) >= ema_diff_min:
                 decision_space["sell"] = True
             
@@ -632,6 +632,6 @@ class TradingStrategy:
             return {"buy": False, "sell": False, "hold": True}
 
 
-# Alias para claridad: ProductionStrategy = TradingStrategy
-# La estrategia selectiva de alta probabilidad es la estrategia de producción
+                                                           
+                                                                             
 ProductionStrategy = TradingStrategy

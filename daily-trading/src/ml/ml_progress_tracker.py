@@ -22,10 +22,10 @@ class MLProgressTracker:
     - Performance del modelo entrenado
     """
     
-    # Umbrales para considerar el sistema listo
-    MIN_TRADES_FOR_BASIC_ML = 500      # Mínimo para entrenar modelo básico
-    MIN_TRADES_FOR_READY = 2000        # Recomendado para considerar "listo"
-    MIN_TRADES_FOR_PRODUCTION = 5000   # Óptimo para producción
+                                               
+    MIN_TRADES_FOR_BASIC_ML = 500                                          
+    MIN_TRADES_FOR_READY = 2000                                             
+    MIN_TRADES_FOR_PRODUCTION = 5000                           
     
     def __init__(self, data_file: str = "src/ml/training_data.csv"):
         self.data_file = data_file
@@ -140,5 +140,5 @@ class MLProgressTracker:
         
         self.logger.info("=" * 60)
         
-        # Guardar progreso
+                          
         self.save_progress(stats)

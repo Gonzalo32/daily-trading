@@ -8,7 +8,7 @@ Este módulo centraliza TODAS las métricas del sistema para:
 3. Facilitar ajuste automático de riesgo
 4. Registrar features faltantes para ML futuro
 """
-# pylint: disable=import-error,logging-fstring-interpolation,broad-except,fixme
+                                                                               
 
 import os
 import pandas as pd
@@ -24,7 +24,7 @@ from src.utils.logging_setup import setup_logging
 @dataclass
 class TradeMetrics:
     """Métricas de un trade individual"""
-    # Identificación
+                    
     trade_id: Optional[str] = None
     timestamp: datetime = None
     symbol: str = ""
@@ -42,64 +42,64 @@ class TradeMetrics:
     ml_filtered: bool = False
     ml_probability: Optional[float] = None
 
-    # ML tracking (CRÍTICO para comparación)
-    ml_approved: Optional[bool] = None  # ¿ML aprobó?
+                                            
+    ml_approved: Optional[bool] = None               
 
-    # Contexto de mercado
+                         
     rsi: Optional[float] = None
     atr: Optional[float] = None
     volatility: Optional[float] = None
 
-    # Features para ML futuro (expandir según necesidad)
+                                                        
     consecutive_signals: Optional[int] = None
     daily_pnl_before_trade: Optional[float] = None
     daily_trades_before: Optional[int] = None
-    time_of_day: Optional[int] = None  # hora del día
-    day_of_week: Optional[int] = None  # día de la semana
+    time_of_day: Optional[int] = None                
+    day_of_week: Optional[int] = None                    
 
-    # Risk management
+                     
     risk_amount: Optional[float] = None
-    r_value: Optional[float] = None  # Distancia al stop loss
+    r_value: Optional[float] = None                          
 
-    # Target para ML
-    target: int = 0  # 1 si ganó >= 1R, 0 si no
+                    
+    target: int = 0                            
 
 
 @dataclass
 class SystemMetrics:
     """Métricas agregadas del sistema"""
-    # Identificación
+                    
     date: date
     timestamp: datetime
 
-    # Métricas básicas
+                      
     total_trades: int = 0
     winning_trades: int = 0
     losing_trades: int = 0
     win_rate: float = 0.0
 
-    # PnL
+         
     daily_pnl: float = 0.0
     total_pnl: float = 0.0
     total_return_pct: float = 0.0
 
-    # Expectancy (CRÍTICO para evaluación)
-    expectancy: float = 0.0  # Expectativa por trade
+                                          
+    expectancy: float = 0.0                         
     avg_win: float = 0.0
     avg_loss: float = 0.0
     profit_factor: float = 0.0
 
-    # Drawdown
+              
     max_drawdown: float = 0.0
     current_drawdown: float = 0.0
     peak_equity: float = 0.0
     current_equity: float = 0.0
 
-    # Sharpe y ratios
+                     
     sharpe_ratio: float = 0.0
     sortino_ratio: float = 0.0
 
-    # Comparación ML vs sin ML (CRÍTICO)
+                                        
     ml_trades_count: int = 0
     ml_win_rate: float = 0.0
     ml_expectancy: float = 0.0
@@ -110,16 +110,16 @@ class SystemMetrics:
     no_ml_expectancy: float = 0.0
     no_ml_profit_factor: float = 0.0
 
-    ml_improvement_pct: float = 0.0  # % mejora de expectancy con ML
+    ml_improvement_pct: float = 0.0                                 
 
-    # Métricas para ajuste automático de riesgo
-    recent_win_rate: float = 0.0  # Últimos N trades
+                                               
+    recent_win_rate: float = 0.0                    
     recent_expectancy: float = 0.0
     volatility_regime: Optional[str] = None
     consecutive_losses: int = 0
     consecutive_wins: int = 0
 
-    # Equity curve
+                  
     equity_curve: List[float] = field(default_factory=list)
 
 
@@ -140,13 +140,13 @@ class MetricsCollector:
         self.initial_capital = initial_capital
         self.logger = setup_logging(__name__)
 
-        # Crear directorio si no existe
+                                       
         os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
-        # Inicializar base de datos
+                                   
         self._init_database()
 
-        # Cache en memoria para acceso rápido
+                                             
         self._daily_trades: List[TradeMetrics] = []
         self._system_metrics_cache: Optional[SystemMetrics] = None
 
@@ -155,7 +155,7 @@ class MetricsCollector:
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
 
-        # Tabla de trades
+                         
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS trades (
                 trade_id TEXT PRIMARY KEY,
@@ -193,7 +193,7 @@ class MetricsCollector:
             )
         """)
 
-        # Tabla de métricas diarias
+                                   
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS daily_metrics (
                 date TEXT PRIMARY KEY,
@@ -232,7 +232,7 @@ class MetricsCollector:
             )
         """)
 
-        # Índices para consultas rápidas
+                                        
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_trades_timestamp ON trades(timestamp)")
         cursor.execute(
@@ -269,7 +269,7 @@ class MetricsCollector:
             bot_state: Estado del bot (daily_pnl, daily_trades, etc)
         """
         try:
-            # Calcular métricas básicas
+                                       
             entry_price = position.get('entry_price', exit_price)
             stop_loss = position.get('stop_loss', entry_price)
             r_value = abs(
@@ -277,7 +277,7 @@ class MetricsCollector:
             r_multiple = pnl / r_value if r_value > 0 else 0.0
             pnl_pct = (pnl / entry_price) * 100 if entry_price > 0 else 0.0
 
-            # Duración
+                      
             entry_time = position.get('entry_time')
             exit_time = position.get('exit_time', datetime.now())
             if isinstance(entry_time, str):
@@ -289,18 +289,18 @@ class MetricsCollector:
             duration = (
                 exit_time - entry_time).total_seconds() if entry_time else 0.0
 
-            # ML tracking (CRÍTICO)
+                                   
             ml_filtered = ml_decision is not None
             ml_probability = ml_decision.get(
                 'probability') if ml_decision else None
             ml_approved = ml_decision.get('approved') if ml_decision else None
 
-            # Contexto de mercado
+                                 
             indicators = market_data.get(
                 'indicators', {}) if market_data else {}
             regime = regime_info.get('regime') if regime_info else None
 
-            # Features para ML futuro
+                                     
             daily_pnl_before = bot_state.get(
                 'daily_pnl', 0) if bot_state else None
             daily_trades_before = bot_state.get(
@@ -308,7 +308,7 @@ class MetricsCollector:
             consecutive_signals = bot_state.get(
                 'consecutive_signals', 0) if bot_state else None
 
-            # Crear métrica de trade
+                                    
             trade_metric = TradeMetrics(
                 trade_id=f"{entry_time.isoformat()}_{position.get('symbol', 'UNK')}_{position.get('side', 'UNK')}",
                 timestamp=entry_time or datetime.now(),
@@ -340,13 +340,13 @@ class MetricsCollector:
                 target=1 if r_multiple >= 1.0 else 0
             )
 
-            # Guardar en base de datos
+                                      
             self._save_trade_to_db(trade_metric)
 
-            # Agregar a cache diario
+                                    
             self._daily_trades.append(trade_metric)
 
-            # Invalidar cache de métricas
+                                         
             self._system_metrics_cache = None
 
             self.logger.debug(
@@ -418,7 +418,7 @@ class MetricsCollector:
             include_ml_comparison: Si incluir comparación ML vs sin ML
         """
         try:
-            # Cargar trades del período
+                                       
             cutoff_date = datetime.now() - timedelta(days=days)
             trades = self._load_trades_since(cutoff_date)
 
@@ -430,18 +430,18 @@ class MetricsCollector:
                     peak_equity=self.initial_capital
                 )
 
-            # Calcular métricas básicas
+                                       
             total_trades = len(trades)
             winning_trades = len([t for t in trades if t.pnl > 0])
             losing_trades = len([t for t in trades if t.pnl < 0])
             win_rate = winning_trades / total_trades if total_trades > 0 else 0.0
 
-            # PnL
+                 
             daily_pnl = sum(t.pnl for t in trades)
-            total_pnl = daily_pnl  # TODO: cargar histórico completo
+            total_pnl = daily_pnl                                   
             total_return_pct = (total_pnl / self.initial_capital) * 100
 
-            # Expectancy (CRÍTICO)
+                                  
             wins = [t.pnl for t in trades if t.pnl > 0]
             losses = [t.pnl for t in trades if t.pnl < 0]
             avg_win = np.mean(wins) if wins else 0.0
@@ -449,13 +449,13 @@ class MetricsCollector:
             expectancy = (win_rate * avg_win) - \
                 ((1 - win_rate) * abs(avg_loss))
 
-            # Profit factor
+                           
             gross_profit = sum(wins) if wins else 0.0
             gross_loss = abs(sum(losses)) if losses else 0.0
             profit_factor = gross_profit / \
                 gross_loss if gross_loss > 0 else float('inf')
 
-            # Drawdown
+                      
             equity_curve = self._calculate_equity_curve(trades)
             peak_equity = max(
                 equity_curve) if equity_curve else self.initial_capital
@@ -464,19 +464,19 @@ class MetricsCollector:
             current_drawdown = (peak_equity - current_equity) / \
                 peak_equity if peak_equity > 0 else 0.0
 
-            # Sharpe ratio
+                          
             returns = [t.pnl for t in trades]
             sharpe_ratio = self._calculate_sharpe_ratio(returns)
             sortino_ratio = self._calculate_sortino_ratio(returns)
 
-            # Comparación ML vs sin ML (CRÍTICO)
+                                                
             ml_metrics = self._calculate_ml_comparison(
                 trades) if include_ml_comparison else {}
 
-            # Métricas para ajuste automático
+                                             
             recent_metrics = self._calculate_recent_metrics(trades)
 
-            # Construir métricas del sistema
+                                            
             metrics = SystemMetrics(
                 date=date.today(),
                 timestamp=datetime.now(),
@@ -502,7 +502,7 @@ class MetricsCollector:
                 **recent_metrics
             )
 
-            # Cache
+                   
             self._system_metrics_cache = metrics
 
             return metrics
@@ -549,7 +549,7 @@ class MetricsCollector:
         ml_metrics = calc_metrics(ml_trades)
         no_ml_metrics = calc_metrics(no_ml_trades)
 
-        # Calcular mejora
+                         
         ml_improvement = 0.0
         if no_ml_metrics['expectancy'] != 0:
             ml_improvement = ((ml_metrics['expectancy'] - no_ml_metrics['expectancy']) /
@@ -580,12 +580,12 @@ class MetricsCollector:
                 'volatility_regime': None
             }
 
-        # Win rate reciente
+                           
         recent_wins = len([t for t in recent_trades if t.pnl > 0])
         recent_win_rate = recent_wins / \
             len(recent_trades) if recent_trades else 0.0
 
-        # Expectancy reciente
+                             
         wins = [t.pnl for t in recent_trades if t.pnl > 0]
         losses = [t.pnl for t in recent_trades if t.pnl < 0]
         avg_win = np.mean(wins) if wins else 0.0
@@ -593,7 +593,7 @@ class MetricsCollector:
         recent_expectancy = (recent_win_rate * avg_win) - \
             ((1 - recent_win_rate) * abs(avg_loss))
 
-        # Consecutivos
+                      
         consecutive_losses = 0
         consecutive_wins = 0
         for t in reversed(recent_trades):
@@ -606,7 +606,7 @@ class MetricsCollector:
                 if consecutive_wins > 0:
                     break
 
-        # Volatilidad (simplificado)
+                                    
         volatilities = [
             t.volatility for t in recent_trades if t.volatility is not None]
         avg_volatility = np.mean(volatilities) if volatilities else None
@@ -742,7 +742,7 @@ class MetricsCollector:
 
         ml_comparison = self._calculate_ml_comparison(trades)
 
-        # Determinar si ML mejora
+                                 
         ml_better = ml_comparison['ml_expectancy'] > ml_comparison['no_ml_expectancy']
 
         return {
@@ -781,7 +781,7 @@ class MetricsCollector:
             'risk_level': 'NORMAL'
         }
 
-        # Ajustar basado en expectancy reciente
+                                               
         if metrics.recent_expectancy < -0.5:
             suggestions['position_size_multiplier'] = 0.5
             suggestions['reason'] = 'Negative recent expectancy'
@@ -791,15 +791,15 @@ class MetricsCollector:
             suggestions['reason'] = 'Strong recent expectancy'
             suggestions['risk_level'] = 'INCREASED'
 
-        # Ajustar basado en pérdidas consecutivas
+                                                 
         if metrics.consecutive_losses >= 3:
             suggestions['position_size_multiplier'] = min(
                 suggestions['position_size_multiplier'], 0.7)
             suggestions['reason'] = f'{metrics.consecutive_losses} consecutive losses'
             suggestions['risk_level'] = 'REDUCED'
 
-        # Ajustar basado en drawdown
-        if metrics.current_drawdown > 0.10:  # >10% drawdown
+                                    
+        if metrics.current_drawdown > 0.10:                 
             suggestions['position_size_multiplier'] = min(
                 suggestions['position_size_multiplier'], 0.6)
             suggestions['reason'] = f'High drawdown: {metrics.current_drawdown:.1%}'
@@ -820,7 +820,7 @@ class MetricsCollector:
         df = pd.read_sql_query("SELECT * FROM trades", conn)
         conn.close()
 
-        # Guardar
+                 
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         df.to_csv(output_path, index=False)
 

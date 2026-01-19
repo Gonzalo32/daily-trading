@@ -42,7 +42,7 @@ class Dashboard:
             },
             "market": None,
             "current_signal": None,
-            "orders": []  # Historial de órdenes ejecutadas
+            "orders": []                                   
         }
         
     def setup_routes(self):
@@ -67,7 +67,7 @@ class Dashboard:
             
             try:
                 while True:
-                    # Mantener la conexión viva, o leer mensajes si querés
+                                                                          
                     try:
                         await websocket.receive_text()
                     except WebSocketDisconnect:
@@ -96,7 +96,7 @@ class Dashboard:
             )
             self.server = uvicorn.Server(config)
             
-            # Iniciar el servidor en una tarea en segundo plano
+                                                               
             async def run_server():
                 try:
                     await self.server.serve()
@@ -104,10 +104,10 @@ class Dashboard:
                     self.logger.error(f"❌ Error en servidor dashboard: {e}")
                     self.is_running = False
             
-            # Crear tarea y no esperar (corre en segundo plano)
+                                                               
             self.server_task = asyncio.create_task(run_server())
             
-            # Esperar un momento para que el servidor inicie
+                                                            
             await asyncio.sleep(2)
             
             self.logger.info(f"✅ Dashboard disponible en: http://localhost:{self.config.DASHBOARD_PORT}")

@@ -23,7 +23,7 @@ class DynamicParameterManager:
         self.config = config
         self.logger = setup_logging(__name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
         
-        # Parámetros base (de configuración)
+                                            
         self.base_params = {
             'risk_per_trade': config.RISK_PER_TRADE,
             'stop_loss_pct': config.STOP_LOSS_PCT,
@@ -33,7 +33,7 @@ class DynamicParameterManager:
             'max_daily_loss': config.MAX_DAILY_LOSS,
         }
         
-        # Parámetros actuales (adaptados)
+                                         
         self.current_params: Dict[str, Any] = self.base_params.copy()
 
     def adapt_parameters(self, regime_info: Dict[str, Any]) -> Dict[str, Any]:
@@ -51,15 +51,15 @@ class DynamicParameterManager:
             confidence = regime_info.get('confidence', 0.5)
             metrics = regime_info.get('metrics', {})
             
-            # Convertir string a enum
+                                     
             regime = MarketRegime(regime_str)
             
             self.logger.info(f"🔧 Adaptando parámetros para régimen: {regime.value}")
             
-            # Copiar parámetros base
+                                    
             adapted = self.base_params.copy()
             
-            # Adaptar según régimen
+                                   
             if regime == MarketRegime.HIGH_VOLATILITY or regime == MarketRegime.CHAOTIC:
                 adapted = self._adapt_high_volatility(adapted, metrics, confidence)
                 
@@ -75,7 +75,7 @@ class DynamicParameterManager:
             elif regime == MarketRegime.RANGING:
                 adapted = self._adapt_ranging(adapted, metrics, confidence)
             
-            # Agregar configuración de trading style
+                                                    
             adapted['trading_style'] = self._determine_trading_style(regime)
             adapted['regime'] = regime.value
             adapted['confidence'] = confidence
@@ -99,61 +99,61 @@ class DynamicParameterManager:
     def _adapt_high_volatility(self, params: Dict[str, Any], metrics: Dict[str, Any], confidence: float) -> Dict[str, Any]:
         """Parámetros para alta volatilidad / mercado caótico"""
         
-        # Stop Loss más amplio (pero menor tamaño de posición)
+                                                              
         atr_relative = metrics.get('atr_relative', 0.02)
         params['stop_loss_pct'] = max(0.015, min(0.03, atr_relative * 1.5))
         
-        # Riesgo reducido por trade
-        params['risk_per_trade'] = self.base_params['risk_per_trade'] * 0.7  # 30% menos riesgo
+                                   
+        params['risk_per_trade'] = self.base_params['risk_per_trade'] * 0.7                    
         
-        # Take Profit más conservador
-        params['take_profit_ratio'] = 1.5  # 1.5R en vez de 2.5R
+                                     
+        params['take_profit_ratio'] = 1.5                       
         
-        # Umbrales RSI más estrictos (evitar extremos)
-        params['rsi_overbought'] = 75  # Más estricto
+                                                      
+        params['rsi_overbought'] = 75                
         params['rsi_oversold'] = 25
         
-        # Fuerza mínima más alta (señales más selectivas)
+                                                         
         params['min_signal_strength'] = 0.25
         
-        # Menos trades permitidos
+                                 
         params['max_daily_trades'] = 3
         
-        # Umbrales de filtrado
-        params['min_volume_multiplier'] = 1.2  # 20% más volumen requerido
-        params['max_volatility_multiplier'] = 2.0  # Permitir hasta 2x la volatilidad normal
+                              
+        params['min_volume_multiplier'] = 1.2                             
+        params['max_volatility_multiplier'] = 2.0                                           
         
         return params
 
     def _adapt_low_volatility(self, params: Dict[str, Any], metrics: Dict[str, Any], confidence: float) -> Dict[str, Any]:
         """Parámetros para baja volatilidad"""
         
-        # Stop Loss más ajustado
+                                
         atr_relative = metrics.get('atr_relative', 0.02)
         params['stop_loss_pct'] = max(0.005, min(0.015, atr_relative * 1.2))
         
-        # Take Profit más chico (movimientos limitados)
-        params['take_profit_ratio'] = 1.5  # 1.5R
+                                                       
+        params['take_profit_ratio'] = 1.5        
         
-        # Riesgo normal
+                       
         params['risk_per_trade'] = self.base_params['risk_per_trade']
         
-        # RSI más permisivo (menos señales en mercado tranquilo)
+                                                                
         params['rsi_overbought'] = 85
         params['rsi_oversold'] = 15
         
-        # Fuerza mínima más baja (aceptar señales más débiles)
+                                                              
         params['min_signal_strength'] = 0.10
         
-        # Filtrar mercados con muy poco movimiento
+                                                  
         avg_range = metrics.get('avg_daily_range_pct', 1.0)
-        params['min_daily_range_pct'] = avg_range * 0.5  # Al menos 50% del rango promedio
+        params['min_daily_range_pct'] = avg_range * 0.5                                   
         
-        # Más trades permitidos (aprovechar oportunidades)
+                                                          
         params['max_daily_trades'] = 6
         
-        # Umbrales de filtrado
-        params['min_volume_multiplier'] = 0.8  # Aceptar menos volumen
+                              
+        params['min_volume_multiplier'] = 0.8                         
         params['max_volatility_multiplier'] = 1.5
         
         return params
@@ -161,30 +161,30 @@ class DynamicParameterManager:
     def _adapt_trending_bullish(self, params: Dict[str, Any], metrics: Dict[str, Any], confidence: float) -> Dict[str, Any]:
         """Parámetros para tendencia alcista fuerte"""
         
-        # Stop Loss normal a ajustado
+                                     
         params['stop_loss_pct'] = self.base_params['stop_loss_pct']
         
-        # Take Profit más ambicioso (dejar correr ganancias)
-        params['take_profit_ratio'] = 3.0  # 3R en tendencia fuerte
+                                                            
+        params['take_profit_ratio'] = 3.0                          
         
-        # Riesgo puede ser ligeramente mayor
-        params['risk_per_trade'] = self.base_params['risk_per_trade'] * 1.1  # 10% más
+                                            
+        params['risk_per_trade'] = self.base_params['risk_per_trade'] * 1.1           
         
-        # RSI más permisivo en compras
-        params['rsi_overbought'] = 85  # Permitir compras en momentum
+                                      
+        params['rsi_overbought'] = 85                                
         params['rsi_oversold'] = 25
         
-        # Fuerza mínima moderada
+                                
         params['min_signal_strength'] = 0.15
         
-        # Más trades permitidos (aprovechar tendencia)
+                                                      
         params['max_daily_trades'] = 5
         
-        # Preferencias de dirección
+                                   
         params['allow_long'] = True
-        params['allow_short'] = False  # Evitar contra-tendencia
+        params['allow_short'] = False                           
         
-        # Umbrales de filtrado
+                              
         params['min_volume_multiplier'] = 1.0
         params['max_volatility_multiplier'] = 1.8
         
@@ -193,30 +193,30 @@ class DynamicParameterManager:
     def _adapt_trending_bearish(self, params: Dict[str, Any], metrics: Dict[str, Any], confidence: float) -> Dict[str, Any]:
         """Parámetros para tendencia bajista fuerte"""
         
-        # Stop Loss normal
+                          
         params['stop_loss_pct'] = self.base_params['stop_loss_pct']
         
-        # Take Profit más ambicioso
-        params['take_profit_ratio'] = 3.0  # 3R
+                                   
+        params['take_profit_ratio'] = 3.0      
         
-        # Riesgo ligeramente mayor
+                                  
         params['risk_per_trade'] = self.base_params['risk_per_trade'] * 1.1
         
-        # RSI más permisivo en ventas
+                                     
         params['rsi_overbought'] = 75
-        params['rsi_oversold'] = 15  # Permitir ventas en momentum bajista
+        params['rsi_oversold'] = 15                                       
         
-        # Fuerza mínima moderada
+                                
         params['min_signal_strength'] = 0.15
         
-        # Más trades permitidos
+                               
         params['max_daily_trades'] = 5
         
-        # Preferencias de dirección
-        params['allow_long'] = False  # Evitar contra-tendencia
+                                   
+        params['allow_long'] = False                           
         params['allow_short'] = True
         
-        # Umbrales de filtrado
+                              
         params['min_volume_multiplier'] = 1.0
         params['max_volatility_multiplier'] = 1.8
         
@@ -225,30 +225,30 @@ class DynamicParameterManager:
     def _adapt_ranging(self, params: Dict[str, Any], metrics: Dict[str, Any], confidence: float) -> Dict[str, Any]:
         """Parámetros para mercado en rango lateral"""
         
-        # Stop Loss ajustado (operaciones más precisas)
+                                                       
         params['stop_loss_pct'] = self.base_params['stop_loss_pct'] * 0.9
         
-        # Take Profit más conservador (movimientos limitados)
-        params['take_profit_ratio'] = 1.8  # 1.8R
+                                                             
+        params['take_profit_ratio'] = 1.8        
         
-        # Riesgo normal
+                       
         params['risk_per_trade'] = self.base_params['risk_per_trade']
         
-        # RSI más estricto (operar en extremos del rango)
-        params['rsi_overbought'] = 72  # Comprar en sobreventa, vender en sobrecompra
+                                                         
+        params['rsi_overbought'] = 72                                                
         params['rsi_oversold'] = 28
         
-        # Fuerza mínima moderada
+                                
         params['min_signal_strength'] = 0.18
         
-        # Trades moderados
+                          
         params['max_daily_trades'] = 4
         
-        # Permitir ambas direcciones (reversión a la media)
+                                                           
         params['allow_long'] = True
         params['allow_short'] = True
         
-        # Umbrales de filtrado
+                              
         params['min_volume_multiplier'] = 1.0
         params['max_volatility_multiplier'] = 1.5
         

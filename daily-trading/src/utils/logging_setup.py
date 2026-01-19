@@ -13,9 +13,9 @@ from datetime import datetime
 from typing import Optional
 
 
-# ======================================================
-# HANDLER PERSONALIZADO POR LÍNEAS
-# ======================================================
+                                                        
+                                  
+                                                        
 class LineRotatingFileHandler(BaseRotatingHandler):
     """
     Handler que rota el archivo de log cuando alcanza un número máximo de líneas.
@@ -56,19 +56,19 @@ class LineRotatingFileHandler(BaseRotatingHandler):
             if not os.path.exists(filepath):
                 return
             
-            # Leer todas las líneas
+                                   
             with open(filepath, 'r', encoding=self.encoding) as f:
                 lines = f.readlines()
             
-            # Si tiene más líneas de las permitidas, mantener solo las últimas
+                                                                              
             if len(lines) > max_lines:
                 lines_to_keep = lines[-max_lines:]
                 
-                # Escribir solo las últimas líneas
+                                                  
                 with open(filepath, 'w', encoding=self.encoding) as f:
                     f.writelines(lines_to_keep)
         except Exception as e:
-            # Si hay error, no hacer nada (mejor tener el archivo completo que perder datos)
+                                                                                            
             pass
     
     def shouldRollover(self, record):
@@ -78,7 +78,7 @@ class LineRotatingFileHandler(BaseRotatingHandler):
     def doRollover(self):
         """Ejecuta la rotación del archivo"""
         try:
-            # Cerrar stream actual si existe
+                                            
             if self.stream:
                 try:
                     self.stream.close()
@@ -86,18 +86,18 @@ class LineRotatingFileHandler(BaseRotatingHandler):
                     pass
                 self.stream = None
             
-            # Truncar archivos de backup existentes antes de rotar
+                                                                  
             for i in range(1, self.backup_count + 1):
                 backup_file = f"{self.baseFilename}.{i}"
                 if os.path.exists(backup_file):
                     self._truncate_file_to_lines(backup_file, self.max_lines)
             
-            # Rotar archivos de backup
+                                      
             for i in range(self.backup_count - 1, 0, -1):
                 sfn = f"{self.baseFilename}.{i}"
                 dfn = f"{self.baseFilename}.{i + 1}"
                 if os.path.exists(sfn):
-                    # Truncar el archivo fuente antes de rotarlo
+                                                                
                     self._truncate_file_to_lines(sfn, self.max_lines)
                     
                     if os.path.exists(dfn):
@@ -107,15 +107,15 @@ class LineRotatingFileHandler(BaseRotatingHandler):
                             pass
                     try:
                         os.rename(sfn, dfn)
-                        # Truncar el archivo destino después de rotarlo
+                                                                       
                         self._truncate_file_to_lines(dfn, self.max_lines)
                     except Exception:
                         pass
             
-            # Mover archivo actual a .1 y truncarlo
+                                                   
             dfn = f"{self.baseFilename}.1"
             if os.path.exists(self.baseFilename):
-                # Truncar el archivo actual antes de rotarlo
+                                                            
                 self._truncate_file_to_lines(self.baseFilename, self.max_lines)
                 
                 if os.path.exists(dfn):
@@ -125,15 +125,15 @@ class LineRotatingFileHandler(BaseRotatingHandler):
                         pass
                 try:
                     os.rename(self.baseFilename, dfn)
-                    # Truncar el archivo .1 después de crearlo
+                                                              
                     self._truncate_file_to_lines(dfn, self.max_lines)
                 except Exception:
                     pass
             
-            # Resetear contador
+                               
             self.line_count = 0
             
-            # Abrir nuevo archivo
+                                 
             if not self.delay:
                 try:
                     self.stream = self._open()
@@ -142,7 +142,7 @@ class LineRotatingFileHandler(BaseRotatingHandler):
                     self.stream = None
         except Exception as e:
             print(f"ERROR en rotación de log: {e}")
-            # Intentar abrir el archivo de todas formas
+                                                       
             if not self.delay and self.stream is None:
                 try:
                     self.stream = self._open()
@@ -155,7 +155,7 @@ class LineRotatingFileHandler(BaseRotatingHandler):
             if self.shouldRollover(record):
                 self.doRollover()
             
-            # Asegurar que el stream esté abierto
+                                                 
             if self.stream is None:
                 self.stream = self._open()
             
@@ -163,7 +163,7 @@ class LineRotatingFileHandler(BaseRotatingHandler):
             stream = self.stream
             
             if stream is None:
-                # Si aún es None, intentar abrir de nuevo
+                                                         
                 self.stream = self._open()
                 stream = self.stream
             
@@ -171,19 +171,19 @@ class LineRotatingFileHandler(BaseRotatingHandler):
                 stream.write(msg + self.terminator)
                 self.flush()
                 
-                # Incrementar contador de líneas
+                                                
                 self.line_count += 1
             else:
-                # Si no se puede abrir el stream, registrar error pero no fallar
+                                                                                
                 print(f"ERROR: No se pudo abrir el archivo de log: {self.baseFilename}")
             
         except Exception as e:
             self.handleError(record)
 
 
-# ======================================================
-# CONFIGURACIÓN GENERAL DE LOGGING
-# ======================================================
+                                                        
+                                  
+                                                        
 def setup_logging(name: str = __name__, logfile: str = "logs/trading_bot.log", log_level: str = "INFO") -> logging.Logger:
     """
     Configura el logger principal del bot con formato unificado y rotación de archivos.
@@ -199,27 +199,27 @@ def setup_logging(name: str = __name__, logfile: str = "logs/trading_bot.log", l
     logger = logging.getLogger(name)
     logger.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
-    # Evitar duplicar handlers si ya está configurado
+                                                     
     if logger.handlers:
         return logger
 
-    # Crear carpeta de logs si no existe
+                                        
     log_dir = os.path.dirname(logfile)
     if log_dir and not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    # Formato unificado de logs
+                               
     fmt = logging.Formatter(
         "%(asctime)s | %(levelname)s | %(name)s | %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    # Handler de consola
+                        
     console_handler = logging.StreamHandler()
     console_handler.setFormatter(fmt)
     console_handler.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 
-    # Handler rotativo de archivo por líneas (rota cada 100 líneas)
+                                                                   
     file_handler = LineRotatingFileHandler(logfile, max_lines=100, backup_count=3, encoding="utf-8")
     file_handler.setFormatter(fmt)
     file_handler.setLevel(getattr(logging, log_level.upper(), logging.INFO))
@@ -227,16 +227,16 @@ def setup_logging(name: str = __name__, logfile: str = "logs/trading_bot.log", l
     logger.addHandler(console_handler)
     logger.addHandler(file_handler)
 
-    # Configurar loggers secundarios (módulos)
+                                              
     _setup_specific_loggers()
 
     logger.info("✅ Sistema de logging inicializado correctamente.")
     return logger
 
 
-# ======================================================
-# LOGGERS ESPECÍFICOS POR MÓDULO
-# ======================================================
+                                                        
+                                
+                                                        
 def _setup_specific_loggers():
     """Crea loggers específicos para distintos módulos del bot"""
     module_loggers = {
@@ -252,9 +252,9 @@ def _setup_specific_loggers():
         mod_logger.setLevel(level)
 
 
-# ======================================================
-# CLASES ESPECIALIZADAS
-# ======================================================
+                                                        
+                       
+                                                        
 class TradingLogger:
     """Logger especializado para registrar eventos de trading (operaciones, riesgo, rendimiento, etc.)"""
 
@@ -325,9 +325,9 @@ class TradingLogger:
             self.logger.error(f"Error registrando métricas de rendimiento: {e}")
 
 
-# ======================================================
-# FUNCIONES DE UTILIDAD
-# ======================================================
+                                                        
+                       
+                                                        
 def get_trading_logger() -> TradingLogger:
     """Devuelve un logger especializado para registrar eventos de trading"""
     logger = logging.getLogger("trading_bot")

@@ -16,6 +16,8 @@ class DecisionSample:
     decision_space: Dict[str, bool]
     strategy_signal: Optional[str]
     executed_action: Optional[str]
+    decision_outcome: Optional[str]
+    reject_reason: Optional[str]
     reason: str
     market_context: Dict[str, Any]
 
@@ -34,7 +36,9 @@ class DecisionSampler:
         strategy,
         strategy_signal: Optional[Dict[str, Any]] = None,
         executed_action: Optional[str] = None,
-        regime_info: Optional[Dict[str, Any]] = None
+        regime_info: Optional[Dict[str, Any]] = None,
+        decision_outcome: Optional[str] = None,
+        reject_reason: Optional[str] = None
     ) -> DecisionSample:
         try:
             indicators = market_data.get("indicators", {})
@@ -65,13 +69,22 @@ class DecisionSampler:
                 strategy_action = strategy_signal.get("action")
 
             if executed_action is None:
-                if strategy_action is None:
-                    executed_action = "HOLD"
+                executed_action = strategy_action or "HOLD"
+
+            if decision_outcome is None:
+                if executed_action in ["BUY", "SELL"]:
+                    decision_outcome = "accepted"
+                elif strategy_action is None:
+                    decision_outcome = "no_signal"
                 else:
-                    executed_action = "HOLD"
+                    decision_outcome = "hold"
 
             reason = self._build_reason(
-                strategy_signal, decision_space, executed_action
+                strategy_signal,
+                decision_space,
+                executed_action,
+                decision_outcome,
+                reject_reason
             )
             market_context = {
                 "regime": regime_info.get("regime", "unknown") if regime_info else "unknown",
@@ -80,6 +93,15 @@ class DecisionSampler:
                 "price": price,
             }
 
+            if decision_outcome and decision_outcome.startswith("rejected"):
+                self.logger.info(
+                    f"🧪 DecisionSample | outcome={decision_outcome} | reason={reject_reason or reason}"
+                )
+            else:
+                self.logger.debug(
+                    f"🧪 DecisionSample | outcome={decision_outcome} | action={executed_action}"
+                )
+
             return DecisionSample(
                 timestamp=timestamp,
                 symbol=symbol,
@@ -87,13 +109,15 @@ class DecisionSampler:
                 decision_space=decision_space,
                 strategy_signal=strategy_action,
                 executed_action=executed_action,
+                decision_outcome=decision_outcome,
+                reject_reason=reject_reason,
                 reason=reason,
                 market_context=market_context
             )
 
         except Exception as e:
             self.logger.exception(f"❌ Error creando DecisionSample: {e}")
-            # Retornar sample básico en caso de error
+                                                     
             return DecisionSample(
                 timestamp=datetime.now(),
                 symbol=market_data.get("symbol", "UNKNOWN"),
@@ -101,6 +125,8 @@ class DecisionSampler:
                 decision_space={"buy": False, "sell": False, "hold": True},
                 strategy_signal=None,
                 executed_action="HOLD",
+                decision_outcome="error",
+                reject_reason=str(e),
                 reason=f"Error: {str(e)}",
                 market_context={}
             )
@@ -164,7 +190,7 @@ class DecisionSampler:
         decision_space = {
             "buy": False,
             "sell": False,
-            "hold": True  # HOLD siempre disponible
+            "hold": True                           
         }
 
         try:
@@ -186,9 +212,14 @@ class DecisionSampler:
         self,
         strategy_signal: Optional[Dict[str, Any]],
         decision_space: Dict[str, bool],
-        executed_action: Optional[str]
+        executed_action: Optional[str],
+        decision_outcome: Optional[str],
+        reject_reason: Optional[str]
     ) -> str:
         """Construye una razón legible para la decisión"""
+        if decision_outcome and decision_outcome.startswith("rejected"):
+            reason = reject_reason or "motivo no especificado"
+            return f"HOLD: Rechazado ({decision_outcome}) - {reason}"
         if executed_action == "HOLD":
             if strategy_signal is None:
                 return "HOLD: No signal from strategy"
@@ -207,7 +238,7 @@ class DecisionSampler:
         return {
             "timestamp": sample.timestamp.isoformat() if isinstance(sample.timestamp, datetime) else str(sample.timestamp),
             "symbol": sample.symbol,
-            # Features relativas
+                                
             "ema_diff_pct": sample.features.get("ema_diff_pct", 0),
             "rsi_normalized": sample.features.get("rsi_normalized", 0),
             "atr_pct": sample.features.get("atr_pct", 0),
@@ -215,15 +246,17 @@ class DecisionSampler:
             "price_to_slow_pct": sample.features.get("price_to_slow_pct", 0),
             "trend_direction": sample.features.get("trend_direction", 0),
             "trend_strength": sample.features.get("trend_strength", 0),
-            # Decision space
+                            
             "decision_buy_possible": sample.decision_space.get("buy", False),
             "decision_sell_possible": sample.decision_space.get("sell", False),
             "decision_hold_possible": sample.decision_space.get("hold", True),
-            # Strategy signal
+                             
             "strategy_signal": sample.strategy_signal or "NONE",
-            # Executed action
+                             
             "executed_action": sample.executed_action or "HOLD",
-            # Context
+            "decision_outcome": sample.decision_outcome or "unknown",
+            "reject_reason": sample.reject_reason or "",
+                     
             "regime": sample.market_context.get("regime", "unknown"),
             "volatility": sample.market_context.get("volatility", "medium"),
             "reason": sample.reason,

@@ -23,22 +23,22 @@ class AdvancedPositionManager:
         self.logger = setup_logging(
             __name__, logfile=config.LOG_FILE, log_level=config.LOG_LEVEL)
 
-        # Configuración de trailing stop
+                                        
         self.trailing_enabled = True
-        self.trailing_start_r = 1.5  # Activar trailing cuando alcance 1.5R
-        self.trailing_atr_multiplier = 1.0  # 1 ATR de trailing
+        self.trailing_start_r = 1.5                                        
+        self.trailing_atr_multiplier = 1.0                     
 
-        # Configuración de break-even
+                                     
         self.breakeven_enabled = True
-        self.breakeven_trigger_r = 1.0  # Mover a BE cuando alcance 1R
-        self.breakeven_buffer = 0.001  # 0.1% por encima de entrada
+        self.breakeven_trigger_r = 1.0                                
+        self.breakeven_buffer = 0.001                              
 
-        # Configuración de time-based stop
+                                          
         self.time_stop_enabled = True
-        self.max_position_duration_minutes = 240  # 4 horas máximo
-        self.stale_position_minutes = 60  # 1 hora sin movimiento = stale
+        self.max_position_duration_minutes = 240                  
+        self.stale_position_minutes = 60                                 
 
-        # Estado de posiciones (tracking adicional)
+                                                   
         self.position_tracking: Dict[str, Dict[str, Any]] = {}
 
     async def manage_position(
@@ -78,7 +78,7 @@ class AdvancedPositionManager:
             position_id = position.get('id', 'unknown')
             symbol = position.get('symbol', 'UNKNOWN')
 
-            # TIME STOP OBLIGATORIO: Verificar edad de la posición PRIMERO
+                                                                          
             open_time = position.get('open_time') or position.get('entry_time')
             
             self.logger.info(
@@ -102,8 +102,8 @@ class AdvancedPositionManager:
                     f"🔍 DEBUG: position_age={position_age:.1f}s, mvp_mode={mvp_mode}, threshold=30s"
                 )
 
-                # ✅ FORCE CIERRE SOLO SI MVP = TRUE Y PASARON 30s
-                # FORCE CLOSE: Cerrar cualquier posición abierta >= 30 segundos
+                                                                 
+                                                                               
                 if mvp_mode and position_age >= 30:
                     self.logger.info(
                         f"⏱ edad de posición: {position_age:.2f}s")
@@ -112,7 +112,7 @@ class AdvancedPositionManager:
                     )
 
                     if executor and risk_manager:
-                        # ✅ Pasar current_price para obtener precio real de salida
+                                                                                  
                         close_result = await executor.close_position(position, current_price=current_price)
 
                         if close_result.get("success"):
@@ -128,11 +128,11 @@ class AdvancedPositionManager:
                                 "reason": "Force close (30s)"
                             })
 
-                            # ✅ ACTUALIZAR EQUITY REAL
+                                                      
                             current_equity = risk_manager.state.equity
                             risk_manager.update_equity(current_equity + pnl)
 
-                            # Limpiar tracking
+                                              
                             self.cleanup_position(position_id)
 
                             self.logger.info(
@@ -152,32 +152,32 @@ class AdvancedPositionManager:
                             self.logger.error(
                                 f"❌ Error cerrando posición {position_id}: {close_result.get('error')}"
                             )
-            # Log de evaluación -----------------------------
+                                                             
             self.logger.info(
                 f"🔍 [MVP={mvp_mode}] Evaluando posición {position_id} ({symbol}) @ {current_price:.2f}"
             )
 
-            # Inicializar tracking si es nueva posición
+                                                       
             if position_id not in self.position_tracking:
                 self._init_position_tracking(position)
 
             tracking = self.position_tracking[position_id]
 
-            # Calcular métricas actuales
+                                        
             metrics = self._calculate_position_metrics(
                 position, current_price, market_data)
 
-            # Actualizar tracking
+                                 
             self._update_tracking(position_id, metrics)
 
-            # 1. CHECK: ¿Se alcanzó el stop loss o take profit original?
+                                                                        
             if self._check_original_stops(position, current_price):
                 reason = "Stop Loss/Take Profit alcanzado"
                 self.logger.info(f"🛑 [{symbol}] {reason}")
                 return self._create_close_decision(position, current_price, reason)
 
-            # 2. CHECK: Time-based stops
-            # En modo MVP: forzar cierre después de 2 minutos
+                                        
+                                                             
             if mvp_mode:
                 duration_minutes = metrics['duration_minutes']
                 if duration_minutes >= 2.0:
@@ -192,13 +192,13 @@ class AdvancedPositionManager:
                         f"⏰ [{symbol}] {time_check.get('reason', 'Time stop alcanzado')}")
                     return time_check
 
-            # 3. CHECK: Fin de día (evitar mantener posiciones overnight en intradía)
+                                                                                     
             if not mvp_mode and self._should_close_end_of_day():
                 reason = "Cierre por fin de día"
                 self.logger.info(f"🌅 [{symbol}] {reason}")
                 return self._create_close_decision(position, current_price, reason)
 
-            # 4. APPLY: Break-even (DESHABILITADO en MVP)
+                                                         
             if not mvp_mode and self.breakeven_enabled and not tracking['breakeven_applied']:
                 be_result = self._apply_breakeven(position, metrics)
                 if be_result['should_update']:
@@ -207,7 +207,7 @@ class AdvancedPositionManager:
                         f"🎯 [{symbol}] Break-even aplicado en posición {position_id}")
                     return be_result
 
-            # 5. APPLY: Trailing stop (DESHABILITADO en MVP)
+                                                            
             if not mvp_mode and self.trailing_enabled and tracking['breakeven_applied']:
                 trailing_result = self._apply_trailing_stop(
                     position, metrics, market_data)
@@ -216,7 +216,7 @@ class AdvancedPositionManager:
                         f"📈 [{symbol}] Trailing stop actualizado en posición {position_id}")
                     return trailing_result
 
-            # Sin cambios necesarios
+                                    
             return {
                 'action': 'hold',
                 'reason': 'Posición en progreso normal',
@@ -234,12 +234,12 @@ class AdvancedPositionManager:
         self.position_tracking[position_id] = {
             'entry_time': position.get('entry_time', datetime.utcnow()),
             'entry_price': position.get('entry_price'),
-            # Para trailing stop LONG
+                                     
             'highest_price': position.get('entry_price'),
-            # Para trailing stop SHORT
+                                      
             'lowest_price': position.get('entry_price'),
-            'max_favorable_excursion': 0.0,  # MFE: mejor profit alcanzado
-            'max_adverse_excursion': 0.0,    # MAE: peor drawdown
+            'max_favorable_excursion': 0.0,                               
+            'max_adverse_excursion': 0.0,                        
             'breakeven_applied': False,
             'trailing_active': False,
             'last_price_update': datetime.utcnow(),
@@ -258,24 +258,24 @@ class AdvancedPositionManager:
         take_profit = position.get('take_profit', entry_price)
         side = position.get('side', 'buy').lower()
 
-        # Calcular riesgo (R)
+                             
         risk = abs(entry_price - stop_loss)
 
-        # Calcular profit/loss actual
+                                     
         if side == 'buy':
             pnl = current_price - entry_price
             pnl_pct = (pnl / entry_price) if entry_price > 0 else 0
             r_multiple = (pnl / risk) if risk > 0 else 0
-        else:  # sell/short
+        else:              
             pnl = entry_price - current_price
             pnl_pct = (pnl / entry_price) if entry_price > 0 else 0
             r_multiple = (pnl / risk) if risk > 0 else 0
 
-        # Duración
+                  
         entry_time = position.get('entry_time', datetime.utcnow())
         if isinstance(entry_time, str):
             entry_time = datetime.fromisoformat(entry_time)
-        # Si entry_time es string, convertirlo
+                                              
         if isinstance(entry_time, str):
             try:
                 entry_time = datetime.fromisoformat(entry_time.replace('Z', '+00:00'))
@@ -295,7 +295,7 @@ class AdvancedPositionManager:
             'r_multiple': r_multiple,
             'risk': risk,
             'duration_minutes': duration.total_seconds() / 60,
-            # Usar ATR del mercado
+                                  
             'atr': market_data.get('indicators', {}).get('atr', risk),
         }
 
@@ -305,28 +305,28 @@ class AdvancedPositionManager:
         current_price = metrics['current_price']
         side = metrics['side']
 
-        # Actualizar highest/lowest
+                                   
         if side == 'buy':
             tracking['highest_price'] = max(
                 tracking['highest_price'], current_price)
             mfe = current_price - metrics['entry_price']
             mae = min(0, current_price - metrics['entry_price'])
-        else:  # sell/short
+        else:              
             tracking['lowest_price'] = min(
                 tracking['lowest_price'], current_price)
             mfe = metrics['entry_price'] - current_price
             mae = min(0, metrics['entry_price'] - current_price)
 
-        # Actualizar MFE/MAE
+                            
         tracking['max_favorable_excursion'] = max(
             tracking['max_favorable_excursion'], mfe)
         tracking['max_adverse_excursion'] = min(
             tracking['max_adverse_excursion'], mae)
 
-        # Detectar movimiento
+                             
         time_since_update = (
             datetime.utcnow() - tracking['last_price_update']).total_seconds() / 60
-        if time_since_update > 5:  # 5 minutos sin actualización significativa
+        if time_since_update > 5:                                             
             tracking['periods_without_movement'] += 1
         else:
             tracking['periods_without_movement'] = 0
@@ -344,7 +344,7 @@ class AdvancedPositionManager:
                 return True
             if take_profit and current_price >= take_profit:
                 return True
-        else:  # sell/short
+        else:              
             if stop_loss and current_price >= stop_loss:
                 return True
             if take_profit and current_price <= take_profit:
@@ -361,7 +361,7 @@ class AdvancedPositionManager:
         """Verifica stops basados en tiempo"""
         duration_minutes = metrics['duration_minutes']
 
-        # 1. Duración máxima excedida
+                                     
         if duration_minutes > self.max_position_duration_minutes:
             return self._create_close_decision(
                 position,
@@ -369,10 +369,10 @@ class AdvancedPositionManager:
                 f"Tiempo máximo excedido ({duration_minutes:.0f} min)"
             )
 
-        # 2. Posición estancada (sin movimiento favorable por mucho tiempo)
-        # 1 hora (12 períodos de 5 min)
+                                                                           
+                                       
         if tracking['periods_without_movement'] > 12:
-            if metrics['r_multiple'] < 0.5:  # Y no está ganando al menos 0.5R
+            if metrics['r_multiple'] < 0.5:                                   
                 return self._create_close_decision(
                     position,
                     metrics['current_price'],
@@ -384,16 +384,16 @@ class AdvancedPositionManager:
     def _should_close_end_of_day(self) -> bool:
         """Verifica si es hora de cerrar posiciones (fin de día)"""
         if self.config.MARKET == 'CRYPTO':
-            return False  # Crypto opera 24/7
+            return False                     
 
-        # Para acciones: cerrar 30 minutos antes del cierre
+                                                           
         current_hour = datetime.now().hour
         current_minute = datetime.now().minute
 
         close_hour = self.config.TRADING_END_HOUR
         close_minute = 0
 
-        # Si estamos dentro de los últimos 30 minutos
+                                                     
         time_to_close = (close_hour * 60 + close_minute) - \
             (current_hour * 60 + current_minute)
 
@@ -403,17 +403,17 @@ class AdvancedPositionManager:
         """Aplica break-even si se alcanzó el umbral"""
         r_multiple = metrics['r_multiple']
 
-        # Solo aplicar si alcanzamos el umbral
+                                              
         if r_multiple < self.breakeven_trigger_r:
             return {'should_update': False}
 
         entry_price = metrics['entry_price']
         side = metrics['side']
 
-        # Calcular nuevo stop loss en break-even (con buffer pequeño)
+                                                                     
         if side == 'buy':
             new_stop_loss = entry_price * (1 + self.breakeven_buffer)
-        else:  # sell/short
+        else:              
             new_stop_loss = entry_price * (1 - self.breakeven_buffer)
 
         return {
@@ -433,7 +433,7 @@ class AdvancedPositionManager:
         """Aplica trailing stop si corresponde"""
         r_multiple = metrics['r_multiple']
 
-        # Solo aplicar trailing si alcanzamos el umbral
+                                                       
         if r_multiple < self.trailing_start_r:
             return {'should_update': False}
 
@@ -444,13 +444,13 @@ class AdvancedPositionManager:
         atr = metrics['atr']
         current_stop = metrics['stop_loss']
 
-        # Calcular nuevo trailing stop
+                                      
         if side == 'buy':
-            # Para LONG: stop loss = highest_price - (ATR * multiplier)
+                                                                       
             highest = tracking.get('highest_price', metrics['current_price'])
             new_stop_loss = highest - (atr * self.trailing_atr_multiplier)
 
-            # Solo mover el stop si es mejor que el actual
+                                                          
             if new_stop_loss > current_stop:
                 tracking['trailing_active'] = True
                 return {
@@ -461,12 +461,12 @@ class AdvancedPositionManager:
                     'should_update': True
                 }
 
-        else:  # sell/short
-            # Para SHORT: stop loss = lowest_price + (ATR * multiplier)
+        else:              
+                                                                       
             lowest = tracking.get('lowest_price', metrics['current_price'])
             new_stop_loss = lowest + (atr * self.trailing_atr_multiplier)
 
-            # Solo mover el stop si es mejor que el actual
+                                                          
             if new_stop_loss < current_stop:
                 tracking['trailing_active'] = True
                 return {

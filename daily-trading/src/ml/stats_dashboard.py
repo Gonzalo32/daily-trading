@@ -15,11 +15,11 @@ SYNTH_FILE = "src/ml/training_data_synth.csv"
 logger = setup_logging(__name__)
 app = FastAPI(title="Trading ML Dataset Dashboard")
 
-# Carpeta para posibles gráficos futuros
+                                        
 PLOTS_DIR = "ml_plots"
 os.makedirs(PLOTS_DIR, exist_ok=True)
 
-# Si quisieras servir imágenes luego:
+                                     
 if os.path.exists(PLOTS_DIR):
     app.mount("/plots", StaticFiles(directory=PLOTS_DIR), name="plots")
 
@@ -54,7 +54,7 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
     stats["columns"] = list(df.columns)
     stats["has_target"] = "target" in df.columns
 
-    # Target distribution
+                         
     if "target" in df.columns:
         value_counts = df["target"].value_counts(normalize=True).to_dict()
         stats["target_distribution"] = {
@@ -63,7 +63,7 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
     else:
         stats["target_distribution"] = {}
 
-    # PnL stats
+               
     if "pnl" in df.columns:
         stats["pnl_mean"] = float(df["pnl"].mean())
         stats["pnl_std"] = float(df["pnl"].std() or 0.0)
@@ -72,7 +72,7 @@ def compute_basic_stats(df: pd.DataFrame) -> dict:
     else:
         stats["pnl_mean"] = stats["pnl_std"] = stats["pnl_min"] = stats["pnl_max"] = None
 
-    # Winrate basado en target
+                              
     if "target" in df.columns and len(df) > 0:
         stats["winrate_target"] = float(df["target"].mean())
     else:
