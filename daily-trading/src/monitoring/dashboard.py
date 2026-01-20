@@ -5,6 +5,7 @@ Interfaz web profesional para day trading
 
 import asyncio
 import logging
+import threading
 from typing import Dict, Any, Optional
 from datetime import datetime
 import json
@@ -87,49 +88,51 @@ class Dashboard:
             self.is_running = True
             self.logger.info(f"🚀 Dashboard iniciando en puerto {self.config.DASHBOARD_PORT}")
             
-            config = uvicorn.Config(
-                self.app, 
-                host="0.0.0.0", 
-                port=self.config.DASHBOARD_PORT,
-                log_level="info",
-                loop="asyncio"
-            )
-            self.server = uvicorn.Server(config)
-            
-                                                               
-            async def run_server():
+            # Ejecutar uvicorn en un thread separado para evitar conflictos con el loop principal
+            def run_uvicorn():
                 try:
-                    await self.server.serve()
+                    uvicorn.run(
+                        self.app,
+                        host="0.0.0.0",
+                        port=self.config.DASHBOARD_PORT,
+                        log_level="warning",
+                        access_log=False,
+                        loop="asyncio"
+                    )
                 except Exception as e:
-                    self.logger.error(f"❌ Error en servidor dashboard: {e}")
+                    self.logger.error(f"❌ Error en servidor dashboard: {e}", exc_info=True)
                     self.is_running = False
             
-                                                               
-            self.server_task = asyncio.create_task(run_server())
+            # Iniciar servidor en thread separado
+            self.server_thread = threading.Thread(target=run_uvicorn, daemon=True)
+            self.server_thread.start()
             
-                                                            
+            # Esperar un poco para que el servidor inicie
             await asyncio.sleep(2)
             
-            self.logger.info(f"✅ Dashboard disponible en: http://localhost:{self.config.DASHBOARD_PORT}")
-            self.logger.info(f"✅ Dashboard también en: http://127.0.0.1:{self.config.DASHBOARD_PORT}")
+            # Verificar que el thread está corriendo
+            if self.server_thread.is_alive():
+                self.logger.info(f"✅ Dashboard disponible en: http://localhost:{self.config.DASHBOARD_PORT}")
+                self.logger.info(f"✅ Dashboard también en: http://127.0.0.1:{self.config.DASHBOARD_PORT}")
+            else:
+                self.logger.warning("⚠️ Dashboard thread no está corriendo")
+                self.is_running = False
             
         except Exception as e:
-            self.logger.error(f"❌ Error iniciando dashboard: {e}")
+            self.logger.error(f"❌ Error iniciando dashboard: {e}", exc_info=True)
             self.is_running = False
-            raise
+            # No hacer raise para que el bot continúe funcionando sin dashboard
             
     async def stop(self):
         """Detener el dashboard"""
         try:
             self.is_running = False
-            if hasattr(self, 'server'):
-                self.server.should_exit = True
-            if hasattr(self, 'server_task'):
-                self.server_task.cancel()
-                try:
-                    await self.server_task
-                except asyncio.CancelledError:
-                    pass
+            # El thread se detendrá automáticamente cuando el proceso termine
+            # ya que es un daemon thread
+            if hasattr(self, 'server_thread') and self.server_thread.is_alive():
+                self.logger.info("🛑 Deteniendo dashboard...")
+                # No podemos forzar la detención de uvicorn fácilmente desde aquí
+                # pero el daemon thread se detendrá cuando el proceso termine
             self.logger.info("🛑 Dashboard detenido")
         except Exception as e:
             self.logger.error(f"❌ Error deteniendo dashboard: {e}")

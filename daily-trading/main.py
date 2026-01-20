@@ -89,14 +89,12 @@ class TradingBot:
                         self.risk_manager.state.daily_pnl = persisted_state.get(
                             "daily_pnl", 0.0
                         )
-                        # Cargar estado persistido (mantener compatibilidad)
                         trades_today_legacy = persisted_state.get(
                             "trades_today", 0)
                         self.risk_manager.state.executed_trades_today = persisted_state.get(
                             "executed_trades_today", trades_today_legacy)
                         self.risk_manager.state.decision_samples_collected = persisted_state.get(
                             "decision_samples_collected", 0)
-                        # Compatibilidad
                         self.risk_manager.state.trades_today = self.risk_manager.state.executed_trades_today
                 except Exception as e:
                     self.logger.warning(
@@ -215,7 +213,11 @@ class TradingBot:
                 self.logger.info(
                     "🚀 MODO MVP: Saltando preparación diaria avanzada")
 
-                max_trades_mvp = self.config.MAX_DAILY_TRADES if self.config.TRADING_MODE == "PAPER" else 20
+                if self.config.TRADING_MODE == "PAPER":
+                    max_trades_mvp = getattr(self.config, "PAPER_MAX_DAILY_TRADES", None) or getattr(
+                        self.config, "MAX_DAILY_TRADES", 100)
+                else:
+                    max_trades_mvp = 20
                 self.current_parameters = {
                     'max_daily_trades': max_trades_mvp,
                     'stop_loss_pct': self.config.STOP_LOSS_PCT,
@@ -223,11 +225,8 @@ class TradingBot:
                     'risk_per_trade': self.config.RISK_PER_TRADE,
                 }
 
-            # ⚠️ VALIDACIÓN FINAL OBLIGATORIA: Verificar consistencia del sistema
-            # Se ejecuta después de inicializar todos los componentes
             self._validate_decision_system()
 
-            # Ejecutar smoke tests si está habilitado
             if getattr(self.config, 'ENABLE_SMOKE_TESTS', False) and self.config.TRADING_MODE == "PAPER":
                 self.logger.info("🧪 Ejecutando smoke tests de invariantes...")
                 if run_decision_invariant_smoke_tests():
@@ -240,13 +239,24 @@ class TradingBot:
                             "Smoke tests fallaron - abortando en PAPER")
 
             if self.dashboard:
-                await self.dashboard.start()
+                self.logger.info("🌐 Iniciando dashboard...")
+                try:
+                    await self.dashboard.start()
+                    self.logger.info("✅ Dashboard iniciado correctamente")
+                except Exception as dashboard_error:
+                    self.logger.error(f"❌ Error iniciando dashboard: {dashboard_error}", exc_info=True)
+                    self.logger.warning("⚠️ Continuando sin dashboard...")
+                    self.dashboard = None
 
+            self.logger.info("🔄 Iniciando loop principal...")
             self.is_running = True
             await self._main_loop()
 
+        except KeyboardInterrupt:
+            self.logger.info("⚠️ Interrupción de teclado recibida")
+            await self.stop()
         except Exception as e:
-            self.logger.error(f"❌ Error crítico en el bot: {e}")
+            self.logger.error(f"❌ Error crítico en el bot: {e}", exc_info=True)
             await self._emergency_shutdown()
 
     async def stop(self):
@@ -545,7 +555,6 @@ class TradingBot:
                         await self.dashboard.update_data(dashboard_data)
 
                 if self.config.TRADING_MODE == "LIVE":
-                    # En LIVE, usar executed_trades_today (trades cerrados) para límites
                     if self.risk_manager.state.executed_trades_today >= self.config.MAX_DAILY_TRADES:
                         self.logger.warning(
                             f"⛔ [LIVE] Límite de trades diarios alcanzado: {self.risk_manager.state.executed_trades_today}"
@@ -553,36 +562,34 @@ class TradingBot:
                         await asyncio.sleep(60)
                         continue
                 else:
-                    # En PAPER: solo loggear, nunca bloquear DecisionSamples
-                    if self.risk_manager.state.executed_trades_today >= self.config.MAX_DAILY_TRADES:
+                    paper_max_trades = getattr(self.config, "PAPER_MAX_DAILY_TRADES", None) or getattr(
+                        self.config, "MAX_DAILY_TRADES", 100)
+                    if self.risk_manager.state.executed_trades_today >= paper_max_trades:
                         if self.risk_manager.state.executed_trades_today % 100 == 0:
                             self.logger.info(
                                 f"📚 [PAPER] Trades ejecutados: {self.risk_manager.state.executed_trades_today} "
-                                f"(límite informativo: {self.config.MAX_DAILY_TRADES}) - DecisionSamples continuarán")
+                                f"(límite informativo: {paper_max_trades}) - DecisionSamples continuarán")
 
                 if not self._is_trading_time():
-                    # ⚠️ FIX 2: En PAPER, NO sleep intermedio (solo al final del loop)
                     if self.config.TRADING_MODE == "LIVE":
                         await asyncio.sleep(60)
                         continue
-                    # En PAPER: continuar sin sleep (sleep solo al final del loop)
 
                 if self.mvp_mode:
 
                     if self.config.TRADING_MODE == "PAPER":
-                        max_daily_trades = self.config.PAPER_MAX_DAILY_TRADES
+                        max_daily_trades = getattr(self.config, "PAPER_MAX_DAILY_TRADES", None) or getattr(
+                            self.config, "MAX_DAILY_TRADES", 100)
                     else:
                         max_daily_trades = self.config.MAX_DAILY_TRADES
 
                     if self.config.TRADING_MODE == "LIVE":
-                        # En LIVE, usar executed_trades_today (trades cerrados) para límites
                         if self.risk_manager.state.executed_trades_today >= max_daily_trades:
                             self.logger.warning(
                                 f"🚨 [LIVE] Máximo de trades diarios alcanzado ({self.risk_manager.state.executed_trades_today}/{max_daily_trades})")
                             await asyncio.sleep(300)
                             continue
                     else:
-                        # En PAPER: solo informar, nunca bloquear DecisionSamples
                         if self.risk_manager.state.executed_trades_today >= max_daily_trades:
                             if self.risk_manager.state.executed_trades_today % 100 == 0:
                                 self.logger.info(
@@ -604,8 +611,7 @@ class TradingBot:
 
                     if self.config.TRADING_MODE == "LIVE":
                         limits_ok = self.risk_manager.check_daily_limits(
-                            daily_pnl=self.risk_manager.state.daily_pnl,
-                            daily_trades=self.risk_manager.state.executed_trades_today
+                            daily_pnl=self.risk_manager.state.daily_pnl
                         )
                         if not limits_ok:
                             msg = (f"🚨 [LIVE] Límites diarios alcanzados - Trading bloqueado "
@@ -620,13 +626,9 @@ class TradingBot:
                             await asyncio.sleep(300)
                             continue
                     else:
-                        # En PAPER: solo informar, nunca bloquear DecisionSamples
                         limits_ok = self.risk_manager.check_daily_limits(
-                            daily_pnl=self.risk_manager.state.daily_pnl,
-                            daily_trades=self.risk_manager.state.executed_trades_today
+                            daily_pnl=self.risk_manager.state.daily_pnl
                         )
-                        # En PAPER, check_daily_limits siempre retorna True (learning-first)
-                        # Solo loggear si hay límites alcanzados
                         if not limits_ok:
                             self.logger.info(
                                 f"📚 [PAPER] Límites informativos alcanzados (PnL: {self.risk_manager.state.daily_pnl:.2f}) - DecisionSamples continuarán")
@@ -641,11 +643,9 @@ class TradingBot:
                 if not market_data:
                     msg = "⚠️ No se pudieron obtener datos de mercado, reintentando..."
                     self.logger.warning(msg)
-                    # ⚠️ FIX 2: En PAPER, NO sleep intermedio (solo al final del loop)
                     if self.config.TRADING_MODE == "LIVE":
                         await asyncio.sleep(10)
                         continue
-                    # En PAPER: continuar sin sleep (sleep solo al final del loop)
                     continue
 
                 if self.dashboard:
@@ -659,8 +659,6 @@ class TradingBot:
                 price = market_data.get('price', 0)
                 symbol = market_data.get('symbol', 'N/A')
 
-                # ⚠️ CRÍTICO: Snapshotear bot_state AL INICIO DEL TICK (antes de ejecutar trades)
-                # Esto previene ML leakage: features deben usar estado PRE-ejecución
                 bot_state_snapshot = {
                     'daily_pnl': self.risk_manager.state.daily_pnl,
                     'daily_trades': self.risk_manager.state.executed_trades_today,
@@ -673,19 +671,12 @@ class TradingBot:
                 strategy_signal = signal
                 self.current_signal = signal
 
-                # ⚠️ FIX 4: Preservar original_signal (nunca pisar)
                 original_signal = signal
 
-                # ⚠️ HARD RULE: Crear DecisionSample INMEDIATAMENTE después de market_data + signal
-                # Estado inicial SIEMPRE: executed_action = HOLD, decision_outcome = NO_SIGNAL
-                # Esto ocurre ANTES de ML, Risk, Execution
-                # El sample SIEMPRE existe en PAPER, independientemente de validaciones posteriores
                 decision_sample = None
                 if signal is None:
                     tick_decision = create_tick_decision_no_signal()
-                    # ⚠️ HARD RULE: DecisionSample SIEMPRE se crea en PAPER (inmediatamente)
                     if self.decision_sampler and self.config.TRADING_MODE == "PAPER":
-                        # ⚠️ HARDENING 3: Assert fuerte - un solo DecisionSample por tick
                         assert decision_sample is None, "DecisionSample duplicado en el mismo tick"
                         decision_sample = self.decision_sampler.create_decision_sample(
                             market_data=market_data,
@@ -696,8 +687,6 @@ class TradingBot:
                             decision_outcome=tick_decision.decision_outcome,
                             reject_reason=tick_decision.reject_reason
                         )
-                        # ⚠️ FIX 3: NO incrementar aquí - solo cuando record_decision_sample() se llama exitosamente
-                        # ⚠️ HARDENING 1: NO construir reason aquí - se construye UNA sola vez antes de guardar
 
                     if iteration_count % 10 == 0:
                         indicators = market_data.get('indicators', {})
@@ -709,8 +698,6 @@ class TradingBot:
                             f"Sin señal (condiciones no cumplidas)"
                         )
                 else:
-                    # Hay señal: inicializar DecisionSample INMEDIATAMENTE
-                    # ⚠️ HARDENING A: Normalizar signal_action UNA sola vez (nunca permitir "")
                     signal_action = (
                         original_signal.get("action", "").upper()
                         if isinstance(original_signal, dict) and original_signal.get("action")
@@ -719,36 +706,26 @@ class TradingBot:
                     if signal_action not in [ExecutedAction.BUY.value, ExecutedAction.SELL.value]:
                         signal_action = ExecutedAction.HOLD.value
                     
-                    # ⚠️ HARDENING A: Normalizar strategy_signal a {"BUY","SELL","NONE"} antes de crear DecisionSample
                     strategy_signal_normalized = signal_action if signal_action in [ExecutedAction.BUY.value, ExecutedAction.SELL.value] else "NONE"
 
-                    # ⚠️ FIX 5: NO usar fake rejection "Pending validation"
-                    # Estado inicial: HOLD + NO_SIGNAL (se actualizará en pipeline cuando haya validación real)
-                    # Usar NO_SIGNAL con reason "awaiting validation" (estado neutro, no rechazo)
                     tick_decision = create_tick_decision_no_signal()
-                    # ⚠️ HARD RULE: DecisionSample SIEMPRE se crea en PAPER (inmediatamente)
                     if self.decision_sampler and self.config.TRADING_MODE == "PAPER":
-                        # ⚠️ HARDENING 3: Assert fuerte - un solo DecisionSample por tick
                         assert decision_sample is None, "DecisionSample duplicado en el mismo tick"
-                        # ⚠️ HARDENING A: Pasar strategy_signal normalizado (dict con action normalizado)
                         strategy_signal_dict = {"action": strategy_signal_normalized} if strategy_signal_normalized != "NONE" else None
                         decision_sample = self.decision_sampler.create_decision_sample(
                             market_data=market_data,
                             strategy=self.strategy,
-                            strategy_signal=strategy_signal_dict,  # ⚠️ HARDENING A: usar dict normalizado
+                            strategy_signal=strategy_signal_dict,
                             executed_action=tick_decision.executed_action,
                             regime_info=self.current_regime_info,
                             decision_outcome=tick_decision.decision_outcome,
-                            reject_reason="awaiting validation"  # ⚠️ FIX 5: reason neutro, no rechazo
+                            reject_reason="awaiting validation"
                         )
-                        # ⚠️ FIX 3: NO incrementar aquí - solo cuando record_decision_sample() se llama exitosamente
 
                     self.logger.info(
-                        # ⚠️ FIX 4: usar original_signal
                         f"🔔 Señal generada: {original_signal['action']} {symbol} @ {original_signal['price']:.2f} (Fuerza: {original_signal['strength']:.2%})")
 
                 if signal:
-                    # Hay señal: procesar pipeline de validación
                     atr = market_data.get('indicators', {}).get('atr')
                     signal = self.risk_manager.size_and_protect(
                         signal, atr=atr)
@@ -765,20 +742,17 @@ class TradingBot:
                     use_ml_filter = not self.mvp_mode and not is_debug and self.ml_filter is not None and self.ml_filter.is_model_available()
 
                     if use_ml_filter:
-                        # ⚠️ CRÍTICO: Usar bot_state_snapshot (PRE-ejecución) para evitar ML leakage
                         ml_decision = await self.ml_filter.filter_signal(
                             signal,
                             market_data,
                             self.current_regime_info,
-                            bot_state_snapshot  # Usar snapshot, no estado actual
+                            bot_state_snapshot
                         )
 
                         if not ml_decision['approved']:
                             self.logger.info(
                                 f"🚫 Señal rechazada por filtro ML: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})")
 
-                            # ⚠️ Pipeline solo muta el sample (no decide si existe)
-                            # Actualizar decision_outcome y reject_reason
                             rejection_detail = f"ML filter: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})"
                             tick_decision = create_tick_decision_rejected(
                                 signal_action,
@@ -787,27 +761,20 @@ class TradingBot:
                             )
 
                             if decision_sample:
-                                # ⚠️ HARDENING 2: executed_action SIEMPRE desde tick_decision (nunca desde signal_action)
                                 decision_sample.executed_action = tick_decision.executed_action
                                 decision_sample.decision_outcome = tick_decision.decision_outcome
                                 decision_sample.reject_reason = tick_decision.reject_reason
-                                # ⚠️ HARDENING 1: NO construir reason aquí - se construye UNA sola vez antes de guardar
 
-                            # En PAPER: no bloquear, solo actualizar sample
-                            # signal = None solo en LIVE para no ejecutar
                             if self.config.TRADING_MODE == "LIVE":
-                                signal = None  # Señal rechazada, no continuar en LIVE
+                                signal = None
                             else:
-                                # En PAPER: continuar para guardar DecisionSample, pero no ejecutar orden
                                 signal = None
                     elif is_debug and self.ml_filter is not None and self.ml_filter.is_model_available():
-                        # Usar snapshot también en modo debug
-
                         ml_decision = await self.ml_filter.filter_signal(
                             signal,
                             market_data,
                             self.current_regime_info,
-                            bot_state_snapshot  # Usar snapshot
+                            bot_state_snapshot
                         )
 
                         if not ml_decision['approved']:
@@ -847,7 +814,6 @@ class TradingBot:
                                     self.logger.warning(
                                         "⚠️ Trade rechazado por límites básicos de MVP")
                         elif is_debug:
-                            # En modo debug, validar pero no bloquear
                             risk_valid, risk_outcome, risk_reason = self.risk_manager.validate_trade(
                                 signal, self.current_positions)
                             if risk_valid:
@@ -861,19 +827,15 @@ class TradingBot:
                             risk_outcome = None
                             risk_reason = None
                         else:
-                            # ⚠️ NUEVO: validate_trade ahora devuelve (bool, decision_outcome, reject_reason)
                             risk_valid, risk_outcome, risk_reason = self.risk_manager.validate_trade(
                                 signal, self.current_positions)
 
                         is_paper_mvp = self.config.TRADING_MODE == "PAPER" and self.mvp_mode
 
                         if not risk_valid and not is_paper_mvp:
-                            # Usar normalize_rejection para garantizar enum válido
-                            # risk_outcome ya viene del RiskManager como enum válido, pero usamos normalize_rejection por seguridad
                             if risk_outcome and validate_decision_outcome(risk_outcome):
                                 decision_outcome = risk_outcome
                             else:
-                                # Fallback seguro usando normalize_rejection
                                 decision_outcome, _ = normalize_rejection(
                                     "risk", risk_reason or "Risk manager: validation failed")
 
@@ -887,11 +849,9 @@ class TradingBot:
                                 f"🚫 Operación rechazada: {tick_decision.decision_outcome} - {tick_decision.reject_reason}")
 
                             if decision_sample:
-                                # ⚠️ HARDENING 2: executed_action SIEMPRE desde tick_decision (nunca desde signal_action)
                                 decision_sample.executed_action = tick_decision.executed_action
                                 decision_sample.decision_outcome = tick_decision.decision_outcome
                                 decision_sample.reject_reason = tick_decision.reject_reason
-                                # ⚠️ HARDENING 1: NO construir reason aquí - se construye UNA sola vez antes de guardar
                         elif not risk_valid and is_paper_mvp:
                             self.logger.warning(
                                 f"⚠️ [PAPER+MVP] Risk manager advierte riesgo, pero continuando para ML "
@@ -900,15 +860,11 @@ class TradingBot:
                                 f"pnl: {self.risk_manager.state.daily_pnl:.2f})")
                             risk_valid = True
 
-                        # ⚠️ CRÍTICO: Separar validación de riesgo de límites de ejecución
-                        # risk_valid = validación de riesgo (posición, exposición, correlación)
-                        # can_execute = límites de trades diarios (solo afecta ejecución real, no DecisionSamples)
-
-                        # Verificar si se puede ejecutar orden real (límites diarios)
-                        can_execute, execute_outcome, execute_reason = self.risk_manager.can_execute_order()
+                        can_execute, execute_outcome, execute_reason = self.risk_manager.can_execute_order(
+                            current_positions=self.current_positions
+                        )
 
                         if risk_valid and can_execute:
-                            # ✅ Puede ejecutarse: riesgo OK y límites OK
                             is_paper_mvp = self.config.TRADING_MODE == "PAPER" and self.mvp_mode
 
                             if not is_paper_mvp:
@@ -921,13 +877,14 @@ class TradingBot:
                                             self.logger.debug(
                                                 f"⏳ Cooldown activo: {elapsed_since_last_trade:.1f}s < {self.min_cooldown_seconds}s")
                                             await asyncio.sleep(self.min_cooldown_seconds - elapsed_since_last_trade)
-                                        # ⚠️ FIX 2: En PAPER, NO sleep intermedio (solo al final del loop)
 
                             if self.mvp_mode:
                                 self.logger.info(
                                     "🚀 [MVP] Ejecutando orden (prioridad: sample size)")
                             elif is_debug:
-                                if not self.risk_manager.validate_trade(signal, self.current_positions):
+                                debug_risk_valid, _, _ = self.risk_manager.validate_trade(
+                                    signal, self.current_positions)
+                                if not debug_risk_valid:
                                     self.logger.warning(
                                         "🐛 [DEBUG] ⚠️ Ejecutando orden a pesar de validación de riesgo fallida (MODO DEBUG)")
                                 msg = ("🐛 [DEBUG] ✅ Ejecutando orden "
@@ -939,16 +896,12 @@ class TradingBot:
 
                             order_result = await self.order_executor.execute_order(signal)
                         elif risk_valid and not can_execute:
-                            # ⚠️ Riesgo OK pero límites alcanzados → crear DecisionSample pero NO ejecutar orden
                             self.logger.info(
-                                f"📚 [PAPER] DecisionSample se creará, pero orden real NO se ejecutará: {execute_reason}")
+                                f"📚 DecisionSample se creará, pero orden real NO se ejecutará: {execute_reason}")
 
-                            # ⚠️ HARDENING B: En PAPER, límites NO implican señal mala (evitar sesgo ML)
-                            if self.config.TRADING_MODE == "PAPER":
-                                # En PAPER: usar NO_SIGNAL (no rechazo) para evitar sesgo de entrenamiento
+                            if execute_outcome == DecisionOutcome.NO_SIGNAL.value:
                                 tick_decision = create_tick_decision_no_signal()
                             else:
-                                # En LIVE: mantener REJECTED_BY_LIMITS (bloqueo real)
                                 tick_decision = create_tick_decision_rejected(
                                     signal_action,
                                     "limits",
@@ -956,102 +909,71 @@ class TradingBot:
                                 )
 
                             if decision_sample:
-                                # ⚠️ HARDENING 2: executed_action SIEMPRE desde tick_decision (nunca desde signal_action)
                                 decision_sample.executed_action = tick_decision.executed_action
                                 decision_sample.decision_outcome = tick_decision.decision_outcome
-                                # ⚠️ HARDENING B: Si NO_SIGNAL en PAPER por límites, reject_reason informativo (no rechazo real)
-                                if self.config.TRADING_MODE == "PAPER" and tick_decision.decision_outcome == DecisionOutcome.NO_SIGNAL.value:
-                                    # En PAPER: reject_reason informativo para explicar por qué no se ejecutó (límites artificiales)
-                                    decision_sample.reject_reason = f"limits (paper only): {execute_reason or 'Daily trade limits reached'}"
+                                if tick_decision.decision_outcome == DecisionOutcome.NO_SIGNAL.value:
+                                    decision_sample.reject_reason = execute_reason or "paper limits"
                                 else:
                                     decision_sample.reject_reason = tick_decision.reject_reason
-                                # ⚠️ HARDENING 1: NO construir reason aquí - se construye UNA sola vez antes de guardar
 
-                            # NO ejecutar orden
                             order_result = {
                                 "success": False, "error": "Daily limits reached (DecisionSample created)"}
-                            # ⚠️ HARDENING 2: tick_decision ya fue creado y aplicado a decision_sample arriba
                         else:
-                            # risk_valid = False ya fue manejado arriba
-                            # ⚠️ HARDENING 2: Asegurar tick_decision coherente cuando order_result["success"] == False
-                            # El tick_decision ya fue creado y aplicado a decision_sample en el bloque "if not risk_valid:" arriba
-                            # Verificamos que decision_sample tenga valores coherentes (safety check)
                             if decision_sample:
-                                # Si por alguna razón decision_sample no tiene valores, usar el tick_decision conocido
                                 if decision_sample.executed_action is None or decision_sample.decision_outcome is None:
                                     if 'tick_decision' in locals():
                                         decision_sample.executed_action = tick_decision.executed_action
                                         decision_sample.decision_outcome = tick_decision.decision_outcome
                                         decision_sample.reject_reason = tick_decision.reject_reason
                             
-                            # NO ejecutar orden
                             order_result = {"success": False,
                                             "error": "Risk validation failed"}
 
-                        # ⚠️ FIX 1: order_result scope - evaluar DESPUÉS del bloque if/elif/else completo
                         if order_result.get('success'):
                             self.last_trade_time = datetime.now()
                             position = order_result.get('position')
                             if position:
                                 self.current_positions.append(position)
-                                # NO incrementar trades aquí - solo se incrementa en apply_trade_result() cuando se cierra
 
-                                # ⚠️ FIX 4: Corregir f-string inválido (condicional dentro de formato)
                                 symbol_val = original_signal.get('symbol') if original_signal else 'N/A'
                                 price_val = original_signal.get('price', 0) if original_signal else 0
                                 self.logger.info(
-                                    # ⚠️ FIX 4: usar original_signal
                                     f"✅ [TRADE EJECUTADO] {signal_action} {symbol_val} @ {price_val:.2f} | "
                                     f"Trades ejecutados hoy: {self.risk_manager.state.executed_trades_today}")
 
-                            # Regla: Si hay señal y se ejecuta => executed_action = "BUY"|"SELL" y decision_outcome = "executed"
                             tick_decision = create_tick_decision_executed(
                                 signal_action)
 
                             if decision_sample:
-                                # ⚠️ HARDENING 2: executed_action SIEMPRE desde tick_decision (nunca desde signal_action)
                                 decision_sample.executed_action = tick_decision.executed_action
                                 decision_sample.decision_outcome = tick_decision.decision_outcome
                                 decision_sample.reject_reason = tick_decision.reject_reason
-                                # ⚠️ HARDENING 1: NO construir reason aquí - se construye UNA sola vez antes de guardar
 
                             if self.mvp_mode:
                                 trade_num = self.total_trades_count + self.risk_manager.state.executed_trades_today
-                                # ⚠️ FIX 4: usar original_signal
                                 action = original_signal['action'] if original_signal else 'N/A'
-                                # ⚠️ FIX 4: usar original_signal
                                 symbol = original_signal['symbol'] if original_signal else 'N/A'
-                                # ⚠️ FIX 4: usar original_signal
                                 price = original_signal['price'] if original_signal else 0
-                                # ⚠️ FIX 4: usar original_signal
                                 size = original_signal['position_size'] if original_signal else 0
-                                # ⚠️ FIX 4: usar original_signal
                                 sl = original_signal['stop_loss'] if original_signal else 0
-                                # ⚠️ FIX 4: usar original_signal
                                 tp = original_signal['take_profit'] if original_signal else 0
                                 msg = (f"🚀 [MVP] ✅ Trade #{trade_num}: "
                                        f"{action} {symbol} @ {price:.2f} "
                                        f"(Size: {size:.4f}, SL: {sl:.2f}, TP: {tp:.2f})")
                                 self.logger.info(msg)
                             elif is_debug:
-                                # ⚠️ FIX 4: usar original_signal
                                 action = original_signal['action'] if original_signal else 'N/A'
-                                # ⚠️ FIX 4: usar original_signal
                                 symbol = original_signal['symbol'] if original_signal else 'N/A'
-                                # ⚠️ FIX 4: usar original_signal
                                 price = original_signal['price'] if original_signal else 0
-                                # ⚠️ FIX 4: usar original_signal
                                 size = original_signal['position_size'] if original_signal else 0
-                                # ⚠️ FIX 4: usar original_signal
                                 sl = original_signal['stop_loss'] if original_signal else 0
-                                # ⚠️ FIX 4: usar original_signal
                                 tp = original_signal['take_profit'] if original_signal else 0
                                 msg = (f"🐛 [DEBUG] ✅ ORDEN EJECUTADA: {action} {symbol} "
                                        f"@ {price:.2f} (Size: {size:.4f}, "
                                        f"SL: {sl:.2f}, TP: {tp:.2f})")
                                 self.logger.info(msg)
                             else:
-                                if original_signal:  # ⚠️ FIX 4: usar original_signal
+                                if original_signal:
                                     self.logger.info(
                                         f"✅ {original_signal['action']} {original_signal['symbol']} @ {original_signal['price']} "
                                         f"(Fuerza: {original_signal['strength']:.2%}, Régimen: {original_signal.get('regime', 'unknown')})"
@@ -1080,7 +1002,6 @@ class TradingBot:
                             self.logger.error(
                                 f"❌ Error ejecutando orden: {order_result.get('error', 'unknown')}")
 
-                            # Usar normalize_rejection para garantizar enum válido
                             execution_error = order_result.get(
                                 'error', 'unknown')
                             tick_decision = create_tick_decision_rejected(
@@ -1090,45 +1011,30 @@ class TradingBot:
                             )
 
                             if decision_sample:
-                                # ⚠️ HARDENING 2: executed_action SIEMPRE desde tick_decision (nunca desde signal_action)
                                 decision_sample.executed_action = tick_decision.executed_action
                                 decision_sample.decision_outcome = tick_decision.decision_outcome
                                 decision_sample.reject_reason = tick_decision.reject_reason
-                                # ⚠️ HARDENING 1: NO construir reason aquí - se construye UNA sola vez antes de guardar
-                        # else: bloque eliminado - toda la lógica está manejada arriba con if/elif
 
-                # ⚠️ HARD RULE: En PAPER, SIEMPRE registrar DecisionSample (incluso si no se ejecutó orden)
-                # Esto maximiza aprendizaje ML sin bloquear por límites de trades
                 if self.decision_sampler and self.trade_recorder and self.config.TRADING_MODE == "PAPER" and decision_sample:
                     should_record = True
 
-                    # ⚠️ VALIDACIÓN FINAL OBLIGATORIA: Asegurar consistencia antes de guardar
-                    # Esta validación SIEMPRE se ejecuta, no puede fallar silenciosamente
                     final_executed_action = decision_sample.executed_action
                     final_decision_outcome = decision_sample.decision_outcome
 
-                    # Normalizar valores None (hardening)
                     if final_executed_action is None:
                         self.logger.warning(
                             f"⚠️ executed_action es None después del pipeline completo. "
-                            # ⚠️ FIX 4: usar original_signal
                             f"strategy_signal={original_signal.get('action') if original_signal else None}. "
                             "Forzando HOLD para evitar contaminación del dataset.")
                         final_executed_action = ExecutedAction.HOLD.value
-                        # ⚠️ HARDENING 2: executed_action debe venir de tick_decision, no asignar directamente
-                        # Se actualizará desde tick_decision en el pipeline, aquí solo normalizamos final_executed_action
-
                     if not final_decision_outcome:
-                        if original_signal is None:  # ⚠️ FIX 4: usar original_signal
+                        if original_signal is None:
                             final_decision_outcome = DecisionOutcome.NO_SIGNAL.value
-                            # ⚠️ HARDENING 4: NO_SIGNAL siempre debe tener reject_reason=None
                             decision_sample.reject_reason = None
                         else:
                             final_decision_outcome = DecisionOutcome.REJECTED_BY_RISK.value
                         decision_sample.decision_outcome = final_decision_outcome
 
-                    # ⚠️ VALIDACIÓN FINAL OBLIGATORIA: validate_decision_consistency() debe pasar
-                    # Si no pasa, corregir automáticamente y loggear warning (no crashear)
                     is_valid, error = validate_decision_consistency(
                         final_executed_action,
                         final_decision_outcome,
@@ -1138,11 +1044,9 @@ class TradingBot:
                         self.logger.warning(
                             f"⚠️ INCONSISTENCIA detectada en DecisionSample: {error}. "
                             f"Corrigiendo automáticamente...")
-                        # Corregir automáticamente (hardening)
                         if final_executed_action == ExecutedAction.HOLD.value and final_decision_outcome == DecisionOutcome.EXECUTED.value:
                             final_decision_outcome = DecisionOutcome.NO_SIGNAL.value
                             decision_sample.decision_outcome = final_decision_outcome
-                            # ⚠️ HARDENING 4: NO_SIGNAL siempre debe tener reject_reason=None
                             decision_sample.reject_reason = None
                             self.logger.warning(
                                 f"✅ Corregido: HOLD + EXECUTED → HOLD + NO_SIGNAL")
@@ -1150,11 +1054,9 @@ class TradingBot:
                             if final_decision_outcome != DecisionOutcome.EXECUTED.value:
                                 final_decision_outcome = DecisionOutcome.EXECUTED.value
                                 decision_sample.decision_outcome = final_decision_outcome
-                                # ⚠️ HARDENING 2: executed_action ya viene de tick_decision, no cambiar aquí
                                 self.logger.warning(
                                     f"✅ Corregido: {final_executed_action} + {decision_sample.decision_outcome} → {final_executed_action} + EXECUTED")
 
-                        # Re-validar después de corrección
                         is_valid_after, error_after = validate_decision_consistency(
                             final_executed_action,
                             final_decision_outcome,
@@ -1166,27 +1068,20 @@ class TradingBot:
                                 f"Sample NO se guardará para evitar corrupción del dataset.")
                             should_record = False
 
-                    # ⚠️ HARDENING B: Si NO_SIGNAL, reject_reason debe ser None (excepto en PAPER con límites informativos)
-                    # En PAPER, si reject_reason tiene "limits (paper only)", mantenerlo (es informativo, no rechazo real)
                     if final_decision_outcome == DecisionOutcome.NO_SIGNAL.value:
-                        if not (self.config.TRADING_MODE == "PAPER" and decision_sample.reject_reason and "limits (paper only)" in str(decision_sample.reject_reason)):
+                        if not (self.config.TRADING_MODE == "PAPER" and decision_sample.reject_reason and 
+                                ("paper limits" in str(decision_sample.reject_reason) or 
+                                 "limits (paper only)" in str(decision_sample.reject_reason))):
                             decision_sample.reject_reason = None
 
-                    # ⚠️ HARDENING 4: Snapshotear decision_space antes de construir reason (evitar mutaciones)
                     decision_space_snapshot = decision_sample.decision_space.copy() if hasattr(decision_sample.decision_space, 'copy') else dict(decision_sample.decision_space)
                     
-                    # ⚠️ HARDENING 1: Construir reason UNA sola vez, justo antes de guardar
-                    # Usar valores finales validados: original_signal, final_executed_action, final_decision_outcome, reject_reason
                     decision_sample.reason = self.decision_sampler._build_reason(
                         original_signal, decision_space_snapshot, final_executed_action,
                         final_decision_outcome, decision_sample.reject_reason
                     )
 
-                    # ⚠️ HARDENING 2: Asegurar que executed_action esté sincronizado con final_executed_action
-                    # (después de todas las correcciones)
                     decision_sample.executed_action = final_executed_action
-
-                    # Log diferenciado: DecisionSample vs Trade ejecutado
                     if final_executed_action in [ExecutedAction.BUY.value, ExecutedAction.SELL.value]:
                         self.logger.debug(
                             f"📊 [DECISION SAMPLE + TRADE EJECUTADO] {final_executed_action} | "
@@ -1201,7 +1096,7 @@ class TradingBot:
                             f"Samples: {self.risk_manager.state.decision_samples_collected}")
 
                     is_hold_sample = (
-                        original_signal is None and  # ⚠️ FIX 4: usar original_signal
+                        original_signal is None and
                         final_executed_action == "HOLD"
                     )
 
@@ -1230,19 +1125,13 @@ class TradingBot:
                         self.logger.debug(
                             f"✅ {final_executed_action} sample guardado (sin downsampling)")
 
-                    # ⚠️ HARD RULE: record_decision_sample() se llama SIEMPRE cuando should_record = True
-                    # Usa DecisionSampler.to_dict() como fuente única (garantiza consistencia CSV)
                     if should_record:
-                        # ⚠️ HARDENING 4: Assert fuerte de invariantes JUSTO antes de guardar CSV
-                        # Solo en PAPER - falla fuerte si hay corrupción
                         assert decision_sample.executed_action in VALID_EXECUTED_ACTIONS, (
                             f"executed_action inválido antes de guardar: {decision_sample.executed_action}"
                         )
                         assert decision_sample.decision_outcome in VALID_DECISION_OUTCOMES, (
                             f"decision_outcome inválido antes de guardar: {decision_sample.decision_outcome}"
                         )
-                        
-                        # ⚠️ HARDENING 5: Assert de "no execution sin BUY/SELL"
                         if decision_sample.decision_outcome == DecisionOutcome.EXECUTED.value:
                             assert decision_sample.executed_action in ["BUY", "SELL"], (
                                 f"EXECUTED no puede tener HOLD: executed_action={decision_sample.executed_action}"
@@ -1251,10 +1140,8 @@ class TradingBot:
                         try:
                             self.trade_recorder.record_decision_sample(
                                 decision_sample, self.decision_sampler)
-                            # ⚠️ FIX 3: Incrementar decision_samples_collected SOLO cuando record_decision_sample() se llama exitosamente
                             self.risk_manager.state.decision_samples_collected += 1
                         except Exception as e:
-                            # ⚠️ Hardening: no crashear si falla el guardado, solo loggear
                             self.logger.error(
                                 f"❌ Error guardando DecisionSample: {e}. "
                                 f"Sample perdido, pero continuando para no bloquear loop.")
@@ -1270,14 +1157,11 @@ class TradingBot:
                         self.logger.error(
                             f"❌ Error actualizando dashboard: {e}")
 
-                # ⚠️ FIX 2: Unificar sleeps en PAPER - un único sleep al final del loop
-                # En PAPER: 0.2s (máxima densidad de samples), en LIVE: 1s
                 sleep_time = 0.2 if self.config.TRADING_MODE == "PAPER" else 1.0
                 await asyncio.sleep(sleep_time)
 
             except Exception as e:
                 self.logger.error(f"❌ Error en bucle principal: {e}")
-                # ⚠️ FIX 2: En PAPER, sleep mínimo (0.2s), en LIVE mantener 10s
                 sleep_time = 0.2 if self.config.TRADING_MODE == "PAPER" else 10
                 await asyncio.sleep(sleep_time)
 
@@ -1290,7 +1174,6 @@ class TradingBot:
         - Cierre por fin de día
         """
         current_price = market_data.get('price', 0)
-        # ⚠️ FIX 2: Guardar último market_data para _close_all_positions()
         self.last_market_data = market_data
 
         for position in self.current_positions[:]:
@@ -1315,15 +1198,11 @@ class TradingBot:
                     time_diff = datetime.now() - entry_time
                     time_seconds = time_diff.total_seconds()
 
-                    # En PAPER learning mode, aumentar tiempo mínimo o deshabilitar force close
-                    # para evitar trades con R≈0 que contaminan el target
                     min_force_close_seconds = 180 if self.config.TRADING_MODE == "PAPER" else 30
                     is_paper_learning = self.config.TRADING_MODE == "PAPER" and self.mvp_mode
 
-                    # En PAPER learning mode, deshabilitar force close para evitar trades con R≈0
                     should_force_close = False
                     if is_paper_learning:
-                        # No hacer force close en PAPER learning mode
                         should_force_close = False
                     elif time_seconds >= min_force_close_seconds:
                         should_force_close = True
@@ -1332,15 +1211,12 @@ class TradingBot:
                         )
 
                     if should_force_close:
-                        # ⚠️ FIX 2: Pasar current_price siempre para evitar PnL=0 artificial en PAPER
                         close_result = await self.order_executor.close_position(position, current_price=current_price)
 
                         if close_result.get('success'):
 
                             pnl = close_result.get('pnl', 0.0)
 
-                            # ⚠️ HARDENING 2: register_trade() solo para logging/history, NO modifica estado financiero
-                            # apply_trade_result() es la ÚNICA fuente de verdad para estado financiero
                             self.risk_manager.register_trade({
                                 'symbol': symbol,
                                 'action': position.get('side', 'UNKNOWN'),
@@ -1348,7 +1224,6 @@ class TradingBot:
                                 'position_size': position.get('size', 0),
                                 'pnl': pnl,
                                 'reason': 'Force time close (30s)',
-
                                 'risk_multiplier': position.get('risk_multiplier', 1.0)
                             })
 
@@ -1358,7 +1233,6 @@ class TradingBot:
                             if position in self.order_executor.positions:
                                 self.order_executor.positions.remove(position)
 
-                            # ⚠️ HARDENING 2: apply_trade_result() es el ÚNICO lugar que modifica estado financiero
                             self.risk_manager.apply_trade_result(pnl)
 
                             self.logger.info(
@@ -1392,7 +1266,6 @@ class TradingBot:
                     self.state_manager.save({
                         "equity": self.risk_manager.state.equity,
                         "daily_pnl": self.risk_manager.state.daily_pnl,
-                        # Mantener compatibilidad
                         "trades_today": self.risk_manager.state.executed_trades_today,
                         "executed_trades_today": self.risk_manager.state.executed_trades_today,
                         "decision_samples_collected": self.risk_manager.state.decision_samples_collected,
@@ -1415,65 +1288,15 @@ class TradingBot:
                             f"Nuevo SL={new_stop_loss:.2f} - {management_decision.get('reason')}"
                         )
 
-                should_close_risk = self.risk_manager.should_close_position(
-                    position, market_data)
-                should_close = management_decision.get(
-                    'should_close', False) or should_close_risk
-
-                should_close_mgmt = management_decision.get(
-                    'should_close', False)
-                if should_close_risk and not should_close_mgmt:
-                    msg = f"🛑 [{symbol}] RiskManager detectó condición de cierre (SL/TP/Time)"
-                    self.logger.info(msg)
-
-                if should_close:
-
-                    self.logger.info(
-                        f"🔒 [{symbol}] Cerrando posición {position_id} | "
-                        f"Razón: {management_decision.get('reason', 'SL/TP/Time alcanzado')}"
+                should_close_mgmt = management_decision.get('should_close', False)
+                if should_close_mgmt and not management_decision.get('closed', False):
+                    self.logger.error(
+                        f"❌ ORQUESTACIÓN ERROR: manage_position() retornó should_close=True pero closed=False "
+                        f"para posición {position_id}. Esto indica que faltaron executor/risk_manager. "
+                        f"La posición NO se cerró realmente y causará deadlock. "
+                        f"Verificar que manage_position() siempre reciba executor y risk_manager."
                     )
-
-                    # ⚠️ FIX 2: Pasar current_price siempre para evitar PnL=0 artificial en PAPER
-                    close_result = await self.order_executor.close_position(position, current_price=current_price)
-
-                    if close_result['success']:
-                        self.current_positions.remove(position)
-
-                        self.risk_manager.apply_trade_result(
-                            close_result['pnl'])
-
-                        self.logger.info(
-                            f"✅ [{symbol}] Posición {position_id} cerrada exitosamente | "
-                            f"PnL: {close_result['pnl']:.2f}"
-                        )
-
-                        self.state_manager.save({
-                            "equity": self.risk_manager.state.equity,
-                            "daily_pnl": self.risk_manager.state.daily_pnl,
-                            "trades_today": self.risk_manager.state.executed_trades_today,  # ⚠️ HARDENING 1: Usar executed_trades_today como fuente única
-                            "peak_equity": self.risk_manager.state.peak_equity,
-                            "max_drawdown": self.risk_manager.state.max_drawdown,
-                        })
-
-                        exit_type = 'unknown'
-                        if 'trailing' in management_decision.get('reason', '').lower():
-                            exit_type = 'trailing_stop'
-                        elif 'break-even' in management_decision.get('reason', '').lower() or 'breakeven' in management_decision.get('reason', '').lower():
-                            exit_type = 'break_even'
-                        elif 'time' in management_decision.get('reason', '').lower() or 'tiempo' in management_decision.get('reason', '').lower():
-                            exit_type = 'time_stop'
-                        elif 'stop loss' in management_decision.get('reason', '').lower():
-                            exit_type = 'stop_loss'
-                        elif 'take profit' in management_decision.get('reason', '').lower():
-                            exit_type = 'take_profit'
-
-                        pos_symbol = position.get('symbol')
-                        pnl = close_result['pnl']
-                        reason = management_decision.get(
-                            'reason', 'Stop/TP alcanzado')
-                        msg = (f"✅ Posición cerrada: {pos_symbol} - "
-                               f"PnL={pnl:.2f} - Tipo: {exit_type} - Razón: {reason}")
-                        self.logger.info(msg)
+                    continue
 
                         has_recorder = self.trade_recorder or self.mvp_mode
                         has_data = position_id in self.position_market_data
@@ -1543,17 +1366,14 @@ class TradingBot:
 
     async def _close_all_positions(self):
         """Cerrar todas las posiciones abiertas"""
-        # ⚠️ FIX 2: Obtener current_price del último market_data conocido si está disponible
         current_price = None
         if hasattr(self, 'last_market_data') and self.last_market_data:
             current_price = self.last_market_data.get('price')
         
         for position in self.current_positions[:]:
-            # ⚠️ FIX 2: Pasar current_price siempre para evitar PnL=0 artificial en PAPER
             close_result = await self.order_executor.close_position(position, current_price=current_price)
             if close_result['success']:
                 self.current_positions.remove(position)
-                # ⚠️ CRÍTICO: apply_trade_result() es el ÚNICO lugar que incrementa executed_trades_today
                 self.risk_manager.apply_trade_result(close_result['pnl'])
 
     def _build_dashboard_payload(
@@ -1920,8 +1740,6 @@ class TradingBot:
             self.logger.error(f"❌ Error validando configuración: {e}")
             return False
 
-    # Método _initialize_components eliminado (duplicado) - usar versión arriba
-
     def _validate_trade_mvp(self, signal: Dict[str, Any], current_positions: List[Dict[str, Any]]) -> bool:
         """
         Validación simplificada de riesgo para modo MVP.
@@ -1995,8 +1813,6 @@ class TradingBot:
         self.logger.info(f"📡 Señal recibida: {signum}")
         asyncio.create_task(self.stop())
 
-    # Método _validate_architecture duplicado eliminado - usar versión arriba (línea 395)
-
     def _validate_decision_system(self):
         """
         Validación final obligatoria del sistema de decisiones.
@@ -2012,14 +1828,12 @@ class TradingBot:
                 validate_decision_consistency
             )
 
-            # Verificar que las constantes estén definidas
             if not VALID_DECISION_OUTCOMES:
                 raise ValueError("VALID_DECISION_OUTCOMES está vacío")
 
             if not VALID_EXECUTED_ACTIONS:
                 raise ValueError("VALID_EXECUTED_ACTIONS está vacío")
 
-            # Verificar que DecisionSampler existe en PAPER
             if self.config.TRADING_MODE == "PAPER":
                 if not self.decision_sampler:
                     raise ValueError(
@@ -2029,14 +1843,10 @@ class TradingBot:
                     raise ValueError(
                         "DecisionSampler debe implementar to_dict()")
 
-            # Verificar que TradeRecorder existe en PAPER
             if self.config.TRADING_MODE == "PAPER":
                 if not self.trade_recorder:
                     self.logger.warning(
                         "⚠️ TradeRecorder no inicializado en PAPER")
-
-            # Verificar que RiskManager devuelve el formato correcto
-            # (esto se validará en runtime, pero documentamos aquí)
 
             self.logger.info(
                 "✅ Validación del sistema de decisiones completada")
@@ -2067,7 +1877,7 @@ async def main():
         bot.state_manager.save({
             "equity": bot.risk_manager.state.equity,
             "daily_pnl": bot.risk_manager.state.daily_pnl,
-            "trades_today": bot.risk_manager.state.executed_trades_today,  # ⚠️ HARDENING 1: Usar executed_trades_today como fuente única
+            "trades_today": bot.risk_manager.state.executed_trades_today,
             "peak_equity": bot.risk_manager.state.peak_equity,
             "max_drawdown": bot.risk_manager.state.max_drawdown,
         })

@@ -23,10 +23,9 @@ class RiskState:
     day: date = date.today()
     daily_pnl: float = 0.0
     total_pnl: float = 0.0
-    trades_today: int = 0  # DEPRECATED: usar executed_trades_today
-    # Trades cerrados (solo se incrementa en apply_trade_result)
+    trades_today: int = 0
     executed_trades_today: int = 0
-    decision_samples_collected: int = 0  # DecisionSamples generados para ML
+    decision_samples_collected: int = 0
     max_drawdown: float = 0.0
     peak_equity: float = 10_000.0
 
@@ -58,8 +57,8 @@ class RiskManager:
         """
         Verifica si la operación cumple los criterios de riesgo.
 
-        ⚠️ IMPORTANTE: Este método NO debe bloquear DecisionSamples en PAPER.
-        Solo valida si puede ejecutarse la orden REAL.
+        ⚠️ CRÍTICO: En modo PAPER, este método NUNCA bloquea la ejecución.
+        Solo ajusta position_size y loguea warnings.
 
         Returns:
             (is_valid, decision_outcome, reject_reason)
@@ -68,11 +67,11 @@ class RiskManager:
             - reject_reason: Razón del rechazo o None si válido
 
         En modo PAPER: 
-        - DecisionSamples SIEMPRE se crean (no bloquea)
-        - Solo limita ejecución de órdenes reales si hay riesgo extremo
-        - Reduce size progresivamente, nunca bloquea completamente
+        - SIEMPRE retorna (True, None, None) - NUNCA bloquea
+        - Puede reducir signal["position_size"] y loguear warnings
+        - DecisionSamples SIEMPRE se crean
 
-        En modo LIVE: bloquea si se alcanzan límites.
+        En modo LIVE: bloquea si se alcanzan límites (comportamiento estricto).
         """
         try:
             is_paper = self.config.TRADING_MODE == "PAPER"
@@ -80,84 +79,75 @@ class RiskManager:
             if is_paper:
                 self._update_adaptive_risk_level()
 
-            # ⚠️ CRÍTICO: En PAPER, los límites NO bloquean DecisionSamples
-            # Solo afectan ejecución de órdenes reales
-            limits_ok = self.check_daily_limits()
-            if not limits_ok:
-                if self.config.TRADING_MODE == "LIVE":
-                    self.logger.warning(
-                        "⚠️ [LIVE] Límite diario alcanzado - Trading bloqueado por seguridad.")
-                    return False, DecisionOutcome.REJECTED_BY_LIMITS.value, "Daily limits reached (LIVE mode)"
-                else:
-                    # En PAPER: permitir DecisionSample, pero no ejecutar orden real
-                    # (esto se maneja en can_execute_order())
+            if is_paper:
+                limits_ok = self.check_daily_limits()
+                if not limits_ok:
                     self.logger.info(
                         f"📚 [PAPER] Límite diario informativo alcanzado - "
-                        f"DecisionSample se creará, pero orden real no se ejecutará "
-                        f"(trades ejecutados: {self.state.executed_trades_today})")
-                    # NO retornar False aquí - permitir crear DecisionSample
+                        f"DecisionSample se creará (trades ejecutados: {self.state.executed_trades_today})")
 
-            # En PAPER, solo reducir size si hay muchas posiciones, no bloquear
-            if len(current_positions) >= self.config.MAX_POSITIONS:
-                if is_paper:
+                if len(current_positions) >= self.config.MAX_POSITIONS:
                     self.logger.info(
                         f"📚 [PAPER] Máximo de posiciones alcanzado ({len(current_positions)}) - "
-                        f"DecisionSample se creará, pero orden real no se ejecutará")
-                    # Reducir size pero no bloquear DecisionSample
+                        f"Reduciendo size para ajuste de riesgo")
                     if 'position_size' in signal:
                         signal['position_size'] *= self._adaptive_risk_level
-                    # Retornar False solo para ejecución, no para DecisionSample
-                    return False, DecisionOutcome.REJECTED_BY_RISK.value, f"Max positions reached: {len(current_positions)}/{self.config.MAX_POSITIONS}"
-                else:
-                    self.logger.warning(
-                        "⚠️ Número máximo de posiciones abiertas alcanzado.")
-                    return False, DecisionOutcome.REJECTED_BY_RISK.value, f"Max positions reached: {len(current_positions)}/{self.config.MAX_POSITIONS}"
 
-            # En PAPER, solo reducir size si hay mucha exposición, no bloquear
+                exposure_ok = self._check_total_exposure(signal, current_positions)
+                if not exposure_ok:
+                    self.logger.info(
+                        "📚 [PAPER] Exposición alta - Reduciendo size para ajuste de riesgo")
+                    if 'position_size' in signal:
+                        signal['position_size'] *= self._adaptive_risk_level
+
+                correlation_ok = self._check_correlation(signal, current_positions)
+                if not correlation_ok:
+                    self.logger.info(
+                        "📚 [PAPER] Posición correlacionada - Reduciendo size para ajuste de riesgo")
+                    if 'position_size' in signal:
+                        signal['position_size'] *= self._adaptive_risk_level
+
+                return True, None, None
+            limits_ok = self.check_daily_limits()
+            if not limits_ok:
+                self.logger.warning(
+                    "⚠️ [LIVE] Límite diario alcanzado - Trading bloqueado por seguridad.")
+                return False, DecisionOutcome.REJECTED_BY_LIMITS.value, "Daily limits reached (LIVE mode)"
+
+            if len(current_positions) >= self.config.MAX_POSITIONS:
+                self.logger.warning(
+                    "⚠️ Número máximo de posiciones abiertas alcanzado.")
+                return False, DecisionOutcome.REJECTED_BY_RISK.value, f"Max positions reached: {len(current_positions)}/{self.config.MAX_POSITIONS}"
+
             exposure_ok = self._check_total_exposure(signal, current_positions)
             if not exposure_ok:
-                if is_paper:
-                    self.logger.info(
-                        "📚 [PAPER] Exposición alta - DecisionSample se creará, pero orden real no se ejecutará")
-                    # Reducir size pero no bloquear DecisionSample
-                    if 'position_size' in signal:
-                        signal['position_size'] *= self._adaptive_risk_level
-                    return False, DecisionOutcome.REJECTED_BY_RISK.value, "Total exposure exceeds limit"
-                else:
-                    self.logger.warning(
-                        "⚠️ Exposición total excede el límite permitido.")
-                    return False, DecisionOutcome.REJECTED_BY_RISK.value, "Total exposure exceeds limit"
+                self.logger.warning(
+                    "⚠️ Exposición total excede el límite permitido.")
+                return False, DecisionOutcome.REJECTED_BY_RISK.value, "Total exposure exceeds limit"
 
-            # Correlación: en PAPER también solo reducir, no bloquear
             correlation_ok = self._check_correlation(signal, current_positions)
             if not correlation_ok:
-                if is_paper:
-                    self.logger.info(
-                        "📚 [PAPER] Posición correlacionada - DecisionSample se creará, pero orden real no se ejecutará")
-                    # Reducir size pero no bloquear DecisionSample
-                    if 'position_size' in signal:
-                        signal['position_size'] *= self._adaptive_risk_level
-                    return False, DecisionOutcome.REJECTED_BY_RISK.value, "Position correlated with existing positions"
-                else:
-                    self.logger.warning(
-                        "⚠️ Posición correlacionada con existentes.")
-                    return False, DecisionOutcome.REJECTED_BY_RISK.value, "Position correlated with existing positions"
+                self.logger.warning(
+                    "⚠️ Posición correlacionada con existentes.")
+                return False, DecisionOutcome.REJECTED_BY_RISK.value, "Position correlated with existing positions"
 
             return True, None, None
         except Exception as e:
             self.logger.exception(f"❌ Error validando operación: {e}")
-            # En PAPER, permitir DecisionSample incluso con error
             if is_paper:
-                return False, DecisionOutcome.REJECTED_BY_EXECUTION.value, f"Validation error: {str(e)}"
+                return True, None, None
             else:
-                return False, DecisionOutcome.REJECTED_BY_EXECUTION.value, f"Validation error: {str(e)}"
+                return False, DecisionOutcome.REJECTED_BY_RISK.value, f"Validation error: {str(e)}"
 
-    def can_execute_order(self) -> Tuple[bool, Optional[str], Optional[str]]:
+    def can_execute_order(self, current_positions: Optional[List[Dict[str, Any]]] = None) -> Tuple[bool, Optional[str], Optional[str]]:
         """
         Verifica si se puede ejecutar una orden REAL (no DecisionSample).
 
-        ⚠️ CRÍTICO: Este es el ÚNICO lugar que bloquea por MAX_DAILY_TRADES y límites.
+        ⚠️ CRÍTICO: Este es el ÚNICO lugar que bloquea por MAX_DAILY_TRADES y límites de PnL.
         En PAPER, DecisionSamples SIEMPRE se crean (no se bloquean).
+
+        Args:
+            current_positions: Lista de posiciones abiertas (opcional, para verificar límite simultáneo en PAPER)
 
         Returns:
             (can_execute, decision_outcome, reject_reason)
@@ -166,36 +156,40 @@ class RiskManager:
             - reject_reason: Razón si no puede ejecutarse
 
         En PAPER:
-        - Si executed_trades_today >= MAX_DAILY_TRADES → no ejecutar orden real
-        - Si límites de PnL alcanzados → no ejecutar orden real
-        - Pero DecisionSample SIEMPRE se crea
+        - Si hay posición abierta (>= 1) → retorna (False, NO_SIGNAL, "paper limits: position open")
+        - Si executed_trades_today >= MAX_DAILY_TRADES → retorna (False, NO_SIGNAL, "paper limits")
+        - Si límites de PnL alcanzados → retorna (False, NO_SIGNAL, "paper limits")
+        - NO usar REJECTED_BY_LIMITS en PAPER
+        - DecisionSample SIEMPRE se crea
+
+        En LIVE:
+        - Usa REJECTED_BY_LIMITS cuando no puede ejecutar
         """
         if self.config.TRADING_MODE == "PAPER":
-            # En PAPER, verificar límites pero NO bloquear DecisionSamples
+            max_concurrent_paper = getattr(self.config, "MAX_CONCURRENT_POSITIONS_PAPER", 1)
+            if current_positions and len(current_positions) >= max_concurrent_paper:
+                return False, DecisionOutcome.NO_SIGNAL.value, (
+                    f"paper limits: position open (concurrent: {len(current_positions)}/{max_concurrent_paper})"
+                )
+
             max_trades = getattr(self.config, "MAX_DAILY_TRADES", None) or getattr(
                 self.config, "PAPER_MAX_DAILY_TRADES", 100)
 
             if max_trades and self.state.executed_trades_today >= max_trades:
-                # No ejecutar orden real, pero DecisionSample se crea
-                return False, DecisionOutcome.REJECTED_BY_LIMITS.value, (
-                    f"Max daily trades reached: {self.state.executed_trades_today}/{max_trades} "
-                    f"(DecisionSample se creará, pero orden real no se ejecutará)"
+                return False, DecisionOutcome.NO_SIGNAL.value, (
+                    f"paper limits: max daily trades reached "
+                    f"({self.state.executed_trades_today}/{max_trades})"
                 )
 
-            # Verificar límites de PnL (check_daily_limits ahora solo maneja PnL)
-            # En PAPER, check_daily_limits siempre retorna True (learning-first)
-            # Pero en LIVE puede bloquear
             limits_ok = self.check_daily_limits()
             if not limits_ok:
-                # No ejecutar orden real, pero DecisionSample se crea
-                return False, DecisionOutcome.REJECTED_BY_LIMITS.value, (
-                    f"Daily PnL limits reached (PnL: {self.state.daily_pnl:.2f}) "
-                    f"(DecisionSample se creará, pero orden real no se ejecutará)"
+                return False, DecisionOutcome.NO_SIGNAL.value, (
+                    f"paper limits: daily PnL limits reached "
+                    f"(PnL: {self.state.daily_pnl:.2f})"
                 )
 
             return True, None, None
         else:
-            # En LIVE, verificar ambos: trades y límites de PnL
             max_trades = getattr(self.config, "MAX_DAILY_TRADES", None)
             if max_trades and self.state.executed_trades_today >= max_trades:
                 return False, DecisionOutcome.REJECTED_BY_LIMITS.value, (
@@ -210,7 +204,6 @@ class RiskManager:
 
     def unregister_position(self):
         """Se llama cuando una posición se cierra"""
-        # NO decrementar trades aquí - solo se incrementa en apply_trade_result()
         self.logger.info("🧹 Slot liberado")
 
     def apply_trade_result(self, pnl: float) -> None:
@@ -222,7 +215,7 @@ class RiskManager:
         self.state.equity += pnl
         self.state.daily_pnl += pnl
         self.state.executed_trades_today += 1
-        self.state.trades_today = self.state.executed_trades_today  # Mantener compatibilidad
+        self.state.trades_today = self.state.executed_trades_today
         self.state.total_pnl += pnl
 
         if self.state.equity > self.state.peak_equity:
@@ -255,7 +248,6 @@ class RiskManager:
         """
 
         pnl = daily_pnl if daily_pnl is not None else self.state.daily_pnl
-        # ⚠️ NO usar daily_trades aquí - can_execute_order() maneja trades
 
         max_loss_pct = getattr(self.config, "MAX_DAILY_LOSS_PCT", None)
         if max_loss_pct is not None:
@@ -275,7 +267,6 @@ class RiskManager:
                     f"Trading bloqueado por seguridad.")
                 return False
             else:
-                # En PAPER: warning pero continuar (learning-first)
                 self.logger.warning(
                     f"⚠️ [PAPER] Límite de pérdida diaria alcanzado: {pnl:.2f} / {-max_loss:.2f} - "
                     f"Continuando con riesgo reducido para aprendizaje.")
@@ -288,7 +279,6 @@ class RiskManager:
                     f"Trading bloqueado.")
                 return False
             else:
-                # En PAPER: no bloquear por ganancia (learning-first)
                 self.logger.info(
                     f"✅ [PAPER] Límite de ganancia diaria alcanzado: {pnl:.2f} / {max_gain:.2f} - "
                     f"Continuando para aprendizaje.")
@@ -527,11 +517,6 @@ class RiskManager:
         """
         try:
             pnl = trade_data.get("pnl", 0.0)
-            # NO incrementar trades aquí - solo se incrementa en apply_trade_result()
-            # register_trade es solo para logging, apply_trade_result es la fuente de verdad
-            # ⚠️ CRÍTICO: NO modificar equity, daily_pnl, total_pnl aquí
-            # apply_trade_result() es la ÚNICA fuente de verdad financiera
-            # NO incrementar trades_today aquí - solo en apply_trade_result()
             if self.state.equity > self.state.peak_equity:
                 self.state.peak_equity = self.state.equity
 
@@ -606,8 +591,8 @@ class RiskManager:
         ÚNICA fuente de verdad: executed_trades_today (trades_today es alias para compatibilidad).
         """
         self.state.daily_pnl = 0.0
-        self.state.executed_trades_today = 0  # ÚNICA fuente de verdad
-        self.state.trades_today = 0  # Alias para compatibilidad
+        self.state.executed_trades_today = 0
+        self.state.trades_today = 0
 
         if self.config.TRADING_MODE == "PAPER":
             self._adaptive_risk_level = 1.0
