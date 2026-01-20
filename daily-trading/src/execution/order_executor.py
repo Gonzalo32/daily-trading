@@ -165,9 +165,19 @@ class OrderExecutor:
                                       
             if self.config.TRADING_MODE == "PAPER":
                 position = self._create_position(order_data, fake=True)
+                # ⚠️ FIX 3: En PAPER, crear order-like dict separado del position
+                order_like = {
+                    "id": position["id"],
+                    "symbol": position["symbol"],
+                    "side": position["side"].lower(),
+                    "amount": position["size"],
+                    "type": "market",
+                    "status": "filled",
+                    "timestamp": position["entry_time"].isoformat() if isinstance(position["entry_time"], datetime) else str(position["entry_time"])
+                }
                 return {
                     "success": True,
-                    "order": position,
+                    "order": order_like,  # ⚠️ FIX 3: order separado de position
                     "position": position,
                     "error": None
                 }
@@ -215,9 +225,19 @@ class OrderExecutor:
     async def _execute_stock_order(self, order_data: Dict[str, Any]) -> Dict[str, Any]:
         try:
             position = self._create_position(order_data, fake=True)
+            # ⚠️ FIX 3: En PAPER, crear order-like dict separado del position
+            order_like = {
+                "id": position["id"],
+                "symbol": position["symbol"],
+                "side": position["side"].lower(),
+                "amount": position["size"],
+                "type": "market",
+                "status": "filled",
+                "timestamp": position["entry_time"].isoformat() if isinstance(position["entry_time"], datetime) else str(position["entry_time"])
+            }
             return {
                 "success": True,
-                "order": position,
+                "order": order_like,  # ⚠️ FIX 3: order separado de position
                 "position": position,
                 "error": None
             }
@@ -255,7 +275,18 @@ class OrderExecutor:
     async def close_position(self, position: dict, current_price: Optional[float] = None) -> dict:
         """
         Cierra una posición y calcula PnL.
-        Guarda el trade en TradeRecorder para ML.
+        
+        ⚠️ FIX 1: OrderExecutor NO escribe en ML - solo calcula y devuelve datos.
+        El registro en TradeRecorder debe hacerse en TradingBot después de recibir el resultado.
+        
+        Returns:
+            {
+                "success": bool,
+                "exit_price": float,
+                "pnl": float,
+                "position": dict|None,
+                "error": str|None
+            }
         """
         try:
             symbol = position["symbol"]
@@ -304,26 +335,22 @@ class OrderExecutor:
             if position in self.positions:
                 self.positions.remove(position)
 
-                                                                   
-                                       
-                                                                   
-            from src.ml.trade_recorder import TradeRecorder
-            recorder = TradeRecorder()
-            recorder.record_trade(    position=position,
-                                    exit_price=exit_price,
-                                    pnl=pnl,)
-
+            # ⚠️ FIX 1: OrderExecutor NO escribe en ML - solo calcula y devuelve
+            # El registro en TradeRecorder debe hacerse en TradingBot después de recibir el resultado
+            
             self.logger.info(
                 f"💸 Posición cerrada {symbol} | {side} | "
                 f"Entry={entry:.2f} Exit={exit_price:.2f} PnL={pnl:.2f} "
                 f"Size={size:.6f}"
             )
 
+            # ⚠️ FIX 1: Contrato consistente - siempre devolver los mismos campos
             return {
                 "success": True,
                 "exit_price": exit_price,
                 "pnl": pnl,
                 "position": position,
+                "error": None
             }
 
         except Exception as e:

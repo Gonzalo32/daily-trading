@@ -1290,6 +1290,8 @@ class TradingBot:
         - Cierre por fin de día
         """
         current_price = market_data.get('price', 0)
+        # ⚠️ FIX 2: Guardar último market_data para _close_all_positions()
+        self.last_market_data = market_data
 
         for position in self.current_positions[:]:
             try:
@@ -1330,7 +1332,8 @@ class TradingBot:
                         )
 
                     if should_force_close:
-                        close_result = await self.order_executor.close_position(position)
+                        # ⚠️ FIX 2: Pasar current_price siempre para evitar PnL=0 artificial en PAPER
+                        close_result = await self.order_executor.close_position(position, current_price=current_price)
 
                         if close_result.get('success'):
 
@@ -1430,7 +1433,8 @@ class TradingBot:
                         f"Razón: {management_decision.get('reason', 'SL/TP/Time alcanzado')}"
                     )
 
-                    close_result = await self.order_executor.close_position(position)
+                    # ⚠️ FIX 2: Pasar current_price siempre para evitar PnL=0 artificial en PAPER
+                    close_result = await self.order_executor.close_position(position, current_price=current_price)
 
                     if close_result['success']:
                         self.current_positions.remove(position)
@@ -1539,8 +1543,14 @@ class TradingBot:
 
     async def _close_all_positions(self):
         """Cerrar todas las posiciones abiertas"""
+        # ⚠️ FIX 2: Obtener current_price del último market_data conocido si está disponible
+        current_price = None
+        if hasattr(self, 'last_market_data') and self.last_market_data:
+            current_price = self.last_market_data.get('price')
+        
         for position in self.current_positions[:]:
-            close_result = await self.order_executor.close_position(position)
+            # ⚠️ FIX 2: Pasar current_price siempre para evitar PnL=0 artificial en PAPER
+            close_result = await self.order_executor.close_position(position, current_price=current_price)
             if close_result['success']:
                 self.current_positions.remove(position)
                 # ⚠️ CRÍTICO: apply_trade_result() es el ÚNICO lugar que incrementa executed_trades_today
