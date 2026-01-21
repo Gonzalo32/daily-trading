@@ -542,10 +542,11 @@ class TradingBot:
                 current_time = datetime.now()
 
                 if (current_time - last_status_log).total_seconds() >= 30:
+                    positions_count = self.position_manager.count_open_positions(self.current_positions)
                     self.logger.info(
                         f"💓 Bot activo | Iteración #{iteration_count} | "
                         f"PnL: {self.risk_manager.state.daily_pnl:.2f} | Trades: {self.risk_manager.state.executed_trades_today} | "
-                        f"Posiciones: {len(self.current_positions)}"
+                        f"Posiciones: {positions_count}"
                     )
                     last_status_log = current_time
 
@@ -672,6 +673,19 @@ class TradingBot:
                 self.current_signal = signal
 
                 original_signal = signal
+
+                positions_count = self.position_manager.count_open_positions(self.current_positions)
+                has_active_position = positions_count > 0
+                
+                if has_active_position:
+                    self.logger.info(
+                        f"🔒 Posición activa detectada ({positions_count}) "
+                        "→ no se evalúa riesgo ni se abre nueva orden. Gestionando posición existente..."
+                    )
+                    
+                    await self._check_open_positions(market_data)
+                    
+                    continue
 
                 decision_sample = None
                 if signal is None:
@@ -864,7 +878,14 @@ class TradingBot:
                             current_positions=self.current_positions
                         )
 
-                        if risk_valid and can_execute:
+                        is_paper_mode = self.config.TRADING_MODE == "PAPER"
+                        
+                        if is_paper_mode and risk_valid:
+                            should_execute = True
+                        else:
+                            should_execute = risk_valid and can_execute
+
+                        if should_execute:
                             is_paper_mvp = self.config.TRADING_MODE == "PAPER" and self.mvp_mode
 
                             if not is_paper_mvp:
@@ -895,7 +916,7 @@ class TradingBot:
                                     "✅ Riesgo validado y límites OK, ejecutando orden...")
 
                             order_result = await self.order_executor.execute_order(signal)
-                        elif risk_valid and not can_execute:
+                        elif risk_valid and not can_execute and not is_paper_mode:
                             self.logger.info(
                                 f"📚 DecisionSample se creará, pero orden real NO se ejecutará: {execute_reason}")
 
@@ -1176,74 +1197,10 @@ class TradingBot:
         current_price = market_data.get('price', 0)
         self.last_market_data = market_data
 
-        for position in self.current_positions[:]:
+        for position in [p for p in self.current_positions if p.get('status') != 'closed']:
             try:
                 position_id = position.get('id', 'unknown')
                 symbol = position.get('symbol', 'UNKNOWN')
-
-                entry_time = position.get(
-                    'entry_time') or position.get('open_time')
-                if entry_time:
-
-                    if isinstance(entry_time, str):
-                        try:
-                            entry_time = datetime.fromisoformat(
-                                entry_time.replace('Z', '+00:00'))
-                        except:
-                            try:
-                                entry_time = datetime.fromisoformat(entry_time)
-                            except:
-                                entry_time = datetime.now()
-
-                    time_diff = datetime.now() - entry_time
-                    time_seconds = time_diff.total_seconds()
-
-                    min_force_close_seconds = 180 if self.config.TRADING_MODE == "PAPER" else 30
-                    is_paper_learning = self.config.TRADING_MODE == "PAPER" and self.mvp_mode
-
-                    should_force_close = False
-                    if is_paper_learning:
-                        should_force_close = False
-                    elif time_seconds >= min_force_close_seconds:
-                        should_force_close = True
-                        self.logger.info(
-                            f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, tiempo: {time_seconds:.1f}s"
-                        )
-
-                    if should_force_close:
-                        close_result = await self.order_executor.close_position(position, current_price=current_price)
-
-                        if close_result.get('success'):
-
-                            pnl = close_result.get('pnl', 0.0)
-
-                            self.risk_manager.register_trade({
-                                'symbol': symbol,
-                                'action': position.get('side', 'UNKNOWN'),
-                                'price': close_result.get('exit_price', current_price),
-                                'position_size': position.get('size', 0),
-                                'pnl': pnl,
-                                'reason': 'Force time close (30s)',
-                                'risk_multiplier': position.get('risk_multiplier', 1.0)
-                            })
-
-                            if position in self.current_positions:
-                                self.current_positions.remove(position)
-
-                            if position in self.order_executor.positions:
-                                self.order_executor.positions.remove(position)
-
-                            self.risk_manager.apply_trade_result(pnl)
-
-                            self.logger.info(
-                                f"⏰ FORCE TIME CLOSE -> {position_id}, {symbol}, PnL: {pnl:.2f}"
-                            )
-
-                            continue
-                        else:
-                            self.logger.error(
-                                f"❌ Error en force time close de {position_id}: {close_result.get('error', 'Unknown')}"
-                            )
 
                 management_decision = await self.position_manager.manage_position(
                     position,
@@ -1258,11 +1215,6 @@ class TradingBot:
                 if management_decision.get('closed', False):
                     pnl = management_decision.get('pnl', 0.0)
 
-                    if position in self.current_positions:
-                        self.current_positions.remove(position)
-                    if position in self.order_executor.positions:
-                        self.order_executor.positions.remove(position)
-
                     self.state_manager.save({
                         "equity": self.risk_manager.state.equity,
                         "daily_pnl": self.risk_manager.state.daily_pnl,
@@ -1275,7 +1227,7 @@ class TradingBot:
 
                     self.logger.info(
                         f"✅ Posición cerrada por AdvancedPositionManager | "
-                        f"PnL: {pnl:.2f} | Posiciones restantes: {len(self.current_positions)}"
+                        f"PnL: {pnl:.2f}"
                     )
                     continue
 
@@ -1298,68 +1250,6 @@ class TradingBot:
                     )
                     continue
 
-                        has_recorder = self.trade_recorder or self.mvp_mode
-                        has_data = position_id in self.position_market_data
-                        should_record = has_recorder and has_data
-                        if should_record:
-
-                            if not self.trade_recorder and self.config.ENABLE_ML:
-                                from src.ml.trade_recorder import TradeRecorder
-                                self.trade_recorder = TradeRecorder()
-
-                            if self.trade_recorder:
-
-                                market_data_context = None
-                                if position_id in self.position_market_data:
-                                    ctx_data = self.position_market_data[position_id]
-                                    market_data_context = ctx_data.get(
-                                        'market_data', {})
-
-                                    if not market_data_context.get('indicators'):
-
-                                        market_data_context['indicators'] = market_data.get(
-                                            'indicators', {})
-
-                                self.trade_recorder.record_trade(
-                                    position=position,
-                                    exit_price=close_result.get(
-                                        'exit_price', current_price),
-                                    pnl=close_result['pnl'],
-                                    market_data_context=market_data_context
-                                )
-
-                                if position_id in self.position_market_data:
-                                    del self.position_market_data[position_id]
-
-                                if self.trade_recorder:
-
-                                    if self.risk_manager.state.executed_trades_today % 10 == 0:
-                                        if self.ml_progress:
-                                            self.ml_progress.log_progress()
-
-                                    if self.mvp_mode:
-                                        try:
-                                            df = self.trade_recorder.get_training_data()
-                                            self.total_trades_count = len(
-                                                df) if df is not None and not df.empty else 0
-                                            remaining = self.config.MVP_MIN_TRADES_FOR_ADVANCED_FEATURES - self.total_trades_count
-                                            if remaining > 0:
-                                                self.logger.info(
-                                                    f"📊 [MVP] Progreso: {self.total_trades_count}/{self.config.MVP_MIN_TRADES_FOR_ADVANCED_FEATURES} trades ({remaining} restantes)")
-                                            else:
-                                                self.logger.warning(
-                                                    "🎉 [MVP] ¡500 trades alcanzados! El bot cambiará a modo avanzado en el próximo reinicio")
-                                        except Exception as e:
-                                            self.logger.warning(
-                                                f"⚠️ No se pudo actualizar contador MVP: {e}")
-
-                        self.position_manager.cleanup_position(position_id)
-
-                        await self.notifications.send_position_closed_notification(close_result)
-                    else:
-                        self.logger.error(
-                            f"❌ Error cerrando posición: {close_result['error']}")
-
             except Exception as e:
                 self.logger.error(
                     f"❌ Error gestionando posición {position.get('id')}: {e}")
@@ -1371,10 +1261,16 @@ class TradingBot:
             current_price = self.last_market_data.get('price')
         
         for position in self.current_positions[:]:
-            close_result = await self.order_executor.close_position(position, current_price=current_price)
-            if close_result['success']:
-                self.current_positions.remove(position)
-                self.risk_manager.apply_trade_result(close_result['pnl'])
+            market_data = self.last_market_data if hasattr(self, 'last_market_data') and self.last_market_data else {}
+            await self.position_manager.manage_position(
+                position,
+                current_price or position.get('entry_price', 0),
+                market_data,
+                mvp_mode=self.mvp_mode,
+                executor=self.order_executor,
+                risk_manager=self.risk_manager,
+                positions_list=self.current_positions
+            )
 
     def _build_dashboard_payload(
             self, market_data: Optional[Dict[str, Any]]
@@ -1750,15 +1646,16 @@ class TradingBot:
             is_paper_mvp = self.config.TRADING_MODE == "PAPER" and self.mvp_mode
 
             max_positions_mvp = max(self.config.MAX_POSITIONS, 15)
-            if len(current_positions) >= max_positions_mvp:
+            positions_count = self.position_manager.count_open_positions(current_positions)
+            if positions_count >= max_positions_mvp:
                 if is_paper_mvp:
                     self.logger.info(
-                        f"📚 [PAPER+MVP] Posiciones: {len(current_positions)}/{max_positions_mvp} "
+                        f"📚 [PAPER+MVP] Posiciones: {positions_count}/{max_positions_mvp} "
                         f"(continuando para ML)")
                 else:
                     self.logger.warning(
                         f"⚠️ [MVP] Máximo de posiciones simultáneas alcanzado: "
-                        f"{len(current_positions)}/{max_positions_mvp}")
+                        f"{positions_count}/{max_positions_mvp}")
                     return False
 
             total_exposure = sum(

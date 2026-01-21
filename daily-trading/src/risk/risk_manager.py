@@ -23,7 +23,8 @@ class RiskState:
     day: date = date.today()
     daily_pnl: float = 0.0
     total_pnl: float = 0.0
-    trades_today: int = 0
+    trades_today: int = 0  # DEPRECATED: usar executed_trades_today
+    # Trades cerrados (solo se incrementa en apply_trade_result)
     executed_trades_today: int = 0
     decision_samples_collected: int = 0
     max_drawdown: float = 0.0

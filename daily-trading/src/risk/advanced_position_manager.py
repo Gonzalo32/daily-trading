@@ -85,11 +85,7 @@ class AdvancedPositionManager:
             symbol = position.get('symbol', 'UNKNOWN')
 
             open_time = position.get('open_time') or position.get('entry_time')
-            
-            self.logger.info(
-                f"🔍 DEBUG: position_id={position_id}, open_time={open_time}, type={type(open_time)}"
-            )
-            
+
             if open_time:
                 if isinstance(open_time, str):
                     try:
@@ -102,13 +98,7 @@ class AdvancedPositionManager:
                             open_time = datetime.utcnow()
 
                 position_age = (datetime.utcnow() - open_time).total_seconds()
-                
-                self.logger.info(
-                    f"🔍 DEBUG: position_age={position_age:.1f}s, mvp_mode={mvp_mode}, threshold=30s"
-                )
 
-                                                                  
-                                                                               
                 if mvp_mode and position_age >= 30:
                     self.logger.info(
                         f"⏱ edad de posición: {position_age:.2f}s")
@@ -117,10 +107,6 @@ class AdvancedPositionManager:
                     )
                     reason = f"Force close (30s) - MVP mode"
                     return await self._execute_close(position, current_price, reason, executor, risk_manager)
-
-            self.logger.info(
-                f"🔍 [MVP={mvp_mode}] Evaluando posición {position_id} ({symbol}) @ {current_price:.2f}"
-            )
 
             if position_id not in self.position_tracking:
                 self._init_position_tracking(position)
@@ -489,6 +475,20 @@ class AdvancedPositionManager:
         """Limpia el tracking de una posición cerrada"""
         if position_id in self.position_tracking:
             del self.position_tracking[position_id]
+
+    def count_open_positions(self, positions_list: List[Dict[str, Any]]) -> int:
+        """
+        Cuenta las posiciones abiertas en la lista proporcionada.
+        
+        Args:
+            positions_list: Lista de posiciones a verificar
+            
+        Returns:
+            Número de posiciones con status != 'closed'
+        """
+        if not positions_list:
+            return 0
+        return len([p for p in positions_list if p.get('status') != 'closed'])
 
     def get_position_stats(self, position_id: str) -> Optional[Dict[str, Any]]:
         """Retorna estadísticas de una posición"""

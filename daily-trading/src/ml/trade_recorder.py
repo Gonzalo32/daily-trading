@@ -472,7 +472,6 @@ class TradeRecorder:
             if limit is not None and limit > 0:
                 df = df.tail(limit)
 
-            self.logger.info(f"📚 Training data cargado ({len(df)} filas).")
             return df
 
         except Exception as e:
