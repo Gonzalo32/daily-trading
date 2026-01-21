@@ -888,6 +888,11 @@ class TradingBot:
                         if should_execute:
                             is_paper_mvp = self.config.TRADING_MODE == "PAPER" and self.mvp_mode
 
+                            if decision_sample and decision_sample.decision_id:
+                                signal['decision_id'] = decision_sample.decision_id
+                                self.logger.debug(
+                                    f"🔗 Propagando decision_id={decision_sample.decision_id} a signal")
+
                             if not is_paper_mvp:
                                 now_time = datetime.now()
                                 if self.last_trade_time is not None:

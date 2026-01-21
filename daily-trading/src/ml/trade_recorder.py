@@ -24,7 +24,7 @@ class TradeRecorder:
 
     def _initialize_trades_file(self):
         df = pd.DataFrame(columns=[
-            "timestamp", "symbol", "side",
+            "timestamp", "symbol", "side", "decision_id",
             "entry_price", "exit_price", "pnl",
             "size", "stop_loss", "take_profit",
             "duration_seconds",
@@ -42,7 +42,7 @@ class TradeRecorder:
 
     def _initialize_decisions_file(self):
         df = pd.DataFrame(columns=[
-            "timestamp", "symbol",
+            "timestamp", "symbol", "decision_id",
             "ema_cross_diff_pct", "atr_pct", "rsi_normalized",
             "price_to_fast_pct", "price_to_slow_pct",
             "trend_direction", "trend_strength",
@@ -117,6 +117,7 @@ class TradeRecorder:
                 "timestamp": position.get("entry_time"),
                 "symbol": position.get("symbol"),
                 "side": position.get("side"),
+                "decision_id": position.get("decision_id", ""),
                 "entry_price": entry_price,
                 "exit_price": exit_price,
                 "pnl": pnl,
@@ -159,9 +160,15 @@ class TradeRecorder:
             df = pd.DataFrame([record])
             df.to_csv(self.data_file, mode="a", index=False, header=False)
 
-            self.logger.info(
-                f"💾 Trade ejecutado guardado ML | {record['symbol']} | PnL={pnl:.2f} | Target={record['target']}"
-            )
+            decision_id = record.get("decision_id", "")
+            if decision_id:
+                self.logger.info(
+                    f"💾 Trade ejecutado guardado ML | {record['symbol']} | PnL={pnl:.2f} | Target={record['target']} | decision_id={decision_id}"
+                )
+            else:
+                self.logger.warning(
+                    f"⚠️ Trade guardado SIN decision_id | {record['symbol']} | PnL={pnl:.2f}"
+                )
 
             from src.ml.auto_trainer import auto_train_if_needed
             auto_train_if_needed()
@@ -434,11 +441,15 @@ class TradeRecorder:
                 self._decision_sample_count = 0
             self._decision_sample_count += 1
 
+            decision_id = record.get("decision_id", "")
             if self._decision_sample_count % 100 == 0:
-                self.logger.debug(
+                log_msg = (
                     f"📚 DecisionSample guardado (#{self._decision_sample_count}) | "
                     f"Action: {record['executed_action']} | Outcome: {record['decision_outcome']}"
                 )
+                if decision_id:
+                    log_msg += f" | decision_id={decision_id}"
+                self.logger.debug(log_msg)
 
         except Exception as e:
             self.logger.exception(f"❌ Error guardando DecisionSample: {e}")

@@ -3,6 +3,7 @@
 from datetime import datetime
 from typing import Dict, Optional, Any, List
 from dataclasses import dataclass
+import uuid
 
 from config import Config
 from src.utils.logging_setup import setup_logging
@@ -27,6 +28,7 @@ class DecisionSample:
     reject_reason: Optional[str]
     reason: str
     market_context: Dict[str, Any]
+    decision_id: Optional[str] = None
 
 
 class DecisionSampler:
@@ -135,6 +137,8 @@ class DecisionSampler:
             # ⚠️ HARDENING A: strategy_signal debe ser siempre {"BUY","SELL","NONE"}
             strategy_signal_final = strategy_action if strategy_action in ["BUY", "SELL"] else "NONE"
             
+            decision_id = str(uuid.uuid4())
+            
             return DecisionSample(
                 timestamp=timestamp,
                 symbol=symbol,
@@ -145,7 +149,8 @@ class DecisionSampler:
                 decision_outcome=decision_outcome,
                 reject_reason=reject_reason,
                 reason=reason,
-                market_context=market_context
+                market_context=market_context,
+                decision_id=decision_id
             )
 
         except Exception as e:
@@ -161,8 +166,8 @@ class DecisionSampler:
                 decision_outcome=DecisionOutcome.REJECTED_BY_EXECUTION.value,
                 reject_reason=f"Error creating DecisionSample: {str(e)}",
                 reason=f"Error: {str(e)}",
-                market_context={"regime": "unknown",
-                                "volatility_level": "medium"}
+                market_context={"regime": "unknown", "volatility_level": "medium"},
+                decision_id=str(uuid.uuid4())
             )
 
     def _extract_relative_features(
@@ -416,6 +421,7 @@ class DecisionSampler:
         return {
             "timestamp": sample.timestamp.isoformat() if isinstance(sample.timestamp, datetime) else str(sample.timestamp),
             "symbol": sample.symbol,
+            "decision_id": sample.decision_id or "",
 
             # Features (usar ema_cross_diff_pct para alinear con CSV)
             "ema_cross_diff_pct": sample.features.get("ema_diff_pct", 0),
