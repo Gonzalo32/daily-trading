@@ -1,5 +1,10 @@
-# Estado del bot (no commitear)
-state.json
+# Variables de entorno (NUNCA commitear - contiene API keys)
+.env
+.env.local
+.env.*.local
+
+# Estado del bot (ahora se commitea para continuidad)
+# state.json
 
 # Logs
 logs/
@@ -23,11 +28,11 @@ env/
 *.swp
 *.swo
 
-# Datos ML
+# Datos ML (no necesarios para ejecutar, solo para entrenar)
 src/ml/training_data.csv
 
-# Modelos entrenados
-models/*.pkl
+# Modelos entrenados (ahora se commitean si existen)
+# models/*.pkl
 !models/.gitkeep
 
 # Base de datos
