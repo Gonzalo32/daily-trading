@@ -27,6 +27,7 @@ from src.utils.logger import setup_logger
 from src.utils.notifications import NotificationManager
 from src.ml.trade_recorder import TradeRecorder
 from src.ml.ml_signal_filter import MLSignalFilter
+from src.ml.ml_v2_filter import MLV2Filter
 from src.state.state_manager import StateManager
 from src.utils.decision_constants import (
     DecisionOutcome,
@@ -144,6 +145,13 @@ class TradingBot:
             model_path=self.config.ML_MODEL_PATH,
             min_probability=self.config.ML_MIN_PROBABILITY,
         ) if ml_enabled and self.config.ENABLE_ML else None
+        
+        self.ml_v2_filter = MLV2Filter(
+            model_path="models/ml_v2_model.pkl",
+            paper_threshold_percentile=70.0,
+            live_threshold_percentile=80.0,
+            trading_mode=self.config.TRADING_MODE
+        ) if ml_enabled else None
 
         if ml_enabled or self.config.TRADING_MODE == "PAPER":
             from src.ml.ml_progress_tracker import MLProgressTracker
@@ -738,6 +746,18 @@ class TradingBot:
 
                     self.logger.info(
                         f"🔔 Señal generada: {original_signal['action']} {symbol} @ {original_signal['price']:.2f} (Fuerza: {original_signal['strength']:.2%})")
+                    
+                    if self.decision_sampler and self.config.TRADING_MODE == "PAPER" and decision_sample is None:
+                        strategy_signal_dict = {"action": signal_action}
+                        decision_sample = self.decision_sampler.create_decision_sample(
+                            market_data=market_data,
+                            strategy=self.strategy,
+                            strategy_signal=strategy_signal_dict,
+                            executed_action=None,
+                            regime_info=self.current_regime_info,
+                            decision_outcome=None,
+                            reject_reason="awaiting filters"
+                        )
 
                 if signal:
                     atr = market_data.get('indicators', {}).get('atr')
@@ -805,6 +825,54 @@ class TradingBot:
                     elif is_debug:
                         self.logger.info(
                             "🐛 [DEBUG] ML no disponible o deshabilitado - saltando filtro ML")
+                    
+                    ml_v2_decision = None
+                    use_ml_v2_filter = (
+                        not self.mvp_mode and 
+                        not is_debug and 
+                        self.ml_v2_filter is not None and 
+                        self.ml_v2_filter.is_model_available() and
+                        signal is not None
+                    )
+                    
+                    if use_ml_v2_filter:
+                        ml_v2_decision = await self.ml_v2_filter.filter_signal(
+                            signal,
+                            market_data
+                        )
+                        
+                        if not ml_v2_decision['approved']:
+                            self.logger.info(
+                                f"ML v2 Filter rechazado: {ml_v2_decision['reason']} | "
+                                f"Score: {ml_v2_decision['ml_score']:.4f} | "
+                                f"Percentil: {ml_v2_decision['percentile']:.1f}%"
+                            )
+                            
+                            original_action = signal.get('action', 'UNKNOWN')
+                            
+                            rejection_detail = (
+                                f"ML_FILTER: {ml_v2_decision['reason']} "
+                                f"(score={ml_v2_decision['ml_score']:.4f}, "
+                                f"percentile={ml_v2_decision['percentile']:.1f}%)"
+                            )
+                            tick_decision = create_tick_decision_rejected(
+                                original_action,
+                                "ml_filter",
+                                rejection_detail
+                            )
+                            
+                            if decision_sample:
+                                decision_sample.executed_action = tick_decision.executed_action
+                                decision_sample.decision_outcome = tick_decision.decision_outcome
+                                decision_sample.reject_reason = tick_decision.reject_reason
+                            
+                            signal = None
+                        else:
+                            self.logger.debug(
+                                f"ML v2 Filter aprobado | "
+                                f"Score: {ml_v2_decision['ml_score']:.4f} | "
+                                f"Percentil: {ml_v2_decision['percentile']:.1f}%"
+                            )
 
                     if signal:
 
