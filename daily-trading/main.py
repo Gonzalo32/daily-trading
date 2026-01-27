@@ -65,7 +65,12 @@ class TradingBot:
         self.strategy = StrategyFactory.create_strategy(self.config)
         self.risk_manager = RiskManager(self.config)
 
-        self.state_manager = StateManager("state.json")
+        self.state_manager = StateManager(self.config.STATE_PATH)
+        state_path = self.state_manager.path
+        state_exists = self.state_manager.exists()
+        self.logger.info(
+            f"State path configurado: {state_path} | encontrado={state_exists}"
+        )
 
         persisted_state = self.state_manager.load()
         today = datetime.now().date()
@@ -83,7 +88,7 @@ class TradingBot:
 
                     if last_date < today:
                         self.logger.info(
-                            f"🌅 Nuevo día detectado ({last_date} -> {today}). Reseteando métricas diarias.")
+                            f"Nuevo dia detectado ({last_date} -> {today}). Reseteando metricas diarias.")
                         self.risk_manager.reset_daily_metrics()
                     else:
 
@@ -99,7 +104,7 @@ class TradingBot:
                         self.risk_manager.state.trades_today = self.risk_manager.state.executed_trades_today
                 except Exception as e:
                     self.logger.warning(
-                        f"⚠️ Error verificando fecha del estado: {e}. Reseteando métricas diarias.")
+                        f"Error verificando fecha del estado: {e}. Reseteando metricas diarias.")
                     self.risk_manager.reset_daily_metrics()
             else:
 
@@ -116,11 +121,16 @@ class TradingBot:
             )
 
             self.logger.info(
-                "🔁 Estado restaurado | Equity=%.2f | PnL=%.2f | Trades=%d | Peak=%.2f",
+                "loaded state from %s | equity=%.2f | pnl=%.2f | trades=%d | peak=%.2f",
+                state_path,
                 self.risk_manager.state.equity,
                 self.risk_manager.state.daily_pnl,
                 self.risk_manager.state.executed_trades_today,
                 self.risk_manager.state.peak_equity
+            )
+        else:
+            self.logger.info(
+                f"Estado no encontrado o vacio en {state_path}. Se mantiene estado inicial."
             )
 
         self.order_executor = OrderExecutor(self.config)

@@ -22,8 +22,33 @@ print("=" * 80)
 
 print("\nLoading decisions.csv...")
 try:
-    decisions = pd.read_csv('src/ml/decisions.csv', on_bad_lines='skip', engine='python')
+    def _read_csv_with_optional_header(path, expected_columns):
+        with open(path, "r", encoding="utf-8") as f:
+            first_line = f.readline().strip()
+        header_tokens = [h.strip() for h in first_line.split(",")] if first_line else []
+        header_present = "timestamp" in header_tokens and "symbol" in header_tokens
+        if header_present:
+            df = pd.read_csv(path)
+            return df, header_tokens
+        df = pd.read_csv(path, names=expected_columns)
+        return df, []
+
+    decisions, decisions_header = _read_csv_with_optional_header(
+        "src/ml/decisions.csv",
+        [
+            "timestamp", "symbol", "decision_id",
+            "ema_cross_diff_pct", "atr_pct", "rsi_normalized",
+            "price_to_fast_pct", "price_to_slow_pct",
+            "trend_direction", "trend_strength",
+            "decision_buy_possible", "decision_sell_possible", "decision_hold_possible",
+            "strategy_signal", "executed_action", "was_executed",
+            "regime", "volatility_level",
+            "decision_outcome", "reject_reason", "reason"
+        ]
+    )
     print(f"  Loaded: {len(decisions):,} rows")
+    if decisions_header and "decision_id" not in decisions_header:
+        print("  WARNING: decisions.csv sin decision_id en header. Se intentara continuar.")
 except Exception as e:
     print(f"  ERROR loading decisions.csv: {e}")
     exit(1)
@@ -42,8 +67,13 @@ try:
         "target", "trade_type",
         "exit_type", "r_multiple", "time_in_trade"
     ]
-    trades = pd.read_csv('src/ml/training_data.csv', names=trades_columns, on_bad_lines='skip', engine='python')
+    trades, trades_header = _read_csv_with_optional_header(
+        "src/ml/training_data.csv",
+        trades_columns
+    )
     print(f"  Loaded: {len(trades):,} rows")
+    if trades_header and "decision_id" not in trades_header:
+        print("  WARNING: training_data.csv sin decision_id en header. Se usaran fallbacks.")
 except Exception as e:
     print(f"  ERROR loading training_data.csv: {e}")
     exit(1)
@@ -118,9 +148,11 @@ tolerance_seconds = 5
 
 trades_used = set()
 join_method_counts = {"decision_id": 0, "timestamp": 0, "symbol_side": 0}
+fallback_warnings = {"missing_decision_id": 0, "timestamp": 0, "symbol_side": 0}
 
 for idx, decision in decisions.iterrows():
     decision_id = decision.get('decision_id', '')
+    has_decision_id = bool(decision_id and str(decision_id).strip())
     decision_time = decision['timestamp']
     decision_symbol = decision['symbol']
     decision_action = decision['executed_action']
@@ -130,7 +162,7 @@ for idx, decision in decisions.iterrows():
     
     matched = False
     
-    if decision_id and decision_id.strip():
+    if has_decision_id:
         matching_trades = trades[
             (trades['decision_id'] == decision_id) &
             (~trades.index.isin(trades_used))
@@ -150,6 +182,8 @@ for idx, decision in decisions.iterrows():
             matched = True
     
     if not matched and pd.notna(decision_time):
+        if not has_decision_id:
+            fallback_warnings["missing_decision_id"] += 1
         matching_trades = trades[
             (trades['symbol'] == decision_symbol) &
             (trades['side'] == decision_action) &
@@ -172,9 +206,12 @@ for idx, decision in decisions.iterrows():
                 merged_rows.append(row)
                 trades_used.add(best_match.name)
                 join_method_counts['timestamp'] += 1
+                fallback_warnings["timestamp"] += 1
                 matched = True
     
     if not matched:
+        if not has_decision_id:
+            fallback_warnings["missing_decision_id"] += 1
         matching_trades = trades[
             (trades['symbol'] == decision_symbol) &
             (trades['side'] == decision_action) &
@@ -192,6 +229,7 @@ for idx, decision in decisions.iterrows():
             merged_rows.append(row)
             trades_used.add(best_match.name)
             join_method_counts['symbol_side'] += 1
+            fallback_warnings["symbol_side"] += 1
 
 if len(merged_rows) == 0:
     print("\nERROR: No matches found after joining")
@@ -207,6 +245,19 @@ print(f"\nJoin method breakdown:")
 print(f"  - decision_id: {join_method_counts['decision_id']:,} ({join_method_counts['decision_id']/len(ml_v2_df)*100:.1f}%)")
 print(f"  - timestamp: {join_method_counts['timestamp']:,} ({join_method_counts['timestamp']/len(ml_v2_df)*100:.1f}%)")
 print(f"  - symbol+side: {join_method_counts['symbol_side']:,} ({join_method_counts['symbol_side']/len(ml_v2_df)*100:.1f}%)")
+if fallback_warnings["missing_decision_id"] > 0:
+    print(
+        f"  WARNING: {fallback_warnings['missing_decision_id']:,} decisiones sin decision_id "
+        "usaron fallback."
+    )
+if fallback_warnings["timestamp"] > 0:
+    print(
+        f"  WARNING: {fallback_warnings['timestamp']:,} joins por timestamp (±{tolerance_seconds}s)."
+    )
+if fallback_warnings["symbol_side"] > 0:
+    print(
+        f"  WARNING: {fallback_warnings['symbol_side']:,} joins por symbol+side."
+    )
 
 print("\n" + "=" * 80)
 print("5. CREATING TARGET")

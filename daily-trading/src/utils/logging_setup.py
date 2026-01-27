@@ -8,6 +8,7 @@ Incluye:
 
 import logging
 import os
+import sys
 from logging.handlers import RotatingFileHandler, BaseRotatingHandler
 from datetime import datetime
 from typing import Optional
@@ -215,7 +216,14 @@ def setup_logging(name: str = __name__, logfile: str = "logs/trading_bot.log", l
     )
 
                         
-    console_handler = logging.StreamHandler()
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8")
+            sys.stderr.reconfigure(encoding="utf-8")
+        except Exception:
+            pass
+
+    console_handler = logging.StreamHandler(stream=sys.stdout)
     console_handler.setFormatter(fmt)
     console_handler.setLevel(getattr(logging, log_level.upper(), logging.INFO))
 

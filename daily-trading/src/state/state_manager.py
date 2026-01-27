@@ -11,9 +11,13 @@ from typing import Dict, Any
 
 class StateManager:
     """Gestor de persistencia del estado del bot"""
-    
-    def __init__(self, path: str = "state.json"):
+
+    def __init__(self, path: str = "data/state.json"):
         self.path = path
+
+    def exists(self) -> bool:
+        """Verifica si el archivo de estado existe en disco"""
+        return os.path.exists(self.path)
 
     def load(self) -> Dict[str, Any]:
         """Carga el estado desde disco"""
@@ -29,6 +33,10 @@ class StateManager:
     def save(self, state: Dict[str, Any]) -> None:
         """Guarda el estado a disco"""
         state["last_saved_at"] = datetime.utcnow().isoformat()
+
+        directory = os.path.dirname(self.path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
 
         with open(self.path, "w", encoding="utf-8") as f:
             json.dump(state, f, indent=2)

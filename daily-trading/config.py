@@ -70,6 +70,7 @@ class Config:
 
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
     LOG_FILE = os.getenv("LOG_FILE", "logs/trading_bot.log")
+    STATE_PATH = os.getenv("STATE_PATH", "data/state.json")
 
     ENABLE_DASHBOARD = os.getenv("ENABLE_DASHBOARD", "true").lower() == "true"
     DASHBOARD_PORT = int(os.getenv("DASHBOARD_PORT", "8000"))
