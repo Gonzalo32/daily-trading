@@ -155,7 +155,7 @@ class TradingBot:
             model_path=self.config.ML_MODEL_PATH,
             min_probability=self.config.ML_MIN_PROBABILITY,
         ) if ml_enabled and self.config.ENABLE_ML else None
-        
+
         self.ml_v2_filter = MLV2Filter(
             model_path="models/ml_v2_model.pkl",
             paper_threshold_percentile=70.0,
@@ -262,7 +262,8 @@ class TradingBot:
                     await self.dashboard.start()
                     self.logger.info("✅ Dashboard iniciado correctamente")
                 except Exception as dashboard_error:
-                    self.logger.error(f"❌ Error iniciando dashboard: {dashboard_error}", exc_info=True)
+                    self.logger.error(
+                        f"❌ Error iniciando dashboard: {dashboard_error}", exc_info=True)
                     self.logger.warning("⚠️ Continuando sin dashboard...")
                     self.dashboard = None
 
@@ -560,7 +561,8 @@ class TradingBot:
                 current_time = datetime.now()
 
                 if (current_time - last_status_log).total_seconds() >= 30:
-                    positions_count = self.position_manager.count_open_positions(self.current_positions)
+                    positions_count = self.position_manager.count_open_positions(
+                        self.current_positions)
                     self.logger.info(
                         f"💓 Bot activo | Iteración #{iteration_count} | "
                         f"PnL: {self.risk_manager.state.daily_pnl:.2f} | Trades: {self.risk_manager.state.executed_trades_today} | "
@@ -692,17 +694,18 @@ class TradingBot:
 
                 original_signal = signal
 
-                positions_count = self.position_manager.count_open_positions(self.current_positions)
+                positions_count = self.position_manager.count_open_positions(
+                    self.current_positions)
                 has_active_position = positions_count > 0
-                
+
                 if has_active_position:
                     self.logger.info(
                         f"🔒 Posición activa detectada ({positions_count}) "
                         "→ no se evalúa riesgo ni se abre nueva orden. Gestionando posición existente..."
                     )
-                    
+
                     await self._check_open_positions(market_data)
-                    
+
                     continue
 
                 decision_sample = None
@@ -737,13 +740,15 @@ class TradingBot:
                     )
                     if signal_action not in [ExecutedAction.BUY.value, ExecutedAction.SELL.value]:
                         signal_action = ExecutedAction.HOLD.value
-                    
-                    strategy_signal_normalized = signal_action if signal_action in [ExecutedAction.BUY.value, ExecutedAction.SELL.value] else "NONE"
+
+                    strategy_signal_normalized = signal_action if signal_action in [
+                        ExecutedAction.BUY.value, ExecutedAction.SELL.value] else "NONE"
 
                     tick_decision = create_tick_decision_no_signal()
                     if self.decision_sampler and self.config.TRADING_MODE == "PAPER":
                         assert decision_sample is None, "DecisionSample duplicado en el mismo tick"
-                        strategy_signal_dict = {"action": strategy_signal_normalized} if strategy_signal_normalized != "NONE" else None
+                        strategy_signal_dict = {
+                            "action": strategy_signal_normalized} if strategy_signal_normalized != "NONE" else None
                         decision_sample = self.decision_sampler.create_decision_sample(
                             market_data=market_data,
                             strategy=self.strategy,
@@ -756,7 +761,7 @@ class TradingBot:
 
                     self.logger.info(
                         f"🔔 Señal generada: {original_signal['action']} {symbol} @ {original_signal['price']:.2f} (Fuerza: {original_signal['strength']:.2%})")
-                    
+
                     if self.decision_sampler and self.config.TRADING_MODE == "PAPER" and decision_sample is None:
                         strategy_signal_dict = {"action": signal_action}
                         decision_sample = self.decision_sampler.create_decision_sample(
@@ -795,24 +800,22 @@ class TradingBot:
 
                         if not ml_decision['approved']:
                             self.logger.info(
-                                f"🚫 Señal rechazada por filtro ML: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})")
-
-                            rejection_detail = f"ML filter: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})"
-                            tick_decision = create_tick_decision_rejected(
-                                signal_action,
-                                "ml",
-                                rejection_detail
-                            )
-
-                            if decision_sample:
-                                decision_sample.executed_action = tick_decision.executed_action
-                                decision_sample.decision_outcome = tick_decision.decision_outcome
-                                decision_sample.reject_reason = tick_decision.reject_reason
-
+                                f"ML filter score (log only): {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})")
                             if self.config.TRADING_MODE == "LIVE":
+                                rejection_detail = f"ML filter: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})"
+                                tick_decision = create_tick_decision_rejected(
+                                    signal_action,
+                                    "ml",
+                                    rejection_detail
+                                )
+                                if decision_sample:
+                                    decision_sample.executed_action = tick_decision.executed_action
+                                    decision_sample.decision_outcome = tick_decision.decision_outcome
+                                    decision_sample.reject_reason = tick_decision.reject_reason
                                 signal = None
                             else:
-                                signal = None
+                                self.logger.info(
+                                    f"[PAPER] ML no aprobó pero ejecución permitida (solo log)")
                     elif is_debug and self.ml_filter is not None and self.ml_filter.is_model_available():
                         ml_decision = await self.ml_filter.filter_signal(
                             signal,
@@ -835,48 +838,49 @@ class TradingBot:
                     elif is_debug:
                         self.logger.info(
                             "🐛 [DEBUG] ML no disponible o deshabilitado - saltando filtro ML")
-                    
+
                     ml_v2_decision = None
                     use_ml_v2_filter = (
-                        not self.mvp_mode and 
-                        not is_debug and 
-                        self.ml_v2_filter is not None and 
+                        not self.mvp_mode and
+                        not is_debug and
+                        self.ml_v2_filter is not None and
                         self.ml_v2_filter.is_model_available() and
                         signal is not None
                     )
-                    
+
                     if use_ml_v2_filter:
                         ml_v2_decision = await self.ml_v2_filter.filter_signal(
                             signal,
                             market_data
                         )
-                        
+
                         if not ml_v2_decision['approved']:
                             self.logger.info(
-                                f"ML v2 Filter rechazado: {ml_v2_decision['reason']} | "
+                                f"ML v2 Filter score (log only): {ml_v2_decision['reason']} | "
                                 f"Score: {ml_v2_decision['ml_score']:.4f} | "
                                 f"Percentil: {ml_v2_decision['percentile']:.1f}%"
                             )
-                            
-                            original_action = signal.get('action', 'UNKNOWN')
-                            
-                            rejection_detail = (
-                                f"ML_FILTER: {ml_v2_decision['reason']} "
-                                f"(score={ml_v2_decision['ml_score']:.4f}, "
-                                f"percentile={ml_v2_decision['percentile']:.1f}%)"
-                            )
-                            tick_decision = create_tick_decision_rejected(
-                                original_action,
-                                "ml_filter",
-                                rejection_detail
-                            )
-                            
-                            if decision_sample:
-                                decision_sample.executed_action = tick_decision.executed_action
-                                decision_sample.decision_outcome = tick_decision.decision_outcome
-                                decision_sample.reject_reason = tick_decision.reject_reason
-                            
-                            signal = None
+                            if self.config.TRADING_MODE == "LIVE":
+                                original_action = signal.get(
+                                    'action', 'UNKNOWN')
+                                rejection_detail = (
+                                    f"ML_FILTER: {ml_v2_decision['reason']} "
+                                    f"(score={ml_v2_decision['ml_score']:.4f}, "
+                                    f"percentile={ml_v2_decision['percentile']:.1f}%)"
+                                )
+                                tick_decision = create_tick_decision_rejected(
+                                    original_action,
+                                    "ml_filter",
+                                    rejection_detail
+                                )
+                                if decision_sample:
+                                    decision_sample.executed_action = tick_decision.executed_action
+                                    decision_sample.decision_outcome = tick_decision.decision_outcome
+                                    decision_sample.reject_reason = tick_decision.reject_reason
+                                signal = None
+                            else:
+                                self.logger.info(
+                                    f"[PAPER] ML v2 no aprobó pero ejecución permitida (solo log)")
                         else:
                             self.logger.debug(
                                 f"ML v2 Filter aprobado | "
@@ -957,7 +961,7 @@ class TradingBot:
                         )
 
                         is_paper_mode = self.config.TRADING_MODE == "PAPER"
-                        
+
                         if is_paper_mode and risk_valid:
                             should_execute = True
                         else:
@@ -1029,7 +1033,7 @@ class TradingBot:
                                         decision_sample.executed_action = tick_decision.executed_action
                                         decision_sample.decision_outcome = tick_decision.decision_outcome
                                         decision_sample.reject_reason = tick_decision.reject_reason
-                            
+
                             order_result = {"success": False,
                                             "error": "Risk validation failed"}
 
@@ -1039,8 +1043,10 @@ class TradingBot:
                             if position:
                                 self.current_positions.append(position)
 
-                                symbol_val = original_signal.get('symbol') if original_signal else 'N/A'
-                                price_val = original_signal.get('price', 0) if original_signal else 0
+                                symbol_val = original_signal.get(
+                                    'symbol') if original_signal else 'N/A'
+                                price_val = original_signal.get(
+                                    'price', 0) if original_signal else 0
                                 self.logger.info(
                                     f"✅ [TRADE EJECUTADO] {signal_action} {symbol_val} @ {price_val:.2f} | "
                                     f"Trades ejecutados hoy: {self.risk_manager.state.executed_trades_today}")
@@ -1054,7 +1060,8 @@ class TradingBot:
                                 decision_sample.reject_reason = tick_decision.reject_reason
 
                             if self.mvp_mode:
-                                trade_num = self.total_trades_count + self.risk_manager.state.executed_trades_today
+                                trade_num = self.total_trades_count + \
+                                    self.risk_manager.state.executed_trades_today
                                 action = original_signal['action'] if original_signal else 'N/A'
                                 symbol = original_signal['symbol'] if original_signal else 'N/A'
                                 price = original_signal['price'] if original_signal else 0
@@ -1173,13 +1180,14 @@ class TradingBot:
                             should_record = False
 
                     if final_decision_outcome == DecisionOutcome.NO_SIGNAL.value:
-                        if not (self.config.TRADING_MODE == "PAPER" and decision_sample.reject_reason and 
-                                ("paper limits" in str(decision_sample.reject_reason) or 
+                        if not (self.config.TRADING_MODE == "PAPER" and decision_sample.reject_reason and
+                                ("paper limits" in str(decision_sample.reject_reason) or
                                  "limits (paper only)" in str(decision_sample.reject_reason))):
                             decision_sample.reject_reason = None
 
-                    decision_space_snapshot = decision_sample.decision_space.copy() if hasattr(decision_sample.decision_space, 'copy') else dict(decision_sample.decision_space)
-                    
+                    decision_space_snapshot = decision_sample.decision_space.copy() if hasattr(
+                        decision_sample.decision_space, 'copy') else dict(decision_sample.decision_space)
+
                     decision_sample.reason = self.decision_sampler._build_reason(
                         original_signal, decision_space_snapshot, final_executed_action,
                         final_decision_outcome, decision_sample.reject_reason
@@ -1323,7 +1331,8 @@ class TradingBot:
                             f"Nuevo SL={new_stop_loss:.2f} - {management_decision.get('reason')}"
                         )
 
-                should_close_mgmt = management_decision.get('should_close', False)
+                should_close_mgmt = management_decision.get(
+                    'should_close', False)
                 if should_close_mgmt and not management_decision.get('closed', False):
                     self.logger.error(
                         f"❌ ORQUESTACIÓN ERROR: manage_position() retornó should_close=True pero closed=False "
@@ -1342,9 +1351,10 @@ class TradingBot:
         current_price = None
         if hasattr(self, 'last_market_data') and self.last_market_data:
             current_price = self.last_market_data.get('price')
-        
+
         for position in self.current_positions[:]:
-            market_data = self.last_market_data if hasattr(self, 'last_market_data') and self.last_market_data else {}
+            market_data = self.last_market_data if hasattr(
+                self, 'last_market_data') and self.last_market_data else {}
             await self.position_manager.manage_position(
                 position,
                 current_price or position.get('entry_price', 0),
@@ -1729,7 +1739,8 @@ class TradingBot:
             is_paper_mvp = self.config.TRADING_MODE == "PAPER" and self.mvp_mode
 
             max_positions_mvp = max(self.config.MAX_POSITIONS, 15)
-            positions_count = self.position_manager.count_open_positions(current_positions)
+            positions_count = self.position_manager.count_open_positions(
+                current_positions)
             if positions_count >= max_positions_mvp:
                 if is_paper_mvp:
                     self.logger.info(
