@@ -29,7 +29,8 @@ data/
 # models/ (ahora se commitean modelos entrenados)
 # *.pkl (ahora se commitean si existen)
 # daily-trading/models/ (ahora se commitean modelos entrenados)
-daily-trading/src/ml/training_data.csv
+# training_data.csv se commitea para acumular trades cerrados entre PCs
+# daily-trading/src/ml/training_data.csv
 daily-trading/src/ml/trading_history.csv
 
 # IDEs

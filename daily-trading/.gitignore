@@ -28,8 +28,9 @@ env/
 *.swp
 *.swo
 
-# Datos ML (no necesarios para ejecutar, solo para entrenar)
-src/ml/training_data.csv
+# Datos ML
+# training_data.csv se commitea para acumular trades cerrados entre PCs
+# src/ml/training_data.csv
 
 # Modelos entrenados (ahora se commitean si existen)
 # models/*.pkl
