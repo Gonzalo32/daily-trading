@@ -1,3 +1,8 @@
+# === Registro de trades: TRACKEABLES (continuidad entre PCs) ===
+# Estos archivos SÍ se commitean para acumular datos entre máquinas:
+# - decisions.csv, training_data.csv, ml_progress.json, state.json
+# - models/, ml_v2_dataset.csv
+
 # Python
 venv/
 __pycache__/
@@ -26,11 +31,17 @@ daily-trading/logs/
 
 # Data y modelos
 data/
-# models/ (ahora se commitean modelos entrenados)
-# *.pkl (ahora se commitean si existen)
-# daily-trading/models/ (ahora se commitean modelos entrenados)
-# training_data.csv se commitea para acumular trades cerrados entre PCs
-# daily-trading/src/ml/training_data.csv
+# Excepción: state.json del bot (continuidad entre PCs)
+!daily-trading/data/
+!daily-trading/data/state.json
+# Excepción: archivos ML trackeados a propósito
+!daily-trading/src/ml/training_data.csv
+!daily-trading/src/ml/decisions.csv
+!daily-trading/ml_progress.json
+!daily-trading/ml_v2_dataset.csv
+!daily-trading/state.json
+!daily-trading/models/
+!daily-trading/models/*.pkl
 daily-trading/src/ml/trading_history.csv
 
 # IDEs

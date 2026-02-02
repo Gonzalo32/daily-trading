@@ -1306,6 +1306,30 @@ class TradingBot:
                 if management_decision.get('closed', False):
                     pnl = management_decision.get('pnl', 0.0)
 
+                    # Guardar trade en training_data.csv para ML / ML v2
+                    if self.trade_recorder and position:
+                        exit_price = position.get('exit_price', current_price)
+                        market_data_ctx = None
+                        pos_id = position.get('id')
+                        if pos_id and hasattr(self, 'position_market_data') and pos_id in self.position_market_data:
+                            stored = self.position_market_data[pos_id]
+                            md = stored.get('market_data', {})
+                            reg = stored.get('regime_info', {})
+                            market_data_ctx = {**md, 'regime_info': reg} if md or reg else None
+                        try:
+                            self.trade_recorder.record_trade(
+                                position, exit_price, pnl, market_data_context=market_data_ctx
+                            )
+                            self.logger.info(
+                                f"📥 Trade guardado en training_data.csv | "
+                                f"{symbol} | PnL: {pnl:.2f}"
+                            )
+                        except Exception as e:
+                            self.logger.error(f"❌ Error guardando trade en training_data.csv: {e}")
+                        # Limpiar contexto de entrada (ya no necesario)
+                        if pos_id and hasattr(self, 'position_market_data') and pos_id in self.position_market_data:
+                            del self.position_market_data[pos_id]
+
                     self.state_manager.save({
                         "equity": self.risk_manager.state.equity,
                         "daily_pnl": self.risk_manager.state.daily_pnl,
