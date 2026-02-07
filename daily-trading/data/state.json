@@ -1,10 +1,10 @@
 {
-  "equity": 9839.002867666832,
-  "daily_pnl": -157.45488385154317,
-  "trades_today": 145,
-  "executed_trades_today": 145,
-  "decision_samples_collected": 300,
-  "peak_equity": 10050.48958902979,
-  "max_drawdown": 0.02349764081213062,
-  "last_saved_at": "2026-02-03T17:40:21.070358"
+  "equity": 7124.779496050115,
+  "daily_pnl": -2871.6782554682604,
+  "trades_today": 871,
+  "executed_trades_today": 871,
+  "decision_samples_collected": 2487,
+  "peak_equity": 16019.896546652224,
+  "max_drawdown": 0.5589807151150081,
+  "last_saved_at": "2026-02-06T19:33:33.991525"
 }
