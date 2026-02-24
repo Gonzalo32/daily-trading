@@ -27,6 +27,7 @@ from src.utils.logger import setup_logger
 from src.utils.notifications import NotificationManager
 from src.ml.trade_recorder import TradeRecorder
 from src.ml.ml_signal_filter import MLSignalFilter
+from src.ml.ml_service import MLService
 from src.ml.ml_v2_filter import MLV2Filter
 from src.state.state_manager import StateManager
 from src.utils.decision_constants import (
@@ -147,23 +148,27 @@ class TradingBot:
         if self.decision_sampler:
             self.logger.info("📊 Decision Sampling Layer activada (PAPER mode)")
 
-        ml_enabled = self.config.ENABLE_ML or (
+        legacy_ml_filter_enabled = self.config.ENABLE_LEGACY_ML_FILTER
+        ml_dataset_enabled = legacy_ml_filter_enabled or (
             self.config.TRADING_MODE == "PAPER")
-        self.trade_recorder = TradeRecorder() if ml_enabled else None
+        self.trade_recorder = TradeRecorder() if ml_dataset_enabled else None
 
         self.ml_filter = MLSignalFilter(
             model_path=self.config.ML_MODEL_PATH,
             min_probability=self.config.ML_MIN_PROBABILITY,
-        ) if ml_enabled and self.config.ENABLE_ML else None
+        ) if legacy_ml_filter_enabled else None
 
         self.ml_v2_filter = MLV2Filter(
             model_path="models/ml_v2_model.pkl",
             paper_threshold_percentile=70.0,
             live_threshold_percentile=80.0,
             trading_mode=self.config.TRADING_MODE
-        ) if ml_enabled else None
+        ) if legacy_ml_filter_enabled else None
 
-        if ml_enabled or self.config.TRADING_MODE == "PAPER":
+        self.ml_service = MLService(
+            self.config) if self.config.ML_ENABLED else None
+
+        if ml_dataset_enabled or self.config.TRADING_MODE == "PAPER":
             from src.ml.ml_progress_tracker import MLProgressTracker
             self.ml_progress = MLProgressTracker()
 
@@ -409,7 +414,7 @@ class TradingBot:
                 model_info = self.ml_filter.get_model_info()
                 self.logger.info(
                     f"   └─ Probabilidad mínima: {model_info['min_probability']:.2%}")
-            elif self.config.ENABLE_ML:
+            elif self.config.ENABLE_LEGACY_ML_FILTER:
                 self.logger.warning(
                     "⚠️ ML habilitado pero modelo no disponible")
 
@@ -709,6 +714,7 @@ class TradingBot:
                     continue
 
                 decision_sample = None
+                ml_shadow_decision_id = None
                 if signal is None:
                     tick_decision = create_tick_decision_no_signal()
                     if self.decision_sampler and self.config.TRADING_MODE == "PAPER":
@@ -722,6 +728,19 @@ class TradingBot:
                             decision_outcome=tick_decision.decision_outcome,
                             reject_reason=tick_decision.reject_reason
                         )
+
+                    if self.ml_service:
+                        ml_shadow_record = self.ml_service.evaluate_and_log(
+                            signal=None,
+                            market_data=market_data,
+                            regime_info=self.current_regime_info,
+                            bot_state=bot_state_snapshot,
+                            decision_id=decision_sample.decision_id if decision_sample else None,
+                            trade_type=tick_decision.decision_outcome.upper(),
+                            executed=0,
+                        )
+                        if ml_shadow_record:
+                            ml_shadow_decision_id = ml_shadow_record.get("decision_id")
 
                     if iteration_count % 10 == 0:
                         indicators = market_data.get('indicators', {})
@@ -787,6 +806,21 @@ class TradingBot:
 
                     is_debug = self.config.ENABLE_DEBUG_STRATEGY
 
+                    if self.ml_service:
+                        ml_shadow_record = self.ml_service.evaluate_and_log(
+                            signal=signal,
+                            market_data=market_data,
+                            regime_info=self.current_regime_info,
+                            bot_state=bot_state_snapshot,
+                            decision_id=decision_sample.decision_id if decision_sample else signal.get("decision_id"),
+                        )
+                        if ml_shadow_record:
+                            ml_shadow_decision_id = ml_shadow_record.get("decision_id")
+                            if signal is not None and not signal.get("decision_id"):
+                                signal["decision_id"] = ml_shadow_decision_id
+                            if original_signal is not None and not original_signal.get("decision_id"):
+                                original_signal["decision_id"] = ml_shadow_decision_id
+
                     ml_decision = None
                     use_ml_filter = not self.mvp_mode and not is_debug and self.ml_filter is not None and self.ml_filter.is_model_available()
 
@@ -812,6 +846,12 @@ class TradingBot:
                                     decision_sample.executed_action = tick_decision.executed_action
                                     decision_sample.decision_outcome = tick_decision.decision_outcome
                                     decision_sample.reject_reason = tick_decision.reject_reason
+                                if self.ml_service and ml_shadow_decision_id:
+                                    self.ml_service.update_execution_outcome(
+                                        decision_id=ml_shadow_decision_id,
+                                        executed=0,
+                                        trade_type=tick_decision.decision_outcome.upper(),
+                                    )
                                 signal = None
                             else:
                                 self.logger.info(
@@ -877,6 +917,12 @@ class TradingBot:
                                     decision_sample.executed_action = tick_decision.executed_action
                                     decision_sample.decision_outcome = tick_decision.decision_outcome
                                     decision_sample.reject_reason = tick_decision.reject_reason
+                                if self.ml_service and ml_shadow_decision_id:
+                                    self.ml_service.update_execution_outcome(
+                                        decision_id=ml_shadow_decision_id,
+                                        executed=0,
+                                        trade_type=tick_decision.decision_outcome.upper(),
+                                    )
                                 signal = None
                             else:
                                 self.logger.info(
@@ -948,6 +994,12 @@ class TradingBot:
                                 decision_sample.executed_action = tick_decision.executed_action
                                 decision_sample.decision_outcome = tick_decision.decision_outcome
                                 decision_sample.reject_reason = tick_decision.reject_reason
+                            if self.ml_service and ml_shadow_decision_id:
+                                self.ml_service.update_execution_outcome(
+                                    decision_id=ml_shadow_decision_id,
+                                    executed=0,
+                                    trade_type=tick_decision.decision_outcome.upper(),
+                                )
                         elif not risk_valid and is_paper_mvp:
                             self.logger.warning(
                                 f"⚠️ [PAPER+MVP] Risk manager advierte riesgo, pero continuando para ML "
@@ -1023,6 +1075,13 @@ class TradingBot:
                                     decision_sample.reject_reason = execute_reason or "paper limits"
                                 else:
                                     decision_sample.reject_reason = tick_decision.reject_reason
+                            if self.ml_service and ml_shadow_decision_id:
+                                executed_flag = 1 if tick_decision.decision_outcome == DecisionOutcome.EXECUTED.value else 0
+                                self.ml_service.update_execution_outcome(
+                                    decision_id=ml_shadow_decision_id,
+                                    executed=executed_flag,
+                                    trade_type=tick_decision.decision_outcome.upper(),
+                                )
 
                             order_result = {
                                 "success": False, "error": "Daily limits reached (DecisionSample created)"}
@@ -1058,6 +1117,16 @@ class TradingBot:
                                 decision_sample.executed_action = tick_decision.executed_action
                                 decision_sample.decision_outcome = tick_decision.decision_outcome
                                 decision_sample.reject_reason = tick_decision.reject_reason
+                            if self.ml_service and ml_shadow_decision_id:
+                                if position is not None and not position.get("decision_id"):
+                                    position["decision_id"] = ml_shadow_decision_id
+                                trade_id = position.get('id') if position else None
+                                self.ml_service.update_execution_outcome(
+                                    decision_id=ml_shadow_decision_id,
+                                    executed=1,
+                                    trade_type=tick_decision.decision_outcome.upper(),
+                                    trade_id=trade_id,
+                                )
 
                             if self.mvp_mode:
                                 trade_num = self.total_trades_count + \
@@ -1092,7 +1161,7 @@ class TradingBot:
 
                             if self.trade_recorder or self.mvp_mode:
 
-                                if not self.trade_recorder and self.config.ENABLE_ML:
+                                if not self.trade_recorder and self.config.ENABLE_LEGACY_ML_FILTER:
                                     from src.ml.trade_recorder import TradeRecorder
                                     self.trade_recorder = TradeRecorder()
 
@@ -1326,6 +1395,27 @@ class TradingBot:
                             )
                         except Exception as e:
                             self.logger.error(f"❌ Error guardando trade en training_data.csv: {e}")
+                        if self.ml_service and position:
+                            decision_id = position.get("decision_id")
+                            r_value = position.get("r_value")
+                            target = None
+                            r_multiple = None
+                            if r_value is not None:
+                                try:
+                                    r_value_float = float(r_value)
+                                    if r_value_float != 0:
+                                        r_multiple = pnl / r_value_float
+                                        target = 1 if pnl >= r_value_float else 0
+                                except (ValueError, TypeError):
+                                    pass
+                            exit_type = position.get("exit_type", "unknown")
+                            self.ml_service.update_trade_outcome(
+                                decision_id=decision_id,
+                                pnl=pnl,
+                                target=target,
+                                r_multiple=r_multiple,
+                                exit_type=exit_type,
+                            )
                         # Limpiar contexto de entrada (ya no necesario)
                         if pos_id and hasattr(self, 'position_market_data') and pos_id in self.position_market_data:
                             del self.position_market_data[pos_id]

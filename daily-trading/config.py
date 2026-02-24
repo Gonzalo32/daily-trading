@@ -81,11 +81,23 @@ class Config:
     TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "")
 
     ENABLE_ML = os.getenv("ENABLE_ML", "false").lower() == "true"
+    ENABLE_LEGACY_ML_FILTER = os.getenv(
+        "ENABLE_LEGACY_ML_FILTER",
+        "true" if ENABLE_ML else "false"
+    ).lower() == "true"
     ML_MODEL_PATH = os.getenv("ML_MODEL_PATH", "models/")
     RETRAIN_FREQUENCY = int(os.getenv("RETRAIN_FREQUENCY", "7"))
     TRAINING_MODE = True
 
     ML_MIN_PROBABILITY = float(os.getenv("ML_MIN_PROBABILITY", "0.55"))
+    ML_ENABLED = os.getenv("ML_ENABLED", "true").lower() == "true"
+    ML_MODE = os.getenv("ML_MODE", "shadow").lower()
+    ML_THRESHOLD = float(os.getenv("ML_THRESHOLD", "0.55"))
+    MODEL_VERSION = os.getenv("MODEL_VERSION", "shadow_stub_v1")
+    FEATURE_VERSION = os.getenv("FEATURE_VERSION", "v1")
+    ML_DECISIONS_DB_PATH = os.getenv(
+        "ML_DECISIONS_DB_PATH", "data/ml_decisions.db"
+    )
 
     ML_LABEL_PROFIT_THRESHOLD_R = float(
         os.getenv("ML_LABEL_PROFIT_THRESHOLD_R", "0.0")
