@@ -9,7 +9,9 @@ Archivo principal que orquesta todos los componentes del sistema con:
 
 
 import asyncio
+import os
 import signal
+import sqlite3
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 
@@ -154,12 +156,12 @@ class TradingBot:
         self.trade_recorder = TradeRecorder() if ml_dataset_enabled else None
 
         self.ml_filter = MLSignalFilter(
-            model_path=self.config.ML_MODEL_PATH,
+            model_path=self.config.ML_LEGACY_MODEL_FILE,
             min_probability=self.config.ML_MIN_PROBABILITY,
         ) if legacy_ml_filter_enabled else None
 
         self.ml_v2_filter = MLV2Filter(
-            model_path="models/ml_v2_model.pkl",
+            model_path=self.config.ML_V2_MODEL_FILE,
             paper_threshold_percentile=70.0,
             live_threshold_percentile=80.0,
             trading_mode=self.config.TRADING_MODE
@@ -167,6 +169,8 @@ class TradingBot:
 
         self.ml_service = MLService(
             self.config) if self.config.ML_ENABLED else None
+        self.ml_gating_runtime_enabled = self.config.ML_GATING_LIVE_ENABLED
+        self._last_ml_audit_decisions = 0
 
         if ml_dataset_enabled or self.config.TRADING_MODE == "PAPER":
             from src.ml.ml_progress_tracker import MLProgressTracker
@@ -202,6 +206,13 @@ class TradingBot:
             self.logger.info("🚀 Iniciando Bot de Day Trading Avanzado...")
             self.logger.info("=" * 60)
 
+            if self.config.TRADING_MODE == "PAPER" and self.config.DATA_COLLECTION_MODE:
+                self.logger.info(
+                    "[PAPER] DATA_COLLECTION_MODE activo: relax_factor=%s, paper_max_trades=%s",
+                    self.config.DATA_COLLECTION_RELAX_FACTOR,
+                    self.config.PAPER_MAX_DAILY_TRADES,
+                )
+
             if self.config.ENABLE_DEBUG_STRATEGY:
                 self.logger.warning("=" * 60)
                 self.logger.warning("🐛 MODO DEBUG ACTIVADO")
@@ -223,6 +234,12 @@ class TradingBot:
             if not self._validate_config():
                 self.logger.error("❌ Configuración inválida. Abortando...")
                 return
+
+            if not self._preflight_checks():
+                self.logger.error("❌ Preflight falló. Configuración inválida.")
+                return
+
+            self._ml_preflight()
 
             await self._initialize_components()
 
@@ -741,6 +758,7 @@ class TradingBot:
                         )
                         if ml_shadow_record:
                             ml_shadow_decision_id = ml_shadow_record.get("decision_id")
+                            self._maybe_log_ml_audit()
 
                     if iteration_count % 10 == 0:
                         indicators = market_data.get('indicators', {})
@@ -805,6 +823,21 @@ class TradingBot:
                     self.logger.info(msg)
 
                     is_debug = self.config.ENABLE_DEBUG_STRATEGY
+                    is_live_mode = self.config.TRADING_MODE == "LIVE"
+                    ml_gating_enabled = is_live_mode and self.ml_gating_runtime_enabled
+                    ml_gating_mode = (self.config.ML_GATING_MODE or "legacy").lower()
+                    ml_gating_strategy = (self.config.ML_GATING_STRATEGY or "block").lower()
+                    if ml_gating_mode not in ("legacy", "v2", "both"):
+                        self.logger.warning(
+                            f"⚠️ ML_GATING_MODE inválido: {ml_gating_mode}. Usando 'legacy'."
+                        )
+                        ml_gating_mode = "legacy"
+                    if ml_gating_strategy not in ("block", "percentile_block"):
+                        self.logger.warning(
+                            f"⚠️ ML_GATING_STRATEGY inválido: {ml_gating_strategy}. Usando 'block'."
+                        )
+                        ml_gating_strategy = "block"
+                    ml_gating_logged = False
 
                     if self.ml_service:
                         ml_shadow_record = self.ml_service.evaluate_and_log(
@@ -820,6 +853,7 @@ class TradingBot:
                                 signal["decision_id"] = ml_shadow_decision_id
                             if original_signal is not None and not original_signal.get("decision_id"):
                                 original_signal["decision_id"] = ml_shadow_decision_id
+                            self._maybe_log_ml_audit()
 
                     ml_decision = None
                     use_ml_filter = not self.mvp_mode and not is_debug and self.ml_filter is not None and self.ml_filter.is_model_available()
@@ -835,7 +869,7 @@ class TradingBot:
                         if not ml_decision['approved']:
                             self.logger.info(
                                 f"ML filter score (log only): {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})")
-                            if self.config.TRADING_MODE == "LIVE":
+                            if is_live_mode and ml_gating_enabled and ml_gating_mode in ("legacy", "both"):
                                 rejection_detail = f"ML filter: {ml_decision['reason']} (P(win)={ml_decision.get('probability', 0):.2%})"
                                 tick_decision = create_tick_decision_rejected(
                                     signal_action,
@@ -853,6 +887,11 @@ class TradingBot:
                                         trade_type=tick_decision.decision_outcome.upper(),
                                     )
                                 signal = None
+                            elif is_live_mode:
+                                if not ml_gating_logged:
+                                    self.logger.info(
+                                        "ML gating disabled (log-only)")
+                                    ml_gating_logged = True
                             else:
                                 self.logger.info(
                                     f"[PAPER] ML no aprobó pero ejecución permitida (solo log)")
@@ -900,7 +939,7 @@ class TradingBot:
                                 f"Score: {ml_v2_decision['ml_score']:.4f} | "
                                 f"Percentil: {ml_v2_decision['percentile']:.1f}%"
                             )
-                            if self.config.TRADING_MODE == "LIVE":
+                            if is_live_mode and ml_gating_enabled and ml_gating_mode in ("v2", "both"):
                                 original_action = signal.get(
                                     'action', 'UNKNOWN')
                                 rejection_detail = (
@@ -924,6 +963,11 @@ class TradingBot:
                                         trade_type=tick_decision.decision_outcome.upper(),
                                     )
                                 signal = None
+                            elif is_live_mode:
+                                if not ml_gating_logged:
+                                    self.logger.info(
+                                        "ML gating disabled (log-only)")
+                                    ml_gating_logged = True
                             else:
                                 self.logger.info(
                                     f"[PAPER] ML v2 no aprobó pero ejecución permitida (solo log)")
@@ -1805,6 +1849,173 @@ class TradingBot:
             return float(value)
         except (TypeError, ValueError):
             return None
+
+    def _preflight_checks(self) -> bool:
+        """Validaciones de entorno antes de iniciar el loop principal."""
+        # Dependencias mínimas
+        try:
+            import pandas  # noqa: F401
+        except Exception as e:
+            self.logger.warning(f"⚠️ pandas no disponible: {e}")
+
+        try:
+            import joblib  # noqa: F401
+        except Exception as e:
+            if self.config.ENABLE_LEGACY_ML_FILTER:
+                self.logger.warning(f"⚠️ joblib no disponible: {e}")
+
+        # ML decisions DB path
+        if self.config.ML_ENABLED:
+            db_path = self.config.ML_DECISIONS_DB_PATH
+            db_dir = os.path.dirname(db_path) or "."
+            try:
+                os.makedirs(db_dir, exist_ok=True)
+                conn = sqlite3.connect(db_path)
+                conn.close()
+            except Exception as e:
+                self.logger.error(
+                    f"❌ ML_DECISIONS_DB_PATH no escribible: {db_path} | {e}"
+                )
+                return False
+
+        # TradeRecorder CSV path
+        if self.trade_recorder:
+            data_dir = os.path.dirname(self.trade_recorder.data_file) or "."
+            try:
+                os.makedirs(data_dir, exist_ok=True)
+                with open(self.trade_recorder.data_file, "a", encoding="utf-8"):
+                    pass
+            except Exception as e:
+                self.logger.error(
+                    f"❌ training_data.csv no escribible: {self.trade_recorder.data_file} | {e}"
+                )
+                return False
+
+        # Modelos ML (warnings y/o fail-fast en LIVE con gating)
+        legacy_model_exists = os.path.exists(self.config.ML_LEGACY_MODEL_FILE)
+        v2_model_exists = os.path.exists(self.config.ML_V2_MODEL_FILE)
+
+        if self.config.ENABLE_LEGACY_ML_FILTER:
+            if not legacy_model_exists:
+                self.logger.warning(
+                    f"⚠️ Modelo legacy no encontrado: {self.config.ML_LEGACY_MODEL_FILE}"
+                )
+            if not v2_model_exists:
+                self.logger.warning(
+                    f"⚠️ Modelo ML v2 no encontrado: {self.config.ML_V2_MODEL_FILE}"
+                )
+
+        return True
+
+    def _ml_preflight(self) -> None:
+        """Validaciones ML que no deben romper la ejecución."""
+        if not self.config.ML_ENABLED:
+            return
+
+        gating_mode = (self.config.ML_GATING_MODE or "legacy").lower()
+        if gating_mode not in ("legacy", "v2", "both"):
+            self.logger.warning(
+                f"⚠️ ML_GATING_MODE inválido: {gating_mode}. Usando 'legacy'."
+            )
+            gating_mode = "legacy"
+
+        self.logger.info(
+            "ML config | enabled=%s | mode=%s | thr=%.2f | model=%s | feature=%s | "
+            "gating_live=%s | gating_mode=%s | gating_strategy=%s",
+            self.config.ML_ENABLED,
+            self.config.ML_MODE,
+            self.config.ML_THRESHOLD,
+            self.config.MODEL_VERSION,
+            self.config.FEATURE_VERSION,
+            self.config.ML_GATING_LIVE_ENABLED,
+            gating_mode,
+            self.config.ML_GATING_STRATEGY,
+        )
+
+        db_path = self.config.ML_DECISIONS_DB_PATH
+        db_dir = os.path.dirname(db_path) or "."
+        try:
+            os.makedirs(db_dir, exist_ok=True)
+            conn = sqlite3.connect(db_path)
+            conn.close()
+        except Exception as e:
+            self.logger.error(
+                f"❌ ML_DECISIONS_DB_PATH no escribible: {db_path} | {e}"
+            )
+
+        is_live = self.config.TRADING_MODE == "LIVE"
+        if is_live and self.config.ML_GATING_LIVE_ENABLED:
+            legacy_model_exists = os.path.exists(self.config.ML_LEGACY_MODEL_FILE)
+            v2_model_exists = os.path.exists(self.config.ML_V2_MODEL_FILE)
+            missing = []
+            if gating_mode in ("legacy", "both") and not legacy_model_exists:
+                missing.append(f"legacy={self.config.ML_LEGACY_MODEL_FILE}")
+            if gating_mode in ("v2", "both") and not v2_model_exists:
+                missing.append(f"v2={self.config.ML_V2_MODEL_FILE}")
+            if missing:
+                self.logger.error(
+                    "❌ ML gating LIVE habilitado pero faltan modelos: %s. "
+                    "Se deshabilita gating para evitar bloqueo incoherente.",
+                    ", ".join(missing),
+                )
+                self.ml_gating_runtime_enabled = False
+
+    def _maybe_log_ml_audit(self) -> None:
+        if not self.ml_service:
+            return
+        every_n = self.config.ML_AUDIT_EVERY_N_DECISIONS
+        if every_n <= 0:
+            return
+        logged = getattr(self.ml_service, "_logged_decisions", 0)
+        if logged <= 0 or logged == self._last_ml_audit_decisions:
+            return
+        if logged % every_n != 0:
+            return
+        self._last_ml_audit_decisions = logged
+        self._log_ml_audit_summary(logged)
+
+    def _log_ml_audit_summary(self, logged_decisions: int) -> None:
+        db_path = self.config.ML_DECISIONS_DB_PATH
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT COUNT(*) FROM ml_decisions")
+            total = cursor.fetchone()[0] or 0
+            if total <= 0:
+                conn.close()
+                return
+            cursor.execute("SELECT COUNT(*) FROM ml_decisions WHERE ml_action = 'ALLOW'")
+            allow = cursor.fetchone()[0] or 0
+            cursor.execute("SELECT COUNT(*) FROM ml_decisions WHERE ml_action = 'BLOCK'")
+            block = cursor.fetchone()[0] or 0
+            cursor.execute("SELECT COUNT(*) FROM ml_decisions WHERE executed = 1")
+            executed = cursor.fetchone()[0] or 0
+            cursor.execute(
+                "SELECT COUNT(*) FROM ml_decisions WHERE ml_action = 'BLOCK' AND executed = 1"
+            )
+            block_executed = cursor.fetchone()[0] or 0
+            conn.close()
+
+            def pct(value: int) -> float:
+                return (value / total * 100.0) if total else 0.0
+
+            self.logger.info(
+                "ML audit | logged=%d | total=%d | allow=%.1f%% | block=%.1f%% | executed=%.1f%%",
+                logged_decisions,
+                total,
+                pct(allow),
+                pct(block),
+                pct(executed),
+            )
+            if self.config.TRADING_MODE == "PAPER":
+                self.logger.info(
+                    "ML audit | block_executed_paper=%.1f%% (%d/%d)",
+                    pct(block_executed),
+                    block_executed,
+                    total,
+                )
+        except Exception as e:
+            self.logger.warning(f"⚠️ ML audit falló: {e}")
 
     def _validate_config(self) -> bool:
         """Validar configuración del bot"""

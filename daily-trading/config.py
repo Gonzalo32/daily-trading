@@ -17,6 +17,17 @@ except ImportError:
 class Config:
     """Configuración centralizada del bot de trading."""
 
+    @staticmethod
+    def _resolve_model_file(path: str, default_filename: str) -> str:
+        if not path:
+            return os.path.join("models", default_filename)
+        normalized = path.strip()
+        if normalized.endswith("/") or normalized.endswith("\\") or os.path.isdir(normalized):
+            return os.path.join(normalized, default_filename)
+        if normalized.lower().endswith(".pkl"):
+            return normalized
+        return os.path.join(normalized, default_filename)
+
     TRADING_MODE = os.getenv("TRADING_MODE", "PAPER").upper()
     MARKET = os.getenv("MARKET", "CRYPTO").upper()
     SYMBOL = os.getenv("SYMBOL", "BTC/USDT")
@@ -85,7 +96,9 @@ class Config:
         "ENABLE_LEGACY_ML_FILTER",
         "true" if ENABLE_ML else "false"
     ).lower() == "true"
-    ML_MODEL_PATH = os.getenv("ML_MODEL_PATH", "models/")
+    ML_MODEL_PATH = os.getenv("ML_MODEL_PATH", "models/model.pkl")
+    ML_LEGACY_MODEL_FILE = _resolve_model_file(ML_MODEL_PATH, "model.pkl")
+    ML_V2_MODEL_FILE = os.getenv("ML_V2_MODEL_FILE", "models/ml_v2_model.pkl")
     RETRAIN_FREQUENCY = int(os.getenv("RETRAIN_FREQUENCY", "7"))
     TRAINING_MODE = True
 
@@ -97,6 +110,18 @@ class Config:
     FEATURE_VERSION = os.getenv("FEATURE_VERSION", "v1")
     ML_DECISIONS_DB_PATH = os.getenv(
         "ML_DECISIONS_DB_PATH", "data/ml_decisions.db"
+    )
+    ML_GATING_LIVE_ENABLED = os.getenv(
+        "ML_GATING_LIVE_ENABLED", "false"
+    ).lower() == "true"
+    ML_GATING_MODE = os.getenv("ML_GATING_MODE", "legacy").lower()
+    ML_GATING_STRATEGY = os.getenv("ML_GATING_STRATEGY", "block").lower()
+    ENABLE_AUTO_TRAIN = os.getenv("ENABLE_AUTO_TRAIN", "false").lower() == "true"
+    ENABLE_TRAINING_SCHEMA_MIGRATION = os.getenv(
+        "ENABLE_TRAINING_SCHEMA_MIGRATION", "false"
+    ).lower() == "true"
+    ML_AUDIT_EVERY_N_DECISIONS = int(
+        os.getenv("ML_AUDIT_EVERY_N_DECISIONS", "200")
     )
 
     ML_LABEL_PROFIT_THRESHOLD_R = float(
@@ -113,6 +138,13 @@ class Config:
     MIN_COOLDOWN_BETWEEN_TRADES = float(
         os.getenv("MIN_COOLDOWN_BETWEEN_TRADES", "5.0"))
 
+    DATA_COLLECTION_MODE = os.getenv(
+        "DATA_COLLECTION_MODE", "false").lower() == "true"
+    DATA_COLLECTION_RELAX_FACTOR = float(
+        os.getenv("DATA_COLLECTION_RELAX_FACTOR", "1.0"))
+    DATA_COLLECTION_MAX_TRADES_PER_DAY = int(
+        os.getenv("DATA_COLLECTION_MAX_TRADES_PER_DAY", "500"))
+
     DECISION_HOLD_SAMPLE_RATE = int(
         os.getenv("DECISION_HOLD_SAMPLE_RATE", "10"))
 
@@ -126,6 +158,16 @@ class Config:
     ML_RETRAIN_EVERY = 500
 
     FORCE_CLOSE_TIMEOUT = 15
+
+    if TRADING_MODE == "PAPER" and DATA_COLLECTION_MODE:
+        relax_factor = max(DATA_COLLECTION_RELAX_FACTOR, 1.0)
+        PAPER_MAX_DAILY_TRADES = max(
+            PAPER_MAX_DAILY_TRADES, DATA_COLLECTION_MAX_TRADES_PER_DAY)
+        EMA_DIFF_PCT_MIN = EMA_DIFF_PCT_MIN / relax_factor
+        RSI_OVERBOUGHT = RSI_OVERBOUGHT + 5
+        RSI_OVERSOLD = RSI_OVERSOLD - 5
+        MIN_COOLDOWN_BETWEEN_TRADES = max(
+            1.0, MIN_COOLDOWN_BETWEEN_TRADES / relax_factor)
 
     @classmethod
     def is_crypto(cls):

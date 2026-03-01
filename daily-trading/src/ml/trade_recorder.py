@@ -3,6 +3,9 @@
 import pandas as pd
 import os
 import csv
+import shutil
+from datetime import datetime
+from config import Config
 from src.utils.logging_setup import setup_logging
 
 
@@ -30,11 +33,18 @@ class TradeRecorder:
         self.data_file = data_file
         self.decisions_file = decisions_file
         self.logger = setup_logging(__name__)
+        self.enable_auto_train = Config.ENABLE_AUTO_TRAIN
+        self.enable_training_schema_migration = Config.ENABLE_TRAINING_SCHEMA_MIGRATION
+        self._schema_matches_full = True
         self.trade_columns = self._load_trade_columns()
         self._warned_missing_decision_id_column = False
 
         if not os.path.exists(self.data_file) or os.path.getsize(self.data_file) == 0:
             self._initialize_trades_file()
+            self.trade_columns = list(self.TRADE_COLUMNS)
+
+        if self.enable_training_schema_migration and not self._schema_matches_full:
+            self._migrate_training_schema()
             self.trade_columns = list(self.TRADE_COLUMNS)
 
         if not os.path.exists(self.decisions_file):
@@ -55,16 +65,58 @@ class TradeRecorder:
 
             header = [col.strip() for col in header]
             if "timestamp" in header and "symbol" in header:
-                if "decision_id" not in header:
-                    self.logger.warning(
-                        "training_data.csv sin columna decision_id. "
-                        "Se mantiene compatibilidad y se escribira sin esa columna."
-                    )
+                self._validate_training_schema(header)
                 return header
 
             self.logger.warning(
                 "training_data.csv no tiene header valido. Se usara el esquema por defecto.")
             return list(self.TRADE_COLUMNS)
+
+        except Exception as e:
+            self.logger.warning(
+                f"Error leyendo header de training_data.csv: {e}. Usando esquema por defecto.")
+            return list(self.TRADE_COLUMNS)
+
+    def _validate_training_schema(self, header):
+        full_schema = list(self.TRADE_COLUMNS)
+        self._schema_matches_full = header == full_schema
+        missing = [col for col in full_schema if col not in header]
+        extra = [col for col in header if col not in full_schema]
+        if missing or extra:
+            self.logger.warning(
+                "training_data.csv con schema distinto al full schema. "
+                f"Faltantes={missing} | Extras={extra}"
+            )
+        if "decision_id" not in header:
+            self.logger.warning(
+                "training_data.csv sin columna decision_id. "
+                "Se mantiene compatibilidad y se escribira sin esa columna."
+            )
+
+    def _migrate_training_schema(self):
+        try:
+            if not os.path.exists(self.data_file) or os.path.getsize(self.data_file) == 0:
+                self._initialize_trades_file()
+                return
+
+            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+            backup_path = f"{self.data_file}.{timestamp}.bak.csv"
+            shutil.copy2(self.data_file, backup_path)
+
+            df = pd.read_csv(self.data_file)
+            for col in self.TRADE_COLUMNS:
+                if col not in df.columns:
+                    df[col] = None
+            df = df[self.TRADE_COLUMNS]
+            df.to_csv(self.data_file, index=False)
+            self.logger.info(
+                f"training_data.csv migrado a full schema. Backup: {backup_path}"
+            )
+            self._schema_matches_full = True
+        except Exception as e:
+            self.logger.warning(
+                f"No se pudo migrar training_data.csv: {e}. Se mantiene esquema actual."
+            )
         except Exception as e:
             self.logger.warning(
                 f"Error leyendo header de training_data.csv: {e}. Usando esquema por defecto.")
@@ -143,12 +195,6 @@ class TradeRecorder:
             regime = regime_info.get("regime", "unknown")
             volatility = regime_info.get("volatility", "normal")
 
-            # ⚠️ CRÍTICO: was_executed derivado de executed_action (no de flags externos)
-            # Validar strategy_signal ∈ {"BUY","SELL","NONE"}
-            executed_action = position.get("side", "").upper()
-            was_executed = (executed_action in ["BUY", "SELL"])
-            strategy_signal_normalized = executed_action if was_executed else "NONE"
-
             record = {
                 "timestamp": position.get("entry_time"),
                 "symbol": position.get("symbol"),
@@ -176,14 +222,6 @@ class TradeRecorder:
 
                 "regime": regime,
                 "volatility_level": volatility,
-
-                "decision_buy_possible": position.get("side") == "BUY",
-                "decision_sell_possible": position.get("side") == "SELL",
-                "decision_hold_possible": True,
-
-                "strategy_signal": strategy_signal_normalized,
-                "executed_action": executed_action,
-                "was_executed": was_executed,
 
                 "target": 1 if pnl >= r_value else 0,
                 "trade_type": "executed",
@@ -214,8 +252,14 @@ class TradeRecorder:
                     f"Trade guardado SIN decision_id | {record['symbol']} | PnL={pnl:.2f}"
                 )
 
-            from src.ml.auto_trainer import auto_train_if_needed
-            auto_train_if_needed()
+            if self.enable_auto_train:
+                try:
+                    from src.ml.auto_trainer import auto_train_if_needed
+                    auto_train_if_needed()
+                except Exception as e:
+                    self.logger.warning(
+                        f"Auto-train no disponible o falló: {e}"
+                    )
 
         except Exception as e:
             self.logger.exception(f"Error guardando trade: {e}")
@@ -288,7 +332,10 @@ class TradeRecorder:
                 "volatility_level": volatility,
 
                 "target": 0,
-                "trade_type": f"rejected_{reason}"
+                "trade_type": f"rejected_{reason}",
+                "exit_type": None,
+                "r_multiple": None,
+                "time_in_trade": None
             }
 
             row = {col: record.get(col) for col in self.trade_columns}
@@ -387,7 +434,10 @@ class TradeRecorder:
                 "volatility_level": volatility,
 
                 "target": 0,
-                "trade_type": "no_signal"
+                "trade_type": "no_signal",
+                "exit_type": None,
+                "r_multiple": None,
+                "time_in_trade": None
             }
 
             row = {col: record.get(col) for col in self.trade_columns}
