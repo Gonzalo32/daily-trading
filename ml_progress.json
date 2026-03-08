@@ -1,7 +1,7 @@
 {
-  "last_updated": "2026-02-26T16:57:03.530755",
+  "last_updated": "2026-03-06T19:26:34.825233",
   "stats": {
-    "total_rows": 614,
+    "total_rows": 629,
     "executed_trades": 188,
     "rejected_signals": 0,
     "no_signal_contexts": 0,

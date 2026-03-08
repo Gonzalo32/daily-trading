@@ -43,3 +43,13 @@ Notas:
    - Si falta `joblib`: `pip install joblib`
    - Si falta `python-dotenv`: `pip install python-dotenv`
    - Si falla por paths: ejecutar desde el root del repo (`daily-trading`)
+
+## Data Collection Run (PAPER)
+- `python scripts/run_data_collection_paper.py --minutes 20`
+
+Outputs esperados:
+- `data/ml_decisions.db`
+- `data/ml_decisions_export_last.csv`
+
+Interpretacion:
+- `executed_1` y `pnl_not_null` deben ser > 0 para decir "listo para dejarlo corriendo".

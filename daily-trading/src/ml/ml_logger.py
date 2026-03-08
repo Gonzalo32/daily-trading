@@ -95,6 +95,7 @@ class MLDecisionLogger:
         executed: int,
         trade_type: Optional[str],
         trade_id: Optional[str] = None,
+        reason: Optional[str] = None,
     ) -> None:
         if not decision_id:
             self.logger.warning(
@@ -108,7 +109,7 @@ class MLDecisionLogger:
             cursor.execute(
                 """
                 UPDATE ml_decisions
-                SET executed = ?, trade_type = ?, trade_id = COALESCE(?, trade_id)
+                SET executed = ?, trade_type = ?, trade_id = COALESCE(?, trade_id), reason = COALESCE(?, reason)
                 WHERE id = (
                     SELECT id FROM ml_decisions
                     WHERE decision_id = ?
@@ -116,7 +117,7 @@ class MLDecisionLogger:
                     LIMIT 1
                 )
                 """,
-                (executed, trade_type, trade_id, decision_id),
+                (executed, trade_type, trade_id, reason, decision_id),
             )
             conn.commit()
             updated = cursor.rowcount

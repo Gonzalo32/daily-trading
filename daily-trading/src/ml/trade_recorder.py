@@ -15,115 +15,58 @@ class TradeRecorder:
     Guarda risk_amount, atr_value, r_value y resultado real (pnl).
     """
 
-    TRADE_COLUMNS = [
-        "timestamp", "symbol", "side", "decision_id",
-        "entry_price", "exit_price", "pnl",
-        "size", "stop_loss", "take_profit",
+    FULL_SCHEMA = [
+        "timestamp",
+        "symbol",
+        "side",
+        "entry_price",
+        "exit_price",
+        "pnl",
+        "size",
+        "stop_loss",
+        "take_profit",
         "duration_seconds",
-        "risk_amount", "atr_value", "r_value", "risk_multiplier",
-        "ema_cross_diff_pct", "atr_pct", "rsi_normalized",
-        "price_to_fast_pct", "price_to_slow_pct",
-        "trend_direction", "trend_strength",
-        "regime", "volatility_level",
-        "target", "trade_type",
-        "exit_type", "r_multiple", "time_in_trade"
+        "risk_amount",
+        "atr_value",
+        "r_value",
+        "risk_multiplier",
+        "ema_cross_diff_pct",
+        "atr_pct",
+        "rsi_normalized",
+        "price_to_fast_pct",
+        "price_to_slow_pct",
+        "trend_direction",
+        "trend_strength",
+        "regime",
+        "volatility_level",
+        "target",
+        "trade_type",
+        "exit_type",
+        "r_multiple",
+        "time_in_trade",
     ]
 
-    def __init__(self, data_file: str = "src/ml/training_data.csv", decisions_file: str = "src/ml/decisions.csv"):
+    def __init__(self, data_file: str = "src/ml/training_data_v2.csv", decisions_file: str = "src/ml/decisions.csv"):
         self.data_file = data_file
         self.decisions_file = decisions_file
         self.logger = setup_logging(__name__)
         self.enable_auto_train = Config.ENABLE_AUTO_TRAIN
         self.enable_training_schema_migration = Config.ENABLE_TRAINING_SCHEMA_MIGRATION
-        self._schema_matches_full = True
-        self.trade_columns = self._load_trade_columns()
+        self.trade_columns = list(self.FULL_SCHEMA)
         self._warned_missing_decision_id_column = False
 
         if not os.path.exists(self.data_file) or os.path.getsize(self.data_file) == 0:
             self._initialize_trades_file()
-            self.trade_columns = list(self.TRADE_COLUMNS)
-
-        if self.enable_training_schema_migration and not self._schema_matches_full:
-            self._migrate_training_schema()
-            self.trade_columns = list(self.TRADE_COLUMNS)
+            self.trade_columns = list(self.FULL_SCHEMA)
 
         if not os.path.exists(self.decisions_file):
             self._initialize_decisions_file()
 
     def _load_trade_columns(self):
-        if not os.path.exists(self.data_file) or os.path.getsize(self.data_file) == 0:
-            return list(self.TRADE_COLUMNS)
-
-        try:
-            with open(self.data_file, "r", encoding="utf-8") as f:
-                reader = csv.reader(f)
-                header = next(reader, [])
-            if not header:
-                self.logger.warning(
-                    "training_data.csv sin header detectado. Se usara el esquema por defecto.")
-                return list(self.TRADE_COLUMNS)
-
-            header = [col.strip() for col in header]
-            if "timestamp" in header and "symbol" in header:
-                self._validate_training_schema(header)
-                return header
-
-            self.logger.warning(
-                "training_data.csv no tiene header valido. Se usara el esquema por defecto.")
-            return list(self.TRADE_COLUMNS)
-
-        except Exception as e:
-            self.logger.warning(
-                f"Error leyendo header de training_data.csv: {e}. Usando esquema por defecto.")
-            return list(self.TRADE_COLUMNS)
-
-    def _validate_training_schema(self, header):
-        full_schema = list(self.TRADE_COLUMNS)
-        self._schema_matches_full = header == full_schema
-        missing = [col for col in full_schema if col not in header]
-        extra = [col for col in header if col not in full_schema]
-        if missing or extra:
-            self.logger.warning(
-                "training_data.csv con schema distinto al full schema. "
-                f"Faltantes={missing} | Extras={extra}"
-            )
-        if "decision_id" not in header:
-            self.logger.warning(
-                "training_data.csv sin columna decision_id. "
-                "Se mantiene compatibilidad y se escribira sin esa columna."
-            )
-
-    def _migrate_training_schema(self):
-        try:
-            if not os.path.exists(self.data_file) or os.path.getsize(self.data_file) == 0:
-                self._initialize_trades_file()
-                return
-
-            timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-            backup_path = f"{self.data_file}.{timestamp}.bak.csv"
-            shutil.copy2(self.data_file, backup_path)
-
-            df = pd.read_csv(self.data_file)
-            for col in self.TRADE_COLUMNS:
-                if col not in df.columns:
-                    df[col] = None
-            df = df[self.TRADE_COLUMNS]
-            df.to_csv(self.data_file, index=False)
-            self.logger.info(
-                f"training_data.csv migrado a full schema. Backup: {backup_path}"
-            )
-            self._schema_matches_full = True
-        except Exception as e:
-            self.logger.warning(
-                f"No se pudo migrar training_data.csv: {e}. Se mantiene esquema actual."
-            )
-        except Exception as e:
-            self.logger.warning(
-                f"Error leyendo header de training_data.csv: {e}. Usando esquema por defecto.")
-            return list(self.TRADE_COLUMNS)
+        return list(self.FULL_SCHEMA)
 
     def _initialize_trades_file(self):
-        df = pd.DataFrame(columns=self.TRADE_COLUMNS)
+        df = pd.DataFrame(columns=self.FULL_SCHEMA)
         os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
         df.to_csv(self.data_file, index=False)
         self.logger.info(f"Archivo de TRADES creado: {self.data_file}")
@@ -199,7 +142,6 @@ class TradeRecorder:
                 "timestamp": position.get("entry_time"),
                 "symbol": position.get("symbol"),
                 "side": position.get("side"),
-                "decision_id": position.get("decision_id", ""),
                 "entry_price": entry_price,
                 "exit_price": exit_price,
                 "pnl": pnl,
@@ -232,25 +174,13 @@ class TradeRecorder:
             }
 
             row = {col: record.get(col) for col in self.trade_columns}
-            if "decision_id" not in self.trade_columns and record.get("decision_id"):
-                if not self._warned_missing_decision_id_column:
-                    self.logger.warning(
-                        "training_data.csv sin decision_id: trade guardado sin decision_id (compatibilidad)."
-                    )
-                    self._warned_missing_decision_id_column = True
 
             df = pd.DataFrame([row], columns=self.trade_columns)
             df.to_csv(self.data_file, mode="a", index=False, header=False)
 
-            decision_id = record.get("decision_id", "")
-            if decision_id:
-                self.logger.info(
-                    f"trade saved with decision_id={decision_id} | {record['symbol']} | PnL={pnl:.2f} | Target={record['target']}"
-                )
-            else:
-                self.logger.warning(
-                    f"Trade guardado SIN decision_id | {record['symbol']} | PnL={pnl:.2f}"
-                )
+            self.logger.info(
+                f"trade saved | {record['symbol']} | PnL={pnl:.2f} | Target={record['target']}"
+            )
 
             if self.enable_auto_train:
                 try:
@@ -305,7 +235,6 @@ class TradeRecorder:
                 "timestamp": market_data.get("timestamp"),
                 "symbol": market_data.get("symbol"),
                 "side": signal.get("action", "UNKNOWN"),
-                "decision_id": signal.get("decision_id", ""),
                 "entry_price": price,
                 "exit_price": None,
                 "pnl": None,
@@ -339,12 +268,6 @@ class TradeRecorder:
             }
 
             row = {col: record.get(col) for col in self.trade_columns}
-            if "decision_id" not in self.trade_columns and record.get("decision_id"):
-                if not self._warned_missing_decision_id_column:
-                    self.logger.warning(
-                        "training_data.csv sin decision_id: senal rechazada guardada sin decision_id."
-                    )
-                    self._warned_missing_decision_id_column = True
 
             df = pd.DataFrame([row], columns=self.trade_columns)
             df.to_csv(self.data_file, mode="a", index=False, header=False)
@@ -407,7 +330,6 @@ class TradeRecorder:
                 "timestamp": market_data.get("timestamp"),
                 "symbol": market_data.get("symbol"),
                 "side": "NO_SIGNAL",
-                "decision_id": market_data.get("decision_id", ""),
                 "entry_price": price,
                 "exit_price": None,
                 "pnl": None,
@@ -441,12 +363,6 @@ class TradeRecorder:
             }
 
             row = {col: record.get(col) for col in self.trade_columns}
-            if "decision_id" not in self.trade_columns and record.get("decision_id"):
-                if not self._warned_missing_decision_id_column:
-                    self.logger.warning(
-                        "training_data.csv sin decision_id: contexto sin senal guardado sin decision_id."
-                    )
-                    self._warned_missing_decision_id_column = True
 
             df = pd.DataFrame([row], columns=self.trade_columns)
             df.to_csv(self.data_file, mode="a", index=False, header=False)

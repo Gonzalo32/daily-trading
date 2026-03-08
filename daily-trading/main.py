@@ -72,7 +72,7 @@ class TradingBot:
         state_path = self.state_manager.path
         state_exists = self.state_manager.exists()
         self.logger.info(
-            f"State path configurado: {state_path} | encontrado={state_exists}"
+            "State path configurado: %s | encontrado=%s", state_path, state_exists
         )
 
         persisted_state = self.state_manager.load()
@@ -105,9 +105,11 @@ class TradingBot:
                         self.risk_manager.state.decision_samples_collected = persisted_state.get(
                             "decision_samples_collected", 0)
                         self.risk_manager.state.trades_today = self.risk_manager.state.executed_trades_today
-                except Exception as e:
+                except (TypeError, ValueError, KeyError) as e:
                     self.logger.warning(
-                        f"Error verificando fecha del estado: {e}. Reseteando metricas diarias.")
+                        "Error verificando fecha del estado: %s. Reseteando metricas diarias.",
+                        e,
+                    )
                     self.risk_manager.reset_daily_metrics()
             else:
 
@@ -311,6 +313,18 @@ class TradingBot:
 
         if self.dashboard:
             await self.dashboard.stop()
+
+        try:
+            if self.market_data:
+                await self.market_data.close()
+        except Exception as e:
+            self.logger.warning(f"⚠️ Error cerrando MarketDataProvider: {e}")
+
+        try:
+            if self.order_executor:
+                await self.order_executor.close()
+        except Exception as e:
+            self.logger.warning(f"⚠️ Error cerrando OrderExecutor: {e}")
 
         self.logger.info("✅ Bot detenido correctamente")
 
@@ -884,7 +898,8 @@ class TradingBot:
                                     self.ml_service.update_execution_outcome(
                                         decision_id=ml_shadow_decision_id,
                                         executed=0,
-                                        trade_type=tick_decision.decision_outcome.upper(),
+                                        trade_type="REJECTED_GATING",
+                                        reason="Blocked by ML gating",
                                     )
                                 signal = None
                             elif is_live_mode:
@@ -960,7 +975,8 @@ class TradingBot:
                                     self.ml_service.update_execution_outcome(
                                         decision_id=ml_shadow_decision_id,
                                         executed=0,
-                                        trade_type=tick_decision.decision_outcome.upper(),
+                                        trade_type="REJECTED_GATING",
+                                        reason="Blocked by ML gating",
                                     )
                                 signal = None
                             elif is_live_mode:
@@ -1042,7 +1058,15 @@ class TradingBot:
                                 self.ml_service.update_execution_outcome(
                                     decision_id=ml_shadow_decision_id,
                                     executed=0,
-                                    trade_type=tick_decision.decision_outcome.upper(),
+                                    trade_type="EXECUTION_ERROR",
+                                    reason=f"Execution failed: {execution_error}",
+                                )
+                            if self.ml_service and ml_shadow_decision_id:
+                                self.ml_service.update_execution_outcome(
+                                    decision_id=ml_shadow_decision_id,
+                                    executed=0,
+                                    trade_type="REJECTED_RISK",
+                                    reason=f"Risk rejected: {tick_decision.reject_reason}",
                                 )
                         elif not risk_valid and is_paper_mvp:
                             self.logger.warning(
@@ -1120,12 +1144,20 @@ class TradingBot:
                                 else:
                                     decision_sample.reject_reason = tick_decision.reject_reason
                             if self.ml_service and ml_shadow_decision_id:
-                                executed_flag = 1 if tick_decision.decision_outcome == DecisionOutcome.EXECUTED.value else 0
-                                self.ml_service.update_execution_outcome(
-                                    decision_id=ml_shadow_decision_id,
-                                    executed=executed_flag,
-                                    trade_type=tick_decision.decision_outcome.upper(),
-                                )
+                                if tick_decision.decision_outcome == DecisionOutcome.NO_SIGNAL.value:
+                                    self.ml_service.update_execution_outcome(
+                                        decision_id=ml_shadow_decision_id,
+                                        executed=0,
+                                        trade_type="NO_SIGNAL",
+                                        reason="Sin señal del strategy",
+                                    )
+                                else:
+                                    self.ml_service.update_execution_outcome(
+                                        decision_id=ml_shadow_decision_id,
+                                        executed=0,
+                                        trade_type="REJECTED_RISK",
+                                        reason=f"Limits rejected: {execute_reason or 'Daily trade limits reached'}",
+                                    )
 
                             order_result = {
                                 "success": False, "error": "Daily limits reached (DecisionSample created)"}
@@ -1168,8 +1200,9 @@ class TradingBot:
                                 self.ml_service.update_execution_outcome(
                                     decision_id=ml_shadow_decision_id,
                                     executed=1,
-                                    trade_type=tick_decision.decision_outcome.upper(),
+                                    trade_type="EXECUTED",
                                     trade_id=trade_id,
+                                    reason="Executed",
                                 )
 
                             if self.mvp_mode:
@@ -2122,6 +2155,18 @@ class TradingBot:
         except Exception as e:
             self.logger.error(f"❌ Error en cierre de emergencia: {e}")
         finally:
+            try:
+                if self.market_data:
+                    await self.market_data.close()
+            except Exception as e:
+                self.logger.warning(f"⚠️ Error cerrando MarketDataProvider: {e}")
+
+            try:
+                if self.order_executor:
+                    await self.order_executor.close()
+            except Exception as e:
+                self.logger.warning(f"⚠️ Error cerrando OrderExecutor: {e}")
+
             self.is_running = False
 
     def _signal_handler(self, signum, frame):

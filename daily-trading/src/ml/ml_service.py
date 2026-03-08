@@ -83,10 +83,11 @@ class MLService:
             else:
                 if ml_score >= self.threshold:
                     ml_action = "ALLOW"
-                    reason = "Score >= threshold"
                 else:
                     ml_action = "BLOCK"
-                    reason = "Score < threshold"
+                reason = "Strategy signal"
+
+            would_execute = 1 if side in ["BUY", "SELL"] else 0
 
             record = {
                 "created_at": datetime.utcnow().isoformat(),
@@ -103,7 +104,7 @@ class MLService:
                 "ml_action": ml_action,
                 "reason": reason,
                 "features_json": self._serialize_features(features),
-                "would_execute": 1 if ml_action == "ALLOW" else 0,
+                "would_execute": would_execute,
                 "executed": executed,
                 "trade_type": trade_type,
                 "target": None,
@@ -134,6 +135,7 @@ class MLService:
         executed: int,
         trade_type: Optional[str],
         trade_id: Optional[str] = None,
+        reason: Optional[str] = None,
     ) -> None:
         if not self.enabled or not decision_id:
             return
@@ -142,6 +144,7 @@ class MLService:
             executed=executed,
             trade_type=trade_type,
             trade_id=trade_id,
+            reason=reason,
         )
 
     def update_trade_outcome(
